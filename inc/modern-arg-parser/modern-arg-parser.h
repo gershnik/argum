@@ -9,28 +9,31 @@
 #include <optional>
 #include <variant>
 #include <stdexcept>
+#include <ostream>
 
 #include <assert.h>
 
 namespace MArgP {
 
     template<class Char>
-    struct SpecialChars;
+    struct CharConstants;
 
-    #define MARGP_DEFINE_SPECIAL_CHARS(type, prefix) \
-        template<> \
-        struct SpecialChars<type> { \
-            static constexpr char optionStart   = prefix ## '-'; \
-            static constexpr char argAssignment = prefix ## '='; \
-        };
+    #define MARGP_DEFINE_CHAR_CONSTANTS(type, prefix) template<> struct CharConstants<type> { \
+        static constexpr auto optionStart                   = prefix ## '-'; \
+        static constexpr auto argAssignment                 = prefix ## '='; \
+        static constexpr auto unrecognizedOptionError       = prefix ## "unrecognized option: "; \
+        static constexpr auto missingOptionArgumentError    = prefix ## "argument required for option: "; \
+        static constexpr auto extraOptionArgumentError      = prefix ## "extraneous argument for option: "; \
+        static constexpr auto extraPositionalError          = prefix ## "unexpected argument: "; \
+    };
 
-    MARGP_DEFINE_SPECIAL_CHARS(char, )
-    MARGP_DEFINE_SPECIAL_CHARS(wchar_t, L)
-    MARGP_DEFINE_SPECIAL_CHARS(char8_t, u8)
-    MARGP_DEFINE_SPECIAL_CHARS(char16_t, u)
-    MARGP_DEFINE_SPECIAL_CHARS(char32_t, U)
+    MARGP_DEFINE_CHAR_CONSTANTS(char, )
+    MARGP_DEFINE_CHAR_CONSTANTS(wchar_t, L)
+    MARGP_DEFINE_CHAR_CONSTANTS(char8_t, u8)
+    MARGP_DEFINE_CHAR_CONSTANTS(char16_t, u)
+    MARGP_DEFINE_CHAR_CONSTANTS(char32_t, U)
 
-    #undef MARGP_DEFINE_SPECIAL_CHARS
+    #undef MARGP_DEFINE_CHAR_CONSTANTS
 
     template<class Char>
     class BasicOptionName final {
@@ -39,7 +42,7 @@ namespace MArgP {
         using CharType = Char;
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
-        using SpecialChars = SpecialChars<Char>;
+        using CharConstants = CharConstants<Char>;
     public:
         template<class First, class... Rest>
         requires(std::is_convertible_v<First, StringViewType> && (std::is_convertible_v<Rest, StringViewType> && ...))
@@ -76,10 +79,10 @@ namespace MArgP {
         }
 
         auto add(int & nameLevel, StringViewType opt) -> void {
-            assert(opt.size() > 1 && opt[0] == SpecialChars::optionStart);
+            assert(opt.size() > 1 && opt[0] == CharConstants::optionStart);
             
             int currentNameLevel = 0;
-            if (opt[1] == SpecialChars::optionStart) {
+            if (opt[1] == CharConstants::optionStart) {
                 assert(opt.size() > 2);
                 opt.remove_prefix(2);
                 this->m_longOptions.emplace(opt);
@@ -113,7 +116,7 @@ namespace MArgP {
     class BasicArgumentTokenizer final {
 
     private:
-        using SpecialChars = SpecialChars<Char>;
+        using CharConstants = CharConstants<Char>;
 
     public:
         using CharType = Char;
@@ -192,16 +195,16 @@ namespace MArgP {
                 auto argp = argv[argIdx];
                 StringViewType arg = { argp, strlen(argp) };
 
-                if (!noMoreOptions && arg.size() > 1 && arg[0] == SpecialChars::optionStart) {
+                if (!noMoreOptions && arg.size() > 1 && arg[0] == CharConstants::optionStart) {
 
-                    if (arg.size() > 2 && arg[1] == SpecialChars::optionStart)
+                    if (arg.size() > 2 && arg[1] == CharConstants::optionStart)
                     {
                         //start of a long option
                         auto body = arg.substr(2);
                         if (this->handleLongOption(argIdx, body, handler, rest) == TokenResult::Stop) 
                             break;
                     }
-                    else if (arg.size() == 2 && arg[1] == SpecialChars::optionStart) {
+                    else if (arg.size() == 2 && arg[1] == CharConstants::optionStart) {
                         // "--" - no more options 
                         noMoreOptions = true;
                         if (handler(OptionStopToken{argIdx}) == TokenResult::Stop)
@@ -233,7 +236,7 @@ namespace MArgP {
             StringViewType name = option;
             std::optional<StringViewType> arg = std::nullopt;
 
-            if (auto assignPos = option.find(SpecialChars::argAssignment); 
+            if (auto assignPos = option.find(CharConstants::argAssignment); 
                     assignPos != option.npos && assignPos != 0) {
 
                 name = option.substr(0, assignPos);
@@ -265,7 +268,7 @@ namespace MArgP {
                                 handler(OptionToken{argIdx, idx, option}) :
                                 handler(UnknownOptionToken{argIdx, option});
                 if (res == TokenResult::Stop) {
-                    rest.push_back(StringType(SpecialChars::optionStart, 1) + StringType(chars));
+                    rest.push_back(StringType(CharConstants::optionStart, 1) + StringType(chars));
                     return TokenResult::Stop;
                 }
             }
@@ -310,6 +313,23 @@ namespace MArgP {
     };
 
     template<class Char>
+    class BasicParsingException : public std::runtime_error {
+    public:
+        virtual auto print(std::basic_ostream<Char> & str) const -> void = 0;
+    protected:
+        BasicParsingException(std::string_view message) : std::runtime_error(std::string(message)) {
+        }
+
+        auto formatOption(std::basic_ostream<Char> & str, std::basic_string_view<Char> opt) const -> void {
+
+            str << CharConstants<Char>::optionStart;
+            if (opt.size() > 1)
+                str << CharConstants<Char>::optionStart;
+            str << opt;
+        }
+    };
+
+    template<class Char>
     class BasicSequentialArgumentParser {
 
     public:
@@ -317,6 +337,7 @@ namespace MArgP {
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
         using OptionName = BasicOptionName<Char>;
+        using ParsingException = BasicParsingException<Char>;
 
     private:
         template<OptionArgument Argument> struct OptionHandlerDeducer;
@@ -328,23 +349,26 @@ namespace MArgP {
         template<>
         struct OptionHandlerDeducer<OptionArgument::Required> { using Type = std::function<void (StringViewType)>; };
 
+        using CharConstants = CharConstants<CharType>;
+
     public:
         template<OptionArgument Argument> using OptionHandler = typename OptionHandlerDeducer<Argument>::Type;
 
         using PositionalHandler = std::function<void (int, const StringViewType &)>;
         
-        class ParsingException : public std::runtime_error {
-        protected:
-            ParsingException(std::string_view message) : std::runtime_error(std::string(message)) {
-            }
-        };
-
+        
         class UnrecognizedOption : public ParsingException {
         public:
             UnrecognizedOption(StringViewType value): 
                 ParsingException("UnrecognizedOption"),
                 option(value) {
             }
+
+            auto print(std::basic_ostream<CharType> & str) const -> void override {
+                str << CharConstants::unrecognizedOptionError;
+                this->formatOption(str, this->option);
+            }
+
             StringType option;
         };
 
@@ -353,6 +377,11 @@ namespace MArgP {
             MissingOptionArgument(StringViewType option_): 
                 ParsingException("MissingOptionArgument"),
                 option(option_) {
+            }
+
+            auto print(std::basic_ostream<CharType> & str) const -> void override {
+                str << CharConstants::missingOptionArgumentError;
+                this->formatOption(str, this->option);
             }
 
             StringType option;
@@ -365,14 +394,23 @@ namespace MArgP {
                 option(option_) {
             }
 
+            auto print(std::basic_ostream<CharType> & str) const -> void override{
+                str << CharConstants::extraOptionArgumentError;
+                this->formatOption(str, this->option);
+            }
+
             StringType option;
         };
 
-        class UnrecognizedPositional : public ParsingException {
+        class ExtraPositional : public ParsingException {
         public:
-            UnrecognizedPositional(StringViewType value_): 
-                ParsingException("UnrecognizedPositional"),
+            ExtraPositional(StringViewType value_): 
+                ParsingException("ExtraPositional"),
                 value(value_) {
+            }
+
+            auto print(std::basic_ostream<CharType> & str) const -> void override {
+                str << CharConstants::extraPositionalError << this->value;
             }
 
             StringType value;
@@ -501,7 +539,7 @@ namespace MArgP {
                         return ArgumentTokenizer::Continue;
 
                     if (currentPositionalIdx >= this->m_maxPositionals)
-                        throw UnrecognizedPositional(token.value);
+                        throw ExtraPositional(token.value);
 
                     this->m_positionalHandler(currentPositionalIdx, token.value);
                     ++currentPositionalIdx;
@@ -537,6 +575,7 @@ namespace MArgP {
 
     MARGP_DECLARE_FRIENDLY_NAMES(OptionName);
     MARGP_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer);
+    MARGP_DECLARE_FRIENDLY_NAMES(ParsingException);
     MARGP_DECLARE_FRIENDLY_NAMES(SequentialArgumentParser);
 
     #undef MARGP_DECLARE_FRIENDLY_NAMES
