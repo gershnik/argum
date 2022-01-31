@@ -14,6 +14,8 @@
 #include <assert.h>
 
 namespace MArgP {
+    
+    //MARK: - CharConstants
 
     template<class Char>
     struct CharConstants;
@@ -34,6 +36,8 @@ namespace MArgP {
     MARGP_DEFINE_CHAR_CONSTANTS(char32_t, U)
 
     #undef MARGP_DEFINE_CHAR_CONSTANTS
+    
+    //MARK: - Utility
 
     template<class Char>
     class BasicOptionName final {
@@ -111,7 +115,8 @@ namespace MArgP {
         Required
     };
     
-
+    //MARK: -
+    
     template<class Char>
     class BasicArgumentTokenizer final {
 
@@ -231,7 +236,7 @@ namespace MArgP {
 
     private:
         template<class Func>
-        auto handleLongOption(int argIdx, StringViewType option, const Func & handler, std::vector<StringType> & rest) const -> TokenResult {
+        auto handleLongOption(int argIdx, StringViewType option, const Func & handler, [[maybe_unused]] std::vector<StringType> & rest) const -> TokenResult {
             
             StringViewType name = option;
             std::optional<StringViewType> arg = std::nullopt;
@@ -256,7 +261,7 @@ namespace MArgP {
         auto handleShortOption(int argIdx, StringViewType chars, const Func & handler, std::vector<StringType> & rest) const {
 
             if (auto idx = this->find(this->m_multiShorts, chars); idx >= 0) {
-                return handler(OptionToken{argIdx, idx, chars});
+                return handler(OptionToken{argIdx, idx, chars, std::nullopt});
             }
 
             while(!chars.empty()) {
@@ -265,7 +270,7 @@ namespace MArgP {
 
                 auto idx = this->find(this->m_singleShorts, option.front());
                 auto res = idx >= 0 ?
-                                handler(OptionToken{argIdx, idx, option}) :
+                                handler(OptionToken{argIdx, idx, option, std::nullopt}) :
                                 handler(UnknownOptionToken{argIdx, option});
                 if (res == TokenResult::Stop) {
                     rest.push_back(StringType(CharConstants::optionStart, 1) + StringType(chars));
@@ -311,6 +316,8 @@ namespace MArgP {
         std::vector<std::pair<StringType, int>> m_multiShorts;
         std::vector<std::pair<StringType, int>> m_longs;
     };
+    
+    //MARK: -
 
     template<class Char>
     class BasicParsingException : public std::runtime_error {
@@ -328,6 +335,8 @@ namespace MArgP {
             str << opt;
         }
     };
+
+    //MARK: -
 
     template<class Char>
     class BasicSequentialArgumentParser {
@@ -515,7 +524,7 @@ namespace MArgP {
         auto parse(int argc, const CharType ** argv) {
             
             PendingOption pendingOption;
-            size_t currentPositionalIdx = 0;
+            int currentPositionalIdx = 0;
             
 
             this->m_tokenizer.tokenize(argc, argv, [&](const auto & token) {
@@ -524,7 +533,7 @@ namespace MArgP {
 
                 if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
-                    auto & option = this->m_options[token.index];
+                    auto & option = this->m_options[size_t(token.index)];
                     pendingOption.reset(token.value, token.argument, option.handler);
                     return ArgumentTokenizer::Continue;
 
@@ -563,7 +572,7 @@ namespace MArgP {
 
     };
 
-    
+    //MARK: - Specializations
 
     #define MARGP_DECLARE_FRIENDLY_NAME(stem, type, prefix) using prefix ## stem = Basic##stem<type>;
     #define MARGP_DECLARE_FRIENDLY_NAMES(stem) \

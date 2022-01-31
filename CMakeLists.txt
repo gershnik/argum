@@ -31,6 +31,12 @@ if (MODERN_ARG_PARSER_TEST)
             modern-arg-parser
     )
 
+    target_compile_options(test 
+        PRIVATE
+            $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic -Weverything 
+                -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-old-style-cast -Wno-padded -Wno-unused-function>
+    )
+
     target_sources(test 
         PRIVATE
             test/catch.hpp

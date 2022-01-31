@@ -15,21 +15,21 @@ using UnknownOptionToken = ArgumentTokenizer::UnknownOptionToken;
 using Token = std::variant<OptionToken, OptionStopToken, ArgumentToken, UnknownOptionToken>;
 
 namespace MArgP {
-    auto operator<<(std::ostream & str, const OptionToken & token) -> std::ostream & {
+    static auto operator<<(std::ostream & str, const OptionToken & token) -> std::ostream & {
         return str << "OptionToken: "  << token.value << ", idx: " << token.index << ", arg: " << token.containingArgIdx;
     }
-    auto operator<<(std::ostream & str, const ArgumentToken & token) -> std::ostream & {
+    static auto operator<<(std::ostream & str, const ArgumentToken & token) -> std::ostream & {
         return str << "ArgumentToken: " << token.value  << ", arg: " << token.containingArgIdx;
     }
-    auto operator<<(std::ostream & str, const OptionStopToken & token) -> std::ostream & {
+    static auto operator<<(std::ostream & str, const OptionStopToken & token) -> std::ostream & {
         return str << "OptionStopToken, arg: " << token.containingArgIdx;
     }
-    auto operator<<(std::ostream & str, const UnknownOptionToken & token) -> std::ostream & {
+    static auto operator<<(std::ostream & str, const UnknownOptionToken & token) -> std::ostream & {
         return str << "UnknownOptionToken: " << token.value  << ", arg: " << token.containingArgIdx;
     }
 }
 
-auto operator<<(std::ostream & str, const Token & token) -> std::ostream & {
+static auto operator<<(std::ostream & str, const Token & token) -> std::ostream & {
     return std::visit([&str](const auto & value) -> std::ostream & { return str << value; }, token);
 }
 
@@ -38,14 +38,14 @@ TEST_CASE( "Empty Command Line" , "[tokenizer]") {
 
     ArgumentTokenizer t;
 
-    auto ret = t.tokenize(0, (const char **)nullptr, [](const auto & token) {
+    auto ret = t.tokenize(0, (const char **)nullptr, []([[maybe_unused]] const auto & token) {
         CHECK(false);
         return ArgumentTokenizer::Continue;
     });
     CHECK(ret == vector<string>{});
 
     const char * argv[] = { "prog" };
-    ret = t.tokenize(std::size(argv), argv, [](const auto & token) {
+    ret = t.tokenize(std::size(argv), argv, []([[maybe_unused]] const auto & token) {
         CHECK(false);
         return ArgumentTokenizer::Continue;
     });
@@ -113,7 +113,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
 
     SECTION("Empty"){
         const char * argv[] = { "prog" };
-        auto ret = t.tokenize(std::size(argv), argv, [](const Token & token) {
+        auto ret = t.tokenize(std::size(argv), argv, []([[maybe_unused]] const Token & token) {
             CHECK(false);
             return ArgumentTokenizer::Continue;
         });
@@ -123,7 +123,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     SECTION("One"){
         const char * argv[] = { "prog", "-c" };
         Token expected[] = {
-            OptionToken{ 1, 0, "c"}
+            OptionToken{ 1, 0, "c", std::nullopt}
         };
         testTokenizer(t, std::size(argv), argv, expected);
     }
@@ -131,8 +131,8 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     SECTION("Two"){
         const char * argv[] = { "prog", "-c", "-c" };
         Token expected[] = {
-            OptionToken{ 1, 0, "c"},
-            OptionToken{ 2, 0, "c"}
+            OptionToken{ 1, 0, "c", std::nullopt},
+            OptionToken{ 2, 0, "c", std::nullopt}
         };
         testTokenizer(t, std::size(argv), argv, expected);
     }
@@ -140,8 +140,8 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     SECTION("Two Merged"){
         const char * argv[] = { "prog", "-cc" };
         Token expected[] = {
-            OptionToken{ 1, 0, "c"},
-            OptionToken{ 1, 0, "c"}
+            OptionToken{ 1, 0, "c", std::nullopt},
+            OptionToken{ 1, 0, "c", std::nullopt}
         };
         testTokenizer(t, std::size(argv), argv, expected);
     }
@@ -149,9 +149,9 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     SECTION("Two With Arg In-Between"){
         const char * argv[] = { "prog", "-c", "c", "-c" };
         Token expected[] = {
-            OptionToken{   1, 0, "c"},
+            OptionToken{   1, 0, "c", std::nullopt},
             ArgumentToken{ 2, "c" },
-            OptionToken{   3, 0, "c"}
+            OptionToken{   3, 0, "c", std::nullopt}
         };
         testTokenizer(t, std::size(argv), argv, expected);
     }
@@ -159,7 +159,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     SECTION("Two With Stop"){
         const char * argv[] = { "prog", "-c", "--", "-c" };
         Token expected[] = {
-            OptionToken{     1, 0, "c"},
+            OptionToken{     1, 0, "c", std::nullopt},
             OptionStopToken{ 2 },
             ArgumentToken{   3, "-c"}
         };
