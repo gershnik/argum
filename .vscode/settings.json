@@ -2,6 +2,12 @@
     "cmake.configureArgs": ["-DMODERN_ARG_PARSER_TEST=1"],
     "cmake.buildDirectory": "${workspaceFolder}/out/vscode/${buildKit}",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.intelliSenseEngine": "Default",
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.codeFolding": "Enabled",
+    "editor.showFoldingControls": "always",
+    "editor.folding": true,
+    "editor.foldingStrategy": "auto",
     "files.associations": {
         "__bit_reference": "cpp",
         "__bits": "cpp",
@@ -80,6 +86,8 @@
         "vector": "cpp",
         "filesystem": "cpp",
         "__functional_base_03": "cpp",
-        "span": "cpp"
-    }
+        "span": "cpp",
+        "concepts": "cpp"
+    },
+    "cmake.configureOnOpen": true
 }

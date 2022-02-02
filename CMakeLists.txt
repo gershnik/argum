@@ -34,7 +34,7 @@ if (MODERN_ARG_PARSER_TEST)
     target_compile_options(test 
         PRIVATE
             $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic -Weverything 
-                -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-old-style-cast -Wno-padded -Wno-unused-function>
+                -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-old-style-cast -Wno-padded -Wno-unused-function -Wno-ctad-maybe-unsupported>
     )
 
     target_sources(test 

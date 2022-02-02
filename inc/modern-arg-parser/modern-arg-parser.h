@@ -3,6 +3,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 #include <set>
 #include <map>
 #include <span>
@@ -10,6 +11,8 @@
 #include <variant>
 #include <stdexcept>
 #include <ostream>
+#include <sstream>
+#include <concepts>
 
 #include <assert.h>
 
@@ -23,10 +26,13 @@ namespace MArgP {
     #define MARGP_DEFINE_CHAR_CONSTANTS(type, prefix) template<> struct CharConstants<type> { \
         static constexpr auto optionStart                   = prefix ## '-'; \
         static constexpr auto argAssignment                 = prefix ## '='; \
+        \
+        static constexpr auto indentation                   = prefix ## "    ";\
         static constexpr auto unrecognizedOptionError       = prefix ## "unrecognized option: "; \
         static constexpr auto missingOptionArgumentError    = prefix ## "argument required for option: "; \
         static constexpr auto extraOptionArgumentError      = prefix ## "extraneous argument for option: "; \
         static constexpr auto extraPositionalError          = prefix ## "unexpected argument: "; \
+        static constexpr auto validationError               = prefix ## "invalid arguments: "; \
     };
 
     MARGP_DEFINE_CHAR_CONSTANTS(char, )
@@ -38,6 +44,17 @@ namespace MArgP {
     #undef MARGP_DEFINE_CHAR_CONSTANTS
     
     //MARK: - Utility
+
+    template<class Char>
+    struct Indent {
+        int count = 0;
+
+        friend auto operator<<(std::basic_ostream<Char> & str, Indent val) -> std::basic_ostream<Char> & {
+            for(int i = 0; i < val.count; ++i)
+                str << CharConstants<char>::indentation;
+            return str;
+        }
+    };
 
     template<class Char>
     class BasicOptionName final {
@@ -337,6 +354,43 @@ namespace MArgP {
     };
 
     //MARK: -
+    
+    template<class Char>
+    using ParsingValidationData = std::map<std::basic_string<Char>, int>;
+
+    template<class T, class Char>
+    concept ParserValidator = std::is_invocable_r_v<bool, T, const ParsingValidationData<Char>>;
+    
+    template<class T, class Char>
+    concept DescribableParserValidator = ParserValidator<T, Char> &&
+        requires(const T & val, std::basic_ostream<Char> & str) {
+            { describe(int(), val, str) } -> std::same_as<std::basic_ostream<Char> &>;
+        };
+    
+    template<class Char, class First, class... Rest>
+    constexpr bool CompatibleParserValidators = ParserValidator<First, Char> && (ParserValidator<Rest, Char> && ...);
+    
+    template<class Char, class First, class... Rest>
+    constexpr bool CompatibleDescribableParserValidators = DescribableParserValidator<First, Char> && (DescribableParserValidator<Rest, Char> && ...);
+    
+    template<class T>
+    concept AnyParserValidator =
+        ParserValidator<T, char> ||
+        ParserValidator<T, wchar_t> ||
+        ParserValidator<T, char8_t> ||
+        ParserValidator<T, char16_t> ||
+        ParserValidator<T, char32_t>;
+   
+    
+    template<class First, class... Rest>
+    constexpr bool AnyCompatibleParserValidators =
+        CompatibleParserValidators<char, First, Rest...> ||
+        CompatibleParserValidators<char, First, Rest...> ||
+        CompatibleParserValidators<wchar_t, First, Rest...> ||
+        CompatibleParserValidators<char8_t, First, Rest...> ||
+        CompatibleParserValidators<char16_t, First, Rest...> ||
+        CompatibleParserValidators<char32_t, First, Rest...>;
+    
 
     template<class Char>
     class BasicSequentialArgumentParser {
@@ -359,6 +413,8 @@ namespace MArgP {
         struct OptionHandlerDeducer<OptionArgument::Required> { using Type = std::function<void (StringViewType)>; };
 
         using CharConstants = CharConstants<CharType>;
+        
+        using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
 
     public:
         template<OptionArgument Argument> using OptionHandler = typename OptionHandlerDeducer<Argument>::Type;
@@ -424,9 +480,24 @@ namespace MArgP {
 
             StringType value;
         };
+        
+        class ValidationError : public ParsingException {
+        public:
+            ValidationError(StringViewType value_):
+                ParsingException("ValidationError"),
+                value(value_) {
+            }
+
+            auto print(std::basic_ostream<CharType> & str) const -> void override {
+                str << CharConstants::validationError << this->value;
+            }
+
+            StringType value;
+        };
 
     private:
         using ArgumentTokenizer = BasicArgumentTokenizer<Char>;
+        using ValidationData = ParsingValidationData<Char>;
 
         struct Option {
             using Handler = std::variant<
@@ -444,16 +515,15 @@ namespace MArgP {
 
         class PendingOption {
         public:
-            auto reset(StringViewType name, const std::optional<StringViewType> & argument, typename Option::Handler handler) {
-                complete();
+            auto reset(const Option & opt, StringViewType name, const std::optional<StringViewType> & argument, ValidationData & validationData) {
+                complete(validationData);
                 m_name = std::move(name);
                 m_argument = argument;
-                m_handler = std::move(handler);
-                m_completed = false;
+                m_option = &opt;
             }
 
-            auto complete() {
-                if (m_completed) 
+            auto complete(ValidationData & validationData) {
+                if (!m_option)
                     return;
 
                 std::visit([&](const auto & handler) {
@@ -469,13 +539,14 @@ namespace MArgP {
                             throw MissingOptionArgument(m_name);
                         handler(*m_argument);
                     }
-                }, m_handler);
-                m_completed = true;
+                }, m_option->handler);
+                ++validationData[m_option->name.name()];
+                m_option = nullptr;
             }
 
-            auto completeUsingArgument(StringViewType argument) -> bool {
+            auto completeUsingArgument(StringViewType argument, ValidationData & validationData) -> bool {
 
-                if (m_completed)
+                if (!m_option)
                     return false;
 
                 auto ret = std::visit([&](const auto & handler) {
@@ -494,14 +565,14 @@ namespace MArgP {
                                 return true;
                             }
                         }
-                    }, m_handler);
-                m_completed = true;
+                    }, m_option->handler);
+                ++validationData[m_option->name.name()];
+                m_option = nullptr;
                 return ret;
             }
 
         private:
-            bool m_completed = true;
-            typename Option::Handler m_handler;
+            const Option * m_option = nullptr;
             StringViewType m_name;
             std::optional<StringViewType> m_argument;
         };
@@ -520,11 +591,24 @@ namespace MArgP {
             this->m_maxPositionals = maxCount;
             this->m_positionalsHandler = handler;
         }
+        
+        template<ParserValidator<CharType> Validator>
+        auto addValidator(Validator v, StringViewType description) -> void {
+            m_validators.emplace_back(std::move(v), description);
+        }
+
+        template<DescribableParserValidator<CharType> Validator>
+        auto addValidator(Validator v) -> void  {
+            std::basic_ostringstream<CharType> str;
+            describe(0, v, str);
+            m_validators.emplace_back(std::move(v), std::move(str.str()));
+        }
 
         auto parse(int argc, const CharType ** argv) {
             
             PendingOption pendingOption;
             int currentPositionalIdx = 0;
+            ParsingValidationData<CharType> validationData;
             
 
             this->m_tokenizer.tokenize(argc, argv, [&](const auto & token) {
@@ -534,17 +618,17 @@ namespace MArgP {
                 if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
                     auto & option = this->m_options[size_t(token.index)];
-                    pendingOption.reset(token.value, token.argument, option.handler);
+                    pendingOption.reset(option, token.value, token.argument, validationData);
                     return ArgumentTokenizer::Continue;
 
                 } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
 
-                    pendingOption.complete();
+                    pendingOption.complete(validationData);
                     return ArgumentTokenizer::Continue;
 
                 } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::ArgumentToken>) {
 
-                    if (pendingOption.completeUsingArgument(token.value)) 
+                    if (pendingOption.completeUsingArgument(token.value, validationData))
                         return ArgumentTokenizer::Continue;
 
                     if (currentPositionalIdx >= this->m_maxPositionals)
@@ -556,21 +640,257 @@ namespace MArgP {
 
                 } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
 
-                    if (pendingOption.completeUsingArgument(token.value)) 
+                    if (pendingOption.completeUsingArgument(token.value, validationData))
                         return ArgumentTokenizer::Continue;
 
                     throw UnrecognizedOption(token.value);
                 }
             });
-            pendingOption.complete();
+            pendingOption.complete(validationData);
+            
+            for(auto & [validator, desc]: m_validators) {
+                if (!validator(validationData))
+                    throw ValidationError(desc);
+            }
         }
     public:
         std::vector<Option> m_options;
         int m_maxPositionals = 0;
         PositionalHandler m_positionalHandler;
         ArgumentTokenizer m_tokenizer;
-
+        std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
     };
+    
+    template<AnyParserValidator Impl>
+    class Not {
+    public:
+        template<class X>
+        Not(X && x) requires(std::is_convertible_v<X &&, Impl>): m_impl(std::forward<X>(x)) {
+        }
+        
+        template<class Char>
+        requires(ParserValidator<Impl, Char>)
+        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+            return !this->m_impl(data);
+        }
+        
+    private:
+        Impl m_impl;
+    };
+    
+    template<AnyParserValidator Validator>
+    auto operator!(const Validator & val) {
+        return Not<std::decay_t<Validator>>(val);
+    }
+    template<AnyParserValidator Validator>
+    auto operator~(const Validator & val) {
+        return !std::forward<Validator>(val);
+    }
+    
+    enum class ValidatorCombination : int {
+        And,
+        Or,
+        Xor,
+        NXor
+    };
+    
+    template<ValidatorCombination Comb, class... Args>
+    requires(sizeof...(Args) > 1 && AnyCompatibleParserValidators<Args...>)
+    class CombinedValidator {
+    public:
+        using TupleType = std::tuple<Args...>;
+    public:
+        CombinedValidator(std::tuple<Args...> && args): m_items(std::move(args)) {
+        }
+        template<class... CArgs>
+        requires(std::is_constructible_v<TupleType, CArgs...>)
+        CombinedValidator(CArgs && ...args): m_items(std::forward<CArgs>(args)...) {  
+        }
+        
+        template<class Char>
+        requires(CompatibleParserValidators<Char, Args...>)
+        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+
+            return std::apply([&data](const Args & ...args) -> bool {
+                if constexpr (Comb == ValidatorCombination::And)
+                    return (args(data) && ...);
+                else if constexpr (Comb == ValidatorCombination::Or)
+                    return (args(data) || ...);
+                else if constexpr (Comb == ValidatorCombination::Xor)
+                    return bool((args(data) ^ ...));
+                else if constexpr (Comb == ValidatorCombination::NXor)
+                    return !bool((args(data) ^ ...));
+            }, this->m_items);
+        }
+
+        auto operator!() const {
+
+            return std::apply([](const Args & ...args) {
+                if constexpr (Comb == ValidatorCombination::And)
+                    return CombinedValidator<ValidatorCombination::Or, decltype(!std::declval<Args>())...>(!args...);
+                else if constexpr (Comb == ValidatorCombination::Or)
+                    return CombinedValidator<ValidatorCombination::And, decltype(!std::declval<Args>())...>(!args...);
+                else if constexpr (Comb == ValidatorCombination::Xor)
+                    return CombinedValidator<ValidatorCombination::NXor, Args...>(args...);
+                else if constexpr (Comb == ValidatorCombination::NXor)
+                    return CombinedValidator<ValidatorCombination::Xor, Args...>(args...);
+            }, this->m_items);
+        }
+        
+        auto items() const -> const TupleType & {
+            return m_items;
+        }
+
+    private:
+        TupleType m_items;
+    };
+
+    template<class Char, ValidatorCombination Comb, DescribableParserValidator<Char>... Args>
+    auto describe(int indent, const CombinedValidator<Comb, Args...> & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
+        if constexpr (Comb == ValidatorCombination::And)
+            str << Indent<Char>{indent} << "all of the following must be true:";
+        else if constexpr (Comb == ValidatorCombination::Or)
+            str << Indent<Char>{indent} << "one or more of the following must be true:";
+        else if constexpr (Comb == ValidatorCombination::Xor)
+            str << Indent<Char>{indent} << "only one of the following must be true:";
+        else if constexpr (Comb == ValidatorCombination::NXor)
+            str << Indent<Char>{indent} << "either all or none of the following must be true:";
+        std::apply([&str,indent] (const Args & ...args) {
+            (describe(indent + 1, args, str << '\n'), ...);
+        }, val.items());
+        return str;
+    }
+
+    template<class V1, class V2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
+    auto operator&&(V1 && v1, V2 && v2)  {
+        using R1 = std::decay_t<V1>;
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<ValidatorCombination::And, R1, R2>(std::forward<V1>(v1), std::forward<V2>(v2));
+    }
+
+    template<class V1, class... Args2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    auto operator&&(V1 && v1, const CombinedValidator<ValidatorCombination::And, Args2...> & v2)  {
+        using R1 = std::decay_t<V1>;
+        return CombinedValidator<ValidatorCombination::And, R1, Args2...>(
+            std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), v2.items())
+        );
+    }
+
+    template<class V2, class... Args1>
+    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    auto operator&&(const CombinedValidator<ValidatorCombination::And, Args1...> & v1, V2 && v2)  {
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<ValidatorCombination::And, Args1..., R2>(
+            std::tuple_cat(v1.items(), std::tuple<R2>(std::forward<V2>(v2)))
+        );
+    }
+
+    template<class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto operator&&(const CombinedValidator<ValidatorCombination::And, Args1...> & v1,
+                    const CombinedValidator<ValidatorCombination::And, Args2...> & v2)  {
+        return CombinedValidator<ValidatorCombination::And, Args1..., Args2...>(
+            std::tuple_cat(v1.items(), v2.items())
+        );
+    }
+
+    template<class V1, class V2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
+    auto operator||(V1 && v1, V2 && v2)  {
+        using R1 = std::decay_t<V1>;
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<ValidatorCombination::Or, R1, R2>(std::forward<V1>(v1), std::forward<V2>(v2));
+    }
+
+    template<class V1, class... Args2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    auto operator||(V1 && v1, const CombinedValidator<ValidatorCombination::Or, Args2...> & v2)  {
+        using R1 = std::decay_t<V1>;
+        return CombinedValidator<ValidatorCombination::Or, R1, Args2...>(
+            std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), v2.items())
+        );
+    }
+
+    template<class V2, class... Args1>
+    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    auto operator||(const CombinedValidator<ValidatorCombination::Or, Args1...> & v1, V2 && v2)  {
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<ValidatorCombination::Or, Args1..., R2>(
+            std::tuple_cat(v1.items(), std::tuple<R2>(std::forward<V2>(v2)))
+        );
+    }
+
+    template<class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto operator||(const CombinedValidator<ValidatorCombination::Or, Args1...> & v1,
+                    const CombinedValidator<ValidatorCombination::Or, Args2...> & v2)  {
+        return CombinedValidator<ValidatorCombination::And, Args1..., Args2...>(
+            std::tuple_cat(v1.items(), v2.items())
+        );
+    }
+    
+    template<class Char>
+    class OptionAbsent;
+    
+    template<class Char>
+    class OptionRequired  {
+    public:
+        OptionRequired(std::basic_string_view<Char> name) : m_name(name) {}
+
+        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+            auto it = data.find(m_name);
+            if (it == data.end())
+                return false;
+            return it->second > 0;
+        }
+        
+        auto operator!() const -> OptionAbsent<Char>;
+
+        friend auto describe(int indent, const OptionRequired & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
+            return str << Indent<Char>{indent} << "option " << val.m_name << " is required";
+        }
+    private:
+        std::basic_string<Char> m_name;
+    };
+    template<class Char> OptionRequired(const Char *) -> OptionRequired<Char>;
+    template<class Char> OptionRequired(const std::basic_string<Char> &) -> OptionRequired<Char>;
+    
+    template<class Char>
+    class OptionAbsent  {
+    public:
+        OptionAbsent(std::basic_string_view<Char> name) : m_name(name) {}
+
+        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+            auto it = data.find(m_name);
+            if (it == data.end())
+                return true;
+            return it->second == 0;
+        }
+        
+        auto operator!() const -> OptionRequired<Char>;
+
+        friend auto describe(int indent, const OptionAbsent & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
+            return str << Indent<Char>{indent} << "option " << val.m_name << " must not be present";
+        }
+    private:
+        std::basic_string<Char> m_name;
+    };
+    template<class Char> OptionAbsent(const Char *) -> OptionAbsent<Char>;
+    template<class Char> OptionAbsent(const std::basic_string<Char> &) -> OptionAbsent<Char>;
+    
+    
+    template<class Char>
+    auto OptionRequired<Char>::operator!() const -> OptionAbsent<Char> {
+        return OptionAbsent<Char>(this->m_name);
+    }
+    
+    template<class Char>
+    auto OptionAbsent<Char>::operator!() const -> OptionRequired<Char> {
+        return OptionRequired<Char>(this->m_name);
+    }
+    
 
     //MARK: - Specializations
 

@@ -2,6 +2,8 @@
 
 #include "catch.hpp"
 
+#include <iostream>
+
 using namespace MArgP;
 using namespace std;
 
@@ -21,9 +23,24 @@ TEST_CASE( "xxx" , "[sequential]") {
     parser.add(OptionName("--name", "-n"), [&](string_view value) {
         name = value;
     });
+    
+    const auto gug = OptionRequired("hah") && OptionRequired("heh");
+    const auto geg = gug && OptionRequired("heh");
+    const auto grg = OptionRequired("hah") && gug;
+    const auto gag = !(geg || grg);
 
-    const char * argv[] = { "prog", "-v", "--name", "world", "-v", "-q" };
-    parser.parse(std::size(argv), argv);
+    describe(0, gag, std::cout);
+
+    parser.addValidator(gug);
+
+    parser.addValidator([](const auto &) { return true; }, "hello");
+
+    const char * argv[] = { "prog", "-v" };
+    try {
+        parser.parse(std::size(argv), argv);
+    } catch (ParsingException & ex) {
+        ex.print(std::cout);
+    }
     CHECK(verbosity == 2);
     CHECK(name == "world");
 }
