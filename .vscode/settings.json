@@ -87,7 +87,8 @@
         "filesystem": "cpp",
         "__functional_base_03": "cpp",
         "span": "cpp",
-        "concepts": "cpp"
+        "concepts": "cpp",
+        "charconv": "cpp"
     },
     "cmake.configureOnOpen": true
 }
