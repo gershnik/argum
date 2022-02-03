@@ -12,6 +12,10 @@ target_include_directories(modern-arg-parser
 target_sources(modern-arg-parser
     PRIVATE
         inc/modern-arg-parser/modern-arg-parser.h
+        inc/modern-arg-parser/char-constants.h
+        inc/modern-arg-parser/messages.h
+        inc/modern-arg-parser/formatting.h
+        inc/modern-arg-parser/validators.h
 
 )
 
