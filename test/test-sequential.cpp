@@ -29,7 +29,9 @@ TEST_CASE( "xxx" , "[sequential]") {
     const auto grg = OptionRequired("hah") && gug;
     const auto gag = !(geg || grg);
 
-    describe(0, gag, std::cout);
+    std::cout << describe(Indent<char>{0}, OptionRequired("hah"));
+    std::cout << describe(Indent<char>{0}, OptionRequired("hah") || OptionRequired("heh"));
+    std::cout << describe(Indent<char>{0}, gag);
 
     parser.addValidator(gug);
 

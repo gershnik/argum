@@ -8,12 +8,18 @@
 #include <sstream>
 #include <charconv>
 #include <tuple>
+#include <concepts>
 
 #include <assert.h>
 
 namespace MArgP {
 
-    template<size_t I, class Char, class... Args>
+    template<class T, class Char>
+    concept StreamPrintable = requires(std::basic_ostream<Char> & str, T && val) {
+        { str << val } -> std::same_as<std::basic_ostream<Char> &>;
+    };
+
+    template<size_t I, class Char, StreamPrintable<Char>... Args>
     auto printImpl(std::basic_ostream<Char> & str, size_t idx, const std::tuple<Args...> & args) {
 
         if (idx == 0) {
@@ -25,13 +31,13 @@ namespace MArgP {
             printImpl<I + 1>(str, idx - 1, args);
     }
 
-    template<class Char, class... Args>
+    template<class Char, StreamPrintable<Char>... Args>
     auto print(std::basic_ostream<Char> & str, size_t idx, const std::tuple<Args...> & args) {
 
         printImpl<0>(str, idx, args);
     }
 
-    template<class Char, class... Args>
+    template<class Char, StreamPrintable<Char>... Args>
     struct Formatter {
 
         std::basic_string_view<Char> fmt;
@@ -98,17 +104,32 @@ namespace MArgP {
         }
     };
 
-    template<class Char, class... Args>
+    template<class Char, StreamPrintable<Char>... Args>
     auto format(std::basic_string_view<Char> fmt, Args && ...args)  {
 
         return Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}};
     }
 
-    template<class Char, class... Args>
+    template<class Char, StreamPrintable<Char>... Args>
     auto format(const Char * fmt, Args && ...args)  {
 
         return Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}};
     }
+
+    template<class T>
+    struct Printable {
+    public:
+        Printable(const T & value): m_value(value) {}
+        Printable(T && value): m_value(std::move(value)) {}
+
+        template<class Char>
+        friend auto operator<<(std::basic_ostream<Char> & str, const Printable & p) -> std::basic_ostream<Char> & {
+            p.m_value(str);
+            return str;
+        }
+    private:
+        T m_value;
+    };
 
     template<class Char>
     struct Indent {
@@ -118,6 +139,13 @@ namespace MArgP {
             for(int i = 0; i < val.count; ++i)
                 str << CharConstants<char>::indentation;
             return str;
+        }
+
+        auto operator+(int rhs) const {
+            return Indent{this->count + rhs};
+        }
+        auto operator-(int rhs) const {
+            return Indent{this->count - rhs};
         }
     };
 

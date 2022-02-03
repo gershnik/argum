@@ -18,8 +18,8 @@ namespace MArgP {
     
     template<class T, class Char>
     concept DescribableParserValidator = ParserValidator<T, Char> &&
-        requires(const T & val, std::basic_ostream<Char> & str) {
-            { describe(int(), val, str) } -> std::same_as<std::basic_ostream<Char> &>;
+        requires(const T & val) {
+            { describe(Indent<Char>{0}, val) } -> StreamPrintable<Char>;
         };
     
     template<class Char, class First, class... Rest>
@@ -63,10 +63,11 @@ namespace MArgP {
         }
         
         template<class Char, DescribableParserValidator<Char> ImplD>
-        friend auto describe(int indent, const NotValidator<ImplD> & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
-            auto inner = std::basic_ostringstream<Char>();
-            describe(0, val.m_impl, inner);
-            return str << Indent<Char>{indent} << format(Messages<Char>::negationDesc(), inner.str());
+        friend auto describe(Indent<Char> indent, const NotValidator<ImplD> & val)  {
+        
+            return Printable([&, indent](std::basic_ostream<Char> & str) {
+                str << format(Messages<Char>::negationDesc(), indent, describe(indent, val.m_impl));
+            });
         }
     private:
         Impl m_impl;
@@ -145,19 +146,21 @@ namespace MArgP {
     };
 
     template<class Char, ValidatorCombination Comb, DescribableParserValidator<Char>... Args>
-    auto describe(int indent, const CombinedValidator<Comb, Args...> & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
-        if constexpr (Comb == ValidatorCombination::And)
-            str << Indent<Char>{indent} << Messages<Char>::allMustBeTrue();
-        else if constexpr (Comb == ValidatorCombination::Or)
-            str << Indent<Char>{indent} << Messages<Char>::oneOrMoreMustBeTrue();
-        else if constexpr (Comb == ValidatorCombination::Xor)
-            str << Indent<Char>{indent} << Messages<Char>::onlyOneMustBeTrue();
-        else if constexpr (Comb == ValidatorCombination::NXor)
-            str << Indent<Char>{indent} << Messages<Char>::allOrNoneMustBeTrue();
-        std::apply([&str,indent] (const Args & ...args) {
-            (describe(indent + 1, args, str << std::endl), ...);
-        }, val.items());
-        return str;
+    auto describe(Indent<Char> indent, const CombinedValidator<Comb, Args...> & val)  {
+
+        return Printable([&, indent](std::basic_ostream<Char> & str) {
+            if constexpr (Comb == ValidatorCombination::And)
+                str << format(Messages<Char>::allMustBeTrue(), indent);
+            else if constexpr (Comb == ValidatorCombination::Or)
+                str << format(Messages<Char>::oneOrMoreMustBeTrue(), indent);
+            else if constexpr (Comb == ValidatorCombination::Xor)
+                str << format(Messages<Char>::onlyOneMustBeTrue(), indent);
+            else if constexpr (Comb == ValidatorCombination::NXor)
+                str << format(Messages<Char>::allOrNoneMustBeTrue(), indent);
+            std::apply([&str,indent] (const Args & ...args) {
+                ((str << std::endl << indent << describe(indent + 1, args)), ...);
+            }, val.items());
+        });
     }
 
     template<ValidatorCombination Comb, class V1, class V2>
@@ -273,8 +276,10 @@ namespace MArgP {
         
         auto operator!() const -> OptionAbsent<Char>;
 
-        friend auto describe(int indent, const OptionRequired & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
-            return str << Indent<Char>{indent} << format(Messages<Char>::optionRequired(), val.m_name);
+        friend auto describe(Indent<Char> indent, const OptionRequired<Char> & val)  {
+            return Printable([&, indent](std::basic_ostream<Char> & str) {
+                str << format(Messages<Char>::optionRequired(), indent, val.m_name);
+            });
         }
     private:
         std::basic_string<Char> m_name;
@@ -296,8 +301,10 @@ namespace MArgP {
         
         auto operator!() const -> OptionRequired<Char>;
 
-        friend auto describe(int indent, const OptionAbsent & val, std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
-            return str << Indent<Char>{indent} << format(Messages<Char>::optionMustNotBePresent(), val.m_name);
+        friend auto describe(Indent<Char> indent, const OptionAbsent<Char> & val)  {
+            return Printable([&, indent](std::basic_ostream<Char> & str) {
+                str << format(Messages<Char>::optionMustNotBePresent(), indent, val.m_name);
+            });
         }
     private:
         std::basic_string<Char> m_name;

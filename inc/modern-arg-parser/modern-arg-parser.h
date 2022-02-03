@@ -307,17 +307,21 @@ namespace MArgP {
     template<class Char>
     class BasicParsingException : public std::runtime_error {
     public:
-        virtual auto print(std::basic_ostream<Char> & str) const -> void = 0;
+        auto print(std::basic_ostream<Char> & str) const -> void {
+            print(str, {0});
+        }
+        virtual auto print(std::basic_ostream<Char> & str, Indent<Char> indent) const -> void = 0;
     protected:
         BasicParsingException(std::string_view message) : std::runtime_error(std::string(message)) {
         }
 
-        auto formatOption(std::basic_ostream<Char> & str, std::basic_string_view<Char> opt) const -> void {
-
-            str << CharConstants<Char>::optionStart;
-            if (opt.size() > 1)
+        auto formatOption(std::basic_string_view<Char> opt) const  {
+            return Printable([=](std::basic_ostream<Char> & str) {
                 str << CharConstants<Char>::optionStart;
-            str << opt;
+                if (opt.size() > 1)
+                    str << CharConstants<Char>::optionStart;
+                str << opt;
+            });
         }
     };
 
@@ -362,9 +366,8 @@ namespace MArgP {
                 option(value) {
             }
 
-            auto print(std::basic_ostream<CharType> & str) const -> void override {
-                str << Messages::unrecognizedOptionError();
-                this->formatOption(str, this->option);
+            auto print(std::basic_ostream<CharType> & str, Indent<Char> indent) const -> void override {
+                str << format(Messages::unrecognizedOptionError(), indent, this->formatOption(this->option));
             }
 
             StringType option;
@@ -377,9 +380,8 @@ namespace MArgP {
                 option(option_) {
             }
 
-            auto print(std::basic_ostream<CharType> & str) const -> void override {
-                str << Messages::missingOptionArgumentError();
-                this->formatOption(str, this->option);
+            auto print(std::basic_ostream<CharType> & str, Indent<Char> indent) const -> void override {
+                str << format(Messages::missingOptionArgumentError(), indent, this->formatOption(this->option));
             }
 
             StringType option;
@@ -392,9 +394,8 @@ namespace MArgP {
                 option(option_) {
             }
 
-            auto print(std::basic_ostream<CharType> & str) const -> void override{
-                str << Messages::extraOptionArgumentError();
-                this->formatOption(str, this->option);
+            auto print(std::basic_ostream<CharType> & str, Indent<Char> indent) const -> void override{
+                str << format(Messages::extraOptionArgumentError(), indent, this->formatOption(this->option));
             }
 
             StringType option;
@@ -407,8 +408,8 @@ namespace MArgP {
                 value(value_) {
             }
 
-            auto print(std::basic_ostream<CharType> & str) const -> void override {
-                str << Messages::extraPositionalError() << this->value;
+            auto print(std::basic_ostream<CharType> & str, Indent<Char> indent) const -> void override {
+                str << format(Messages::extraPositionalError(), indent, this->value);
             }
 
             StringType value;
@@ -421,8 +422,8 @@ namespace MArgP {
                 value(value_) {
             }
 
-            auto print(std::basic_ostream<CharType> & str) const -> void override {
-                str << Messages::validationError() << this->value;
+            auto print(std::basic_ostream<CharType> & str, Indent<Char> indent) const -> void override {
+                str << format(Messages::validationError(), indent, this->value);
             }
 
             StringType value;
@@ -532,9 +533,8 @@ namespace MArgP {
 
         template<DescribableParserValidator<CharType> Validator>
         auto addValidator(Validator v) -> void  {
-            std::basic_ostringstream<CharType> str;
-            describe(0, v, str);
-            m_validators.emplace_back(std::move(v), std::move(str.str()));
+            auto desc = (std::basic_ostringstream<CharType>() << describe(Indent<Char>{0}, v)).str();
+            m_validators.emplace_back(std::move(v), std::move(desc));
         }
 
         auto parse(int argc, const CharType ** argv) {
