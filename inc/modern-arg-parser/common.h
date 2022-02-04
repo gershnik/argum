@@ -5,6 +5,21 @@
 
 #define MARGP_UTF_CHAR_SUPPORTED 0 //no compiler/library implements all the necessary machinery yet
 
+#define MARGP_DECLARE_FRIENDLY_NAME(stem, type, prefix) using prefix ## stem = Basic##stem<type>;
+    
+#if MARGP_UTF_CHAR_SUPPORTED
+    #define MARGP_DECLARE_FRIENDLY_NAMES(stem) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, char, ) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, wchar_t, L) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, char8_t, U8) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, char16_t, U16) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, char32_t, U32)
+#else
+    #define MARGP_DECLARE_FRIENDLY_NAMES(stem) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, char, ) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, wchar_t, L)
+#endif
+
 namespace MArgP {
 
     template<class Char>

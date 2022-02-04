@@ -21,6 +21,8 @@ target_sources(modern-arg-parser
         inc/modern-arg-parser/char-constants.h
         inc/modern-arg-parser/messages.h
         inc/modern-arg-parser/formatting.h
+        inc/modern-arg-parser/data.h
+        inc/modern-arg-parser/tokenizer.h
         inc/modern-arg-parser/validators.h
 
 )
