@@ -12,6 +12,7 @@ target_include_directories(modern-arg-parser
 target_sources(modern-arg-parser
     PRIVATE
         inc/modern-arg-parser/modern-arg-parser.h
+        inc/modern-arg-parser/common.h
         inc/modern-arg-parser/char-constants.h
         inc/modern-arg-parser/messages.h
         inc/modern-arg-parser/formatting.h
@@ -46,6 +47,7 @@ if (MODERN_ARG_PARSER_TEST)
         PRIVATE
             test/catch.hpp
             test/test.cpp
+            test/test-formatting.cpp
             test/test-tokenizer.cpp
             test/test-sequential.cpp
     )

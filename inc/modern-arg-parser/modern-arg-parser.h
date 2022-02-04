@@ -1,5 +1,5 @@
-#ifndef MODERN_ARG_PARSER_MODERN_ARG_PARSER_H_INCLUDED
-#define MODERN_ARG_PARSER_MODERN_ARG_PARSER_H_INCLUDED
+#ifndef HEADER_MARGP_MODERN_ARG_PARSER_H_INCLUDED
+#define HEADER_MARGP_MODERN_ARG_PARSER_H_INCLUDED
 
 #include "char-constants.h"
 #include "messages.h"
@@ -599,12 +599,19 @@ namespace MArgP {
     //MARK: - Specializations
 
     #define MARGP_DECLARE_FRIENDLY_NAME(stem, type, prefix) using prefix ## stem = Basic##stem<type>;
+    
+#if MARGP_UTF_CHAR_SUPPORTED
     #define MARGP_DECLARE_FRIENDLY_NAMES(stem) \
         MARGP_DECLARE_FRIENDLY_NAME(stem, char, ) \
         MARGP_DECLARE_FRIENDLY_NAME(stem, wchar_t, L) \
         MARGP_DECLARE_FRIENDLY_NAME(stem, char8_t, U8) \
         MARGP_DECLARE_FRIENDLY_NAME(stem, char16_t, U16) \
         MARGP_DECLARE_FRIENDLY_NAME(stem, char32_t, U32)
+#else
+    #define MARGP_DECLARE_FRIENDLY_NAMES(stem) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, char, ) \
+        MARGP_DECLARE_FRIENDLY_NAME(stem, wchar_t, L)
+#endif
 
     MARGP_DECLARE_FRIENDLY_NAMES(OptionName);
     MARGP_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer);

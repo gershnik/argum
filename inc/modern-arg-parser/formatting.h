@@ -9,6 +9,11 @@
 #include <charconv>
 #include <tuple>
 #include <concepts>
+#include <optional>
+#include <variant>
+#if MARGP_UTF_CHAR_SUPPORTED
+    #include <cuchar>
+#endif
 
 #include <assert.h>
 
@@ -37,6 +42,49 @@ namespace MArgP {
         printImpl<0>(str, idx, args);
     }
 
+    template<Character Char> 
+    auto parsePlaceholder(const Char * first, const Char * last) -> std::optional<size_t> {
+        if constexpr (!std::is_same_v<Char, char>) {
+
+            char buffer[16 * MB_LEN_MAX]; //16 characters for placeholder number ought to be enough :)
+            char * const bufferStart = std::begin(buffer);
+            char * const bufferEnd = std::end(buffer);
+
+            char * bufferCurrent = bufferStart;
+            std::mbstate_t state = {};
+            for ( ; first != last; ++first) {
+                if (bufferEnd - bufferCurrent < MB_CUR_MAX)
+                    return std::nullopt;
+
+                size_t written;
+                if constexpr (std::is_same_v<Char, wchar_t>)
+                    written = wcrtomb(bufferCurrent, *first, &state);
+            #if MARGP_UTF_CHAR_SUPPORTED
+                else if constexpr (std::is_same_v<Char, char8_t>)
+                    written = c8rtomb(bufferCurrent, *first, &state);
+                else if constexpr (std::is_same_v<Char, char16_t>)
+                    written = c16rtomb(bufferCurrent, *first, &state);
+                else if constexpr (std::is_same_v<Char, char32_t>)
+                    written = c32rtomb(bufferCurrent, *first, &state);
+            #endif
+
+                if (written == size_t(-1))
+                    return std::nullopt;
+                bufferCurrent += written;
+            }
+            return parsePlaceholder(bufferStart, bufferCurrent);
+
+        } else {
+
+            size_t ret;
+            auto res = std::from_chars(first, last, ret);
+            if (res.ptr != last || res.ec != std::errc()) 
+                return std::nullopt;
+            return ret;
+
+        }
+    }
+
     template<class Char, StreamPrintable<Char>... Args>
     struct Formatter {
 
@@ -60,7 +108,7 @@ namespace MArgP {
                         if (current == last) 
                             break;
                         if (*current == CharConstants<Char>::formatStart) {
-                            flush(current - 1);
+                            flush(current);
                             ++current;
                             outStart = current;
                             continue;
@@ -69,13 +117,12 @@ namespace MArgP {
                         auto placeholderEnd = std::find(current, last, CharConstants<Char>::formatEnd);
                         if (placeholderEnd == last) 
                             continue;
-                        size_t argIdx;
-                        auto res = std::from_chars(current, placeholderEnd, argIdx);
-                        if (res.ptr != placeholderEnd || res.ec != std::errc() || argIdx == 0 || argIdx > sizeof...(Args)) 
+                        auto maybeArgIdx = parsePlaceholder(current, placeholderEnd);
+                        if (!maybeArgIdx || *maybeArgIdx == 0 || *maybeArgIdx > sizeof...(Args)) 
                             continue;
 
                         flush(current - 1);
-                        print(str, argIdx - 1, formatter.args);
+                        print(str, *maybeArgIdx - 1, formatter.args);
                         current = placeholderEnd + 1;
                         outStart = current;
                 } else {
@@ -94,6 +141,7 @@ namespace MArgP {
     template<class Char>
     struct Formatter<Char> {
         std::basic_string_view<Char> fmt;
+        std::monostate args;
         
         friend auto operator<<(std::basic_ostream<Char> & str, const Formatter & formatter) -> std::basic_ostream<Char> & {
             return str << formatter.fmt;

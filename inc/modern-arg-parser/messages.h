@@ -1,10 +1,12 @@
 #ifndef HEADER_MARGP_MESSAGES_H_INCLUDED
 #define HEADER_MARGP_MESSAGES_H_INCLUDED
 
+#include "common.h"
+
 
 namespace MArgP {
 
-    template<class Char> struct Messages;
+    template<Character Char> struct Messages;
 
     #define MARGP_DEFINE_MESSAGES(type, pr) template<> struct Messages<type> { \
         static constexpr auto unrecognizedOptionError()     { return pr ## "unrecognized option: {2}"; }\
@@ -23,9 +25,11 @@ namespace MArgP {
 
     MARGP_DEFINE_MESSAGES(char, )
     MARGP_DEFINE_MESSAGES(wchar_t, L)
+#if MARGP_UTF_CHAR_SUPPORTED
     MARGP_DEFINE_MESSAGES(char8_t, u8)
     MARGP_DEFINE_MESSAGES(char16_t, u)
     MARGP_DEFINE_MESSAGES(char32_t, U)
+#endif
 
     #undef MARGP_DEFINE_MESSAGES
 
