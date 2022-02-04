@@ -39,6 +39,7 @@ if (MODERN_ARG_PARSER_TEST)
         PRIVATE
             $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic -Weverything 
                 -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-old-style-cast -Wno-padded -Wno-unused-function -Wno-ctad-maybe-unsupported>
+            $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4 /WX>
     )
 
     target_sources(test 

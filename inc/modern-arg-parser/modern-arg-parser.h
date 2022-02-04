@@ -13,6 +13,7 @@
 #include <map>
 #include <optional>
 #include <variant>
+#include <functional>
 #include <stdexcept>
 #include <ostream>
 #include <sstream>

@@ -2,6 +2,10 @@
 
 #include "catch.hpp"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4505)
+#endif
+
 using namespace MArgP;
 using namespace std;
 
@@ -45,7 +49,7 @@ TEST_CASE( "Empty Command Line" , "[tokenizer]") {
     CHECK(ret == vector<string>{});
 
     const char * argv[] = { "prog" };
-    ret = t.tokenize(std::size(argv), argv, []([[maybe_unused]] const auto & token) {
+    ret = t.tokenize(int(std::size(argv)), argv, []([[maybe_unused]] const auto & token) {
         CHECK(false);
         return ArgumentTokenizer::Continue;
     });
@@ -80,7 +84,7 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
         Token expected[] = {
             UnknownOptionToken{ 1, "c" }
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
     SECTION("Positional Only"){
         const char * argv[] = { "prog", "a", "xyz", "123" };
@@ -89,7 +93,7 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
             ArgumentToken{ 2, "xyz" },
             ArgumentToken{ 3, "123" }
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
     SECTION("Everything"){
         const char * argv[] = { "prog", "-a", "xyz", "-b", "--", "c" };
@@ -100,7 +104,7 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
             OptionStopToken{     4 },
             ArgumentToken{       5, "c" }
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
     
 }
@@ -113,7 +117,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
 
     SECTION("Empty"){
         const char * argv[] = { "prog" };
-        auto ret = t.tokenize(std::size(argv), argv, []([[maybe_unused]] const Token & token) {
+        auto ret = t.tokenize(int(std::size(argv)), argv, []([[maybe_unused]] const Token & token) {
             CHECK(false);
             return ArgumentTokenizer::Continue;
         });
@@ -125,7 +129,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
         Token expected[] = {
             OptionToken{ 1, 0, "c", std::nullopt}
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
 
     SECTION("Two"){
@@ -134,7 +138,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
             OptionToken{ 1, 0, "c", std::nullopt},
             OptionToken{ 2, 0, "c", std::nullopt}
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
 
     SECTION("Two Merged"){
@@ -143,7 +147,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
             OptionToken{ 1, 0, "c", std::nullopt},
             OptionToken{ 1, 0, "c", std::nullopt}
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
 
     SECTION("Two With Arg In-Between"){
@@ -153,7 +157,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
             ArgumentToken{ 2, "c" },
             OptionToken{   3, 0, "c", std::nullopt}
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
 
     SECTION("Two With Stop"){
@@ -163,6 +167,6 @@ TEST_CASE( "Short option" , "[tokenizer]") {
             OptionStopToken{ 2 },
             ArgumentToken{   3, "-c"}
         };
-        testTokenizer(t, std::size(argv), argv, expected);
+        testTokenizer(t, int(std::size(argv)), argv, expected);
     }
 }

@@ -39,7 +39,7 @@ TEST_CASE( "xxx" , "[sequential]") {
 
     const char * argv[] = { "prog", "-v" };
     try {
-        parser.parse(std::size(argv), argv);
+        parser.parse(int(std::size(argv)), argv);
     } catch (ParsingException & ex) {
         ex.print(std::cout);
     }

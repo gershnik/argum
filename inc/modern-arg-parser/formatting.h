@@ -44,9 +44,9 @@ namespace MArgP {
         std::tuple<Args && ...> args;
 
         friend auto operator<<(std::basic_ostream<Char> & str, const Formatter & formatter) -> std::basic_ostream<Char> & {
-            auto outStart = formatter.fmt.begin();
-            auto current = formatter.fmt.begin();
-            const auto last = formatter.fmt.end();
+            auto outStart = formatter.fmt.data();
+            auto current = outStart;
+            const auto last = current + formatter.fmt.size();
 
             auto flush = [&](auto end) {
                 assert(end >= outStart);
