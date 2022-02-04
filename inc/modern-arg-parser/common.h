@@ -3,11 +3,7 @@
 
 #include <type_traits>
 
-#if __has_include(<cuchar>)
-    #define MARGP_UTF_CHAR_SUPPORTED 1
-#else
-    #define MARGP_UTF_CHAR_SUPPORTED 0
-#endif
+#define MARGP_UTF_CHAR_SUPPORTED 0
 
 namespace MArgP {
 
@@ -16,7 +12,7 @@ namespace MArgP {
                         std::is_same_v<Char, wchar_t>
 #if MARGP_UTF_CHAR_SUPPORTED
                         ||
-                        std::is_same_v<Char, char8_t> ||
+                        (std::is_same_v<Char, char8_t> && requires(Char c) { c8rtomb((char*)0, c, (std::mbstate_t*)0); }) ||
                         std::is_same_v<Char, char16_t> ||
                         std::is_same_v<Char, char32_t>
 #endif

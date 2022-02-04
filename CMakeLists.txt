@@ -9,6 +9,11 @@ target_include_directories(modern-arg-parser
         inc
 )
 
+target_compile_definitions(modern-arg-parser
+    INTERFACE
+        $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+)
+
 target_sources(modern-arg-parser
     PRIVATE
         inc/modern-arg-parser/modern-arg-parser.h

@@ -51,25 +51,4 @@ TEST_CASE( "wide formatting" , "[formatting]") {
     CHECK(formatToStr(L"{12345678901234567890}", 42) == L"{12345678901234567890}");
 }
 
-#if MARGP_UTF_CHAR_SUPPORTED
 
-TEST_CASE( "utf-8 formatting" , "[formatting]") {
-
-    CHECK(formatToStr(u8"") == u8"");
-    CHECK(formatToStr(u8"", 42) == u8"");
-    CHECK(formatToStr(u8"abc", 42) == u8"abc");
-    CHECK(formatToStr(u8"{", 42) == u8"{");
-    CHECK(formatToStr(u8"{1", 42) == u8"{1");
-    CHECK(formatToStr(u8"a{1", 42) == u8"a{1");
-    CHECK(formatToStr(u8"{{", 42) == u8"{");
-    CHECK(formatToStr(u8"{{1", 42) == u8"{1");
-    CHECK(formatToStr(u8"{{1}", 42) == u8"{1}");
-    CHECK(formatToStr(u8"{1}", 42) == u8"42");
-    CHECK(formatToStr(u8"{1a}", 42) == u8"{1a}");
-    CHECK(formatToStr(u8"{+1}", 42) == u8"{+1}");
-    CHECK(formatToStr(u8"{1.}", 42) == u8"{1.}");
-    CHECK(formatToStr(u8"{2}", 42) == u8"{2}");
-    CHECK(formatToStr(u8"{12345678901234567890}", 42) == u8"{12345678901234567890}");
-}
-
-#endif
