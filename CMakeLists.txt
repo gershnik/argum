@@ -55,6 +55,7 @@ if (MODERN_ARG_PARSER_TEST)
             test/catch.hpp
             test/test.cpp
             test/test-formatting.cpp
+            test/test-validators.cpp
             test/test-tokenizer.cpp
             test/test-sequential.cpp
     )

@@ -21,6 +21,7 @@ namespace MArgP {
         static constexpr auto allOrNoneMustBeTrue()         { return pr ## "either all or none of the following must be true:"; }\
         static constexpr auto optionRequired()              { return pr ## "option {2} is required"; }\
         static constexpr auto optionMustNotBePresent()      { return pr ## "option {2} must not be present"; }\
+        static constexpr auto usageStart()                  { return pr ## "Usage: "; }\
     };
 
     MARGP_DEFINE_MESSAGES(char, )

@@ -158,7 +158,7 @@ namespace MArgP {
             else if constexpr (Comb == ValidatorCombination::NXor)
                 str << format(Messages<Char>::allOrNoneMustBeTrue(), indent);
             std::apply([&str,indent] (const Args & ...args) {
-                ((str << std::endl << indent << describe(indent + 1, args)), ...);
+                ((str << std::endl << (indent + 1) << describe(indent + 2, args)), ...);
             }, val.items());
         });
     }

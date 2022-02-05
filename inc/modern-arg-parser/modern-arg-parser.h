@@ -50,7 +50,7 @@ namespace MArgP {
         using CharType = Char;
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
-        using OptionName = BasicOptionName<Char>;
+        using OptionNames = BasicOptionNames<Char>;
         using ParsingException = BasicParsingException<Char>;
 
     private:
@@ -155,10 +155,10 @@ namespace MArgP {
                 OptionHandler<OptionArgument::Required>
             >;
             
-            Option(OptionName && n, Handler && h): name(std::move(n)), handler(std::move(h)) {
+            Option(OptionNames && n, Handler && h): names(std::move(n)), handler(std::move(h)) {
             }
 
-            OptionName name;
+            OptionNames names;
             Handler handler;
         };
 
@@ -189,7 +189,7 @@ namespace MArgP {
                         handler(*m_argument);
                     }
                 }, m_option->handler);
-                ++validationData[m_option->name.name()];
+                ++validationData[m_option->names.main()];
                 m_option = nullptr;
             }
 
@@ -215,7 +215,7 @@ namespace MArgP {
                             }
                         }
                     }, m_option->handler);
-                ++validationData[m_option->name.name()];
+                ++validationData[m_option->names.main()];
                 m_option = nullptr;
                 return ret;
             }
@@ -228,11 +228,12 @@ namespace MArgP {
 
     public:
         template<class Handler>
-        auto add(OptionName && name, Handler handler) -> void
+        auto add(OptionNames && names, Handler handler) -> void
             requires(std::is_convertible_v<decltype(std::move(handler)), typename Option::Handler>) {
 
-            this->m_options.emplace_back(std::move(name), std::move(handler));
-            this->m_tokenizer.add(this->m_options.back().name);
+            auto & added = this->m_options.emplace_back(std::move(names), std::move(handler));
+            this->m_optionsByName.add(added.names.main(), this->m_options.size() - 1);
+            this->m_tokenizer.add(this->m_options.back().names);
         }
 
         auto setPositionals(int maxCount, PositionalHandler handler) -> void {
@@ -265,8 +266,10 @@ namespace MArgP {
 
                 if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
-                    auto & option = this->m_options[size_t(token.index)];
-                    pendingOption.reset(option, token.value, token.argument, validationData);
+                    auto idxIt = this->m_optionsByName.find(token.name);
+                    MARGP_ALWAYS_ASSERT(idxIt != this->m_optionsByName.end());
+                    auto & option = this->m_options[idxIt->value()];
+                    pendingOption.reset(option, token.usedName, token.argument, validationData);
                     return ArgumentTokenizer::Continue;
 
                 } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
@@ -288,10 +291,10 @@ namespace MArgP {
 
                 } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
 
-                    if (pendingOption.completeUsingArgument(token.value, validationData))
+                    if (pendingOption.completeUsingArgument(argv[token.containingArgIdx], validationData))
                         return ArgumentTokenizer::Continue;
 
-                    throw UnrecognizedOption(token.value);
+                    throw UnrecognizedOption(token.name);
                 }
             });
             pendingOption.complete(validationData);
@@ -301,8 +304,19 @@ namespace MArgP {
                     throw ValidationError(desc);
             }
         }
+
+        auto printUsage(std::basic_ostream<Char> & str, StringViewType progName) {
+
+            str << Messages::usageStart() << progName;
+
+            for(auto & opt: this->m_options) {
+                str << CharConstants::space << opt.names.main();
+            }
+            str << std::endl;
+        }
     public:
         std::vector<Option> m_options;
+        FlatMap<StringType, int> m_optionsByName;
         int m_maxPositionals = 0;
         PositionalHandler m_positionalHandler;
         ArgumentTokenizer m_tokenizer;

@@ -17,25 +17,19 @@ TEST_CASE( "xxx" , "[sequential]") {
     int verbosity = 0;
     string name;
 
-    parser.add(OptionName("-v"), [&]() {
+    parser.add(OptionNames("-v"), [&]() {
         ++verbosity;
     });
-    parser.add(OptionName("--name", "-n"), [&](string_view value) {
+    parser.add(OptionNames("--name", "-n"), [&](string_view value) {
         name = value;
     });
     
-    const auto gug = OptionRequired("hah") && OptionRequired("heh");
-    const auto geg = gug && OptionRequired("heh");
-    const auto grg = OptionRequired("hah") && gug;
-    const auto gag = !(geg || grg);
-
-    std::cout << describe(Indent<char>{0}, OptionRequired("hah"));
-    std::cout << describe(Indent<char>{0}, OptionRequired("hah") || OptionRequired("heh"));
-    std::cout << describe(Indent<char>{0}, gag);
-
-    parser.addValidator(gug);
+    parser.addValidator(OptionRequired("hah") && OptionRequired("heh"));
 
     parser.addValidator([](const auto &) { return true; }, "hello");
+
+    std::cout << '\n';
+    parser.printUsage(std::cout, "ggg");
 
     const char * argv[] = { "prog", "-v" };
     try {
