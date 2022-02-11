@@ -6,6 +6,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <stdexcept>
+#include <sstream>
 
 namespace MArgP {
 
@@ -76,10 +78,26 @@ namespace MArgP {
     constexpr Repeated Repeated::zeroOrMore = Repeated(0, Repeated::infinity);
     constexpr Repeated Repeated::oneOrMore  = Repeated(1, Repeated::infinity);
 
-    
+    template<class Char>
+    class BasicParsingException : public std::runtime_error {
+    public:
+        auto message() const -> std::basic_string_view<Char> {
+            return m_message;
+        }
+        
+    protected:
+        BasicParsingException(std::basic_string_view<Char> message) : 
+            std::runtime_error((std::ostringstream() << message).str()),
+            m_message(message) {
+        }
+
+    private:
+        std::basic_string<Char> m_message;
+    };
     
 
     MARGP_DECLARE_FRIENDLY_NAMES(OptionNames);
+    MARGP_DECLARE_FRIENDLY_NAMES(ParsingException);
 }
 
 

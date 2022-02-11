@@ -25,6 +25,7 @@ target_sources(modern-arg-parser
         inc/modern-arg-parser/flat-map.h
         inc/modern-arg-parser/data.h
         inc/modern-arg-parser/tokenizer.h
+        inc/modern-arg-parser/adaptive-parser.h
         inc/modern-arg-parser/validators.h
 
 )
@@ -65,7 +66,7 @@ if (MODERN_ARG_PARSER_TEST)
             test/test-validators.cpp
             test/test-partitioner.cpp
             test/test-tokenizer.cpp
-            test/test-sequential.cpp
+            test/test-adaptive.cpp
     )
 
 endif()

@@ -12,9 +12,9 @@ using namespace std::literals;
 
 TEST_CASE( "xxx" , "[sequential]") {
 
-    SequentialArgumentParser parser;
-    using Option = SequentialArgumentParser::Option;
-    using Positional = SequentialArgumentParser::Positional;
+    AdaptiveParser parser;
+    using Option = AdaptiveParser::Option;
+    using Positional = AdaptiveParser::Positional;
 
     int verbosity = 0;
     string name;
