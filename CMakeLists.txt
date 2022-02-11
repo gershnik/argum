@@ -21,6 +21,8 @@ target_sources(modern-arg-parser
         inc/modern-arg-parser/char-constants.h
         inc/modern-arg-parser/messages.h
         inc/modern-arg-parser/formatting.h
+        inc/modern-arg-parser/partitioner.h
+        inc/modern-arg-parser/flat-map.h
         inc/modern-arg-parser/data.h
         inc/modern-arg-parser/tokenizer.h
         inc/modern-arg-parser/validators.h
@@ -46,7 +48,12 @@ if (MODERN_ARG_PARSER_TEST)
     target_compile_options(test 
         PRIVATE
             $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic -Weverything 
-                -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-old-style-cast -Wno-padded -Wno-unused-function -Wno-ctad-maybe-unsupported>
+                -Wno-c++98-compat 
+                -Wno-c++98-compat-pedantic 
+                -Wno-old-style-cast 
+                -Wno-ctad-maybe-unsupported
+                -Wno-padded 
+                -Wno-weak-vtables> 
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4 /WX>
     )
 
@@ -56,6 +63,7 @@ if (MODERN_ARG_PARSER_TEST)
             test/test.cpp
             test/test-formatting.cpp
             test/test-validators.cpp
+            test/test-partitioner.cpp
             test/test-tokenizer.cpp
             test/test-sequential.cpp
     )

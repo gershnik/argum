@@ -13,16 +13,36 @@ using namespace std::literals;
 TEST_CASE( "xxx" , "[sequential]") {
 
     SequentialArgumentParser parser;
+    using Option = SequentialArgumentParser::Option;
+    using Positional = SequentialArgumentParser::Positional;
 
     int verbosity = 0;
     string name;
 
-    parser.add(OptionNames("-v"), [&]() {
-        ++verbosity;
-    });
-    parser.add(OptionNames("--name", "-n"), [&](string_view value) {
-        name = value;
-    });
+    parser.add(
+        Option("-v")
+        .setHandler([&]() {
+            ++verbosity;
+        }));
+    parser.add(
+        Option("--name", "-n")
+        .setHandler([&](string_view value) {
+            name = value;
+        }));
+    parser.add(
+        Positional("bob")
+        .set(Repeated(0, 25))
+        .setHandler([](unsigned idx, string_view value) {
+            CHECK(idx == 0);
+        })
+    );
+    parser.add(
+        Positional("fob")
+        .set(Repeated(1,1))
+        .setHandler([](unsigned idx, string_view value) {
+        
+        })
+    );
     
     parser.addValidator(OptionRequired("hah") && OptionRequired("heh"));
 
@@ -31,11 +51,11 @@ TEST_CASE( "xxx" , "[sequential]") {
     std::cout << '\n';
     parser.printUsage(std::cout, "ggg");
 
-    const char * argv[] = { "prog", "-v" };
+    const char * argv[] = { "-v", "hello" };
     try {
-        parser.parse(int(std::size(argv)), argv);
+        parser.parse(std::begin(argv), std::end(argv));
     } catch (ParsingException & ex) {
-        ex.print(std::cout);
+        std::cout << ex.message();
     }
     CHECK(verbosity == 2);
     CHECK(name == "world");

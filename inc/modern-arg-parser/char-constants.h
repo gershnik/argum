@@ -13,6 +13,8 @@ namespace MArgP {
         static constexpr auto formatStart                   = prefix ## '{'; \
         static constexpr auto formatEnd                     = prefix ## '}'; \
         static constexpr auto space                         = prefix ## ' '; \
+        static constexpr auto optBracketOpen                = prefix ## '['; \
+        static constexpr auto optBracketClose               = prefix ## ']'; \
         static constexpr auto indentation                   = prefix ## "    ";\
     };
 

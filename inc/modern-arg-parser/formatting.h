@@ -160,6 +160,22 @@ namespace MArgP {
         return Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}};
     }
 
+    template<Character Char, StreamPrintable<Char>... Args>
+    auto formatToString(std::basic_string_view<Char> fmt, Args && ...args)  {
+
+        return (std::basic_ostringstream<Char>() << format(fmt, std::forward<Args>(args)...)).str();
+    }
+    template<Character Char, StreamPrintable<Char>... Args>
+    auto formatToString(const Char * fmt, Args && ...args)  {
+
+        return (std::basic_ostringstream<Char>() << format(fmt, std::forward<Args>(args)...)).str();
+    }
+    template<Character Char, StreamPrintable<Char>... Args>
+    auto formatToString(const std::basic_string<Char> & fmt, Args && ...args)  {
+
+        return (std::basic_ostringstream<Char>() << format(fmt, std::forward<Args>(args)...)).str();
+    }
+
     template<class T>
     struct Printable {
     public:

@@ -22,7 +22,7 @@
 #endif
 
 #ifndef NDEBUG
-    #define  MARGP_ALWAYS_ASSERT(x) assert(x)
+    #define MARGP_ALWAYS_ASSERT(x) assert(x)
 #else
     #define MARGP_ALWAYS_ASSERT(x)  ((void) ((x) ? ((void)0) : std::terminate()))
 #endif
