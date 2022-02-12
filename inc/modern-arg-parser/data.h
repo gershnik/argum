@@ -94,6 +94,18 @@ namespace MArgP {
     private:
         std::basic_string<Char> m_message;
     };
+
+    template<>
+    class BasicParsingException<char> : public std::runtime_error {
+    public:
+        auto message() const -> std::string_view {
+            return what();
+        }
+    protected:
+        BasicParsingException(std::string_view message) : 
+            std::runtime_error(std::string(message)) {
+        }
+    };
     
 
     MARGP_DECLARE_FRIENDLY_NAMES(OptionNames);

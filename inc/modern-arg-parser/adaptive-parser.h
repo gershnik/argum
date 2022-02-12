@@ -93,11 +93,13 @@ namespace MArgP {
         };
         
         struct ValidationError : public ParsingException {
-            ValidationError(StringViewType value_):
-                ParsingException(formatToString(Messages::validationError(), value_)),
-                value(value_) {
+            ValidationError(StringViewType message):
+                ParsingException(formatToString(Messages::validationError(), message)) {
             }
-            StringType value;
+            template<DescribableParserValidator<CharType> Validator>
+            ValidationError(Validator validator):
+                ParsingException(describeToStr<CharType>(validator)) {
+            }
         };
 
         class Option {
@@ -180,6 +182,8 @@ namespace MArgP {
             auto & added = this->m_options.emplace_back(std::move(option));
             this->m_optionsByName.add(added.names.main(), unsigned(this->m_options.size()) - 1);
             this->m_tokenizer.add(this->m_options.back().names);
+            if (added.repeated.min() > 0)
+                addValidator(OptionOccursAtLeast(added.names.main(), added.repeated.min()));
         }
         
         auto add(Positional positional) {
@@ -193,7 +197,7 @@ namespace MArgP {
 
         template<DescribableParserValidator<CharType> Validator>
         auto addValidator(Validator v) -> void  {
-            auto desc = (std::basic_ostringstream<CharType>() << describe(Indent<Char>{0}, v)).str();
+            auto desc = describeToStr<CharType>(v);
             m_validators.emplace_back(std::move(v), std::move(desc));
         }
 
@@ -264,6 +268,9 @@ namespace MArgP {
                     return ArgumentTokenizer::Continue;
                 });
                 completeOption();
+
+                //We could use normal validators for this but it is faster to do it manually
+                validatePositionals();
                 
                 for(auto & [validator, desc]: m_owner.m_validators) {
                     if (!validator(m_validationData))
@@ -284,6 +291,7 @@ namespace MArgP {
                     return;
 
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
+                validateOptionMax(option);
                 std::visit([&](const auto & handler) {
                     using HandlerType = std::decay_t<decltype(handler)>;
                     if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::None>>) {
@@ -298,7 +306,6 @@ namespace MArgP {
                         handler(*m_optionArgument);
                     }
                 }, option.handler);
-                ++m_validationData[option.names.main()];
                 m_optionIndex = -1;
                 m_optionArgument.reset();
             }
@@ -309,6 +316,7 @@ namespace MArgP {
                     return false;
 
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
+                validateOptionMax(option);
                 auto ret = std::visit([&](const auto & handler) {
                         using HandlerType = std::decay_t<decltype(handler)>;
                         if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::None>>) {
@@ -326,10 +334,18 @@ namespace MArgP {
                             }
                         }
                     }, option.handler);
-                ++m_validationData[option.names.main()];
                 m_optionIndex = -1;
                 m_optionArgument.reset();
                 return ret;
+            }
+
+            auto validateOptionMax(const Option & option) {
+                auto & name = option.names.main();
+                ++m_validationData.optionCount(name);
+                auto validator = OptionOccursAtMost(name, option.repeated.max());
+                if (!validator(m_validationData)) {
+                    throw ValidationError(validator);
+                }
             }
 
             auto handlePositional(StringViewType value, const CharType * const * remainingArgFirst, const CharType * const * argLast) {
@@ -338,34 +354,30 @@ namespace MArgP {
 
                 calculateRemainingPositionals(remainingArgFirst, argLast);
 
+                const Positional * positional = nullptr;
                 if (m_positionalIndex >= 0) {
                     if (unsigned(m_positionalIndex) >= m_positionalSizes.size())
                         throw ExtraPositional(value);
 
-                    if (m_positionalSizes[unsigned(m_positionalIndex)] == m_positionalCount) {
-                        m_positionalCount = 0;
-                        ++m_positionalIndex;
-                        auto next = std::find_if(m_positionalSizes.begin() + m_positionalIndex + 1, m_positionalSizes.end(), [](const unsigned val) {
-                            return val > 0;
-                        });
-                        m_positionalIndex = int(next - m_positionalSizes.end());
-                        if (next == m_positionalSizes.end())
-                            throw ExtraPositional(value);
-                    }
-                } else {
-                    auto next = std::find_if(m_positionalSizes.begin(), m_positionalSizes.end(), [](const unsigned val) {
+                    auto & current = m_owner.m_positionals[unsigned(m_positionalIndex)];
+                    if (m_positionalSizes[unsigned(m_positionalIndex)] > m_validationData.positionalCount(current.name))
+                        positional = &current;
+
+                }
+
+                if (!positional) {
+                    auto next = std::find_if(m_positionalSizes.begin() + m_positionalIndex + 1, m_positionalSizes.end(), [](const unsigned val) {
                         return val > 0;
                     });
                     m_positionalIndex = int(next - m_positionalSizes.begin());
-                    if (next == m_positionalSizes.end())
+                    if (unsigned(m_positionalIndex) >= m_positionalSizes.size())
                         throw ExtraPositional(value);
+                    positional = &m_owner.m_positionals[unsigned(m_positionalIndex)];
                 }
-
-
-                auto & positional = m_owner.m_positionals[unsigned(m_positionalIndex)];
-
-                positional.handler(m_positionalCount, value);
-                ++m_positionalCount;
+                
+                auto & count = m_validationData.positionalCount(positional->name);
+                positional->handler(count, value);
+                ++count;
             }
 
             auto handleUnknownOption(StringViewType name, StringViewType fullText) {
@@ -386,8 +398,9 @@ namespace MArgP {
                 auto fillStartIndex = m_positionalIndex + 1;
                 if (m_positionalIndex >= 0) {
                     auto & positional = m_owner.m_positionals[unsigned(m_positionalIndex)];
-                    if (positional.repeated.max() > m_positionalCount) {
-                        remainingPositionalCount += m_positionalCount; //account for already processed
+                    auto count = m_validationData.positionalCount(positional.name);
+                    if (positional.repeated.max() > count) {
+                        remainingPositionalCount += count; //account for already processed
                         partitioner.addRange(positional.repeated.min(), positional.repeated.max());
                         --fillStartIndex;
                     }
@@ -444,6 +457,18 @@ namespace MArgP {
                 return remainingPositionalCount;
             }
 
+            auto validatePositionals() {
+                for(auto idx = (m_positionalIndex >= 0 ? unsigned(m_positionalIndex) : 0u); 
+                    idx != unsigned(m_owner.m_positionals.size());
+                    ++idx) {
+                    
+                    auto & positional = m_owner.m_positionals[unsigned(idx)];
+                    auto validator = PositionalOccursAtLeast(positional.name, positional.repeated.min());
+                    if (!validator(this->m_validationData))
+                        throw ValidationError(validator);
+                }
+            }
+
         private:
             const BasicAdaptiveParser & m_owner;
 
@@ -452,7 +477,6 @@ namespace MArgP {
             std::optional<StringViewType> m_optionArgument;
 
             int m_positionalIndex = -1;
-            unsigned m_positionalCount = 0;
             std::vector<unsigned> m_positionalSizes;
             
             ParsingValidationData<CharType> m_validationData;

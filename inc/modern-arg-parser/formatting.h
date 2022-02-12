@@ -18,11 +18,6 @@
 
 namespace MArgP {
 
-    template<class T, class Char>
-    concept StreamPrintable = Character<Char> && requires(std::basic_ostream<Char> & str, T && val) {
-        { str << val } -> std::same_as<std::basic_ostream<Char> &>;
-    };
-
     template<size_t I, Character Char, StreamPrintable<Char>... Args>
     auto printImpl(std::basic_ostream<Char> & str, size_t idx, const std::tuple<Args...> & args) {
 

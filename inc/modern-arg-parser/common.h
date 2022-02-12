@@ -2,6 +2,10 @@
 #define HEADER_MARGP_COMMON_H_INCLUDED
 
 #include <type_traits>
+#include <string_view>
+#include <ostream>
+#include <concepts>
+
 #include <assert.h>
 
 #define MARGP_UTF_CHAR_SUPPORTED 0 //no compiler/library implements all the necessary machinery yet
@@ -40,7 +44,16 @@ namespace MArgP {
 #endif
     ;
 
+    template<class X>
+    concept StringLike = requires(X name) {
+        Character<std::decay_t<decltype(name[0])>>;
+        std::is_convertible_v<X, std::basic_string_view<std::decay_t<decltype(name[0])>>>;
+    };
 
+    template<class T, class Char>
+    concept StreamPrintable = Character<Char> && requires(std::basic_ostream<Char> & str, T && val) {
+        { str << val } -> std::same_as<std::basic_ostream<Char> &>;
+    };
 }
 
 #endif

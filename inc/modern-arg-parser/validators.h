@@ -3,6 +3,7 @@
 
 #include "messages.h"
 #include "formatting.h"
+#include "flat-map.h"
 
 #include <concepts>
 #include <tuple>
@@ -11,7 +12,30 @@
 namespace MArgP {
 
     template<class Char>
-    using ParsingValidationData = std::map<std::basic_string<Char>, int>;
+    class ParsingValidationData {
+    public:
+        auto optionCount(std::basic_string_view<Char> name) const -> unsigned {
+            auto it = this->m_optionCounts.find(name);
+            if (it == this->m_optionCounts.end())
+                return 0;
+            return it->value();
+        }
+        auto optionCount(std::basic_string_view<Char> name) -> unsigned & {
+            return this->m_optionCounts[name];
+        }
+        auto positionalCount(std::basic_string_view<Char> name) const -> unsigned {
+            auto it = this->m_positionalCounts.find(name);
+            if (it == this->m_positionalCounts.end())
+                return 0;
+            return it->value();
+        }
+        auto positionalCount(std::basic_string_view<Char> name) -> unsigned & {
+            return this->m_positionalCounts[name];
+        }
+    private:
+        FlatMap<std::basic_string<Char>, unsigned> m_optionCounts;
+        FlatMap<std::basic_string<Char>, unsigned> m_positionalCounts;
+    };
 
     template<class T, class Char>
     concept ParserValidator = std::is_invocable_r_v<bool, T, const ParsingValidationData<Char>>;
@@ -45,6 +69,18 @@ namespace MArgP {
         CompatibleParserValidators<char8_t, First, Rest...> ||
         CompatibleParserValidators<char16_t, First, Rest...> ||
         CompatibleParserValidators<char32_t, First, Rest...>;
+
+    //MARK: - Describe wrappers
+
+    template<class Char, DescribableParserValidator<Char> Validator>
+    auto describe(const Validator & val) {
+        return describe(Indent<Char>{0}, val);
+    }
+
+    template<class Char, DescribableParserValidator<Char> Validator>
+    auto describeToStr(const Validator & val) {
+        return (std::basic_ostringstream<Char>() << describe<Char>(val)).str();
+    }
     
 
     //MARK: - NotValidator
@@ -256,71 +292,131 @@ namespace MArgP {
                                                    allOrNoneOf(std::forward<Rest>(rest)...));
     }
 
-    //MARK: - Specific Validators
+    //MARK: - Occurence Validators
 
-    template<class Char> class OptionAbsent;
-    template<class Char> class OptionRequired;
-
-    
-    template<class Char>
-    class OptionRequired  {
+    template<class Char, bool IsOption, class Comp>
+    requires(std::is_same_v<Comp, std::greater_equal<unsigned>> ||
+             std::is_same_v<Comp, std::less_equal<unsigned>> || 
+             std::is_same_v<Comp, std::greater<unsigned>> ||
+             std::is_same_v<Comp, std::greater<unsigned>> ||
+             std::is_same_v<Comp, std::equal_to<unsigned>> ||
+             std::is_same_v<Comp, std::not_equal_to<unsigned>>)
+    class ItemOccurs {
     public:
-        OptionRequired(std::basic_string_view<Char> name) : m_name(name) {}
+        ItemOccurs(std::basic_string_view<Char> name, unsigned count) : m_name(name), m_count(count) {}
 
         auto operator()(const ParsingValidationData<Char> & data) const -> bool {
-            auto it = data.find(m_name);
-            if (it == data.end())
-                return false;
-            return it->second > 0;
+            return Comp()(data.optionCount(this->m_name), this->m_count);
         }
         
-        auto operator!() const -> OptionAbsent<Char>;
+        auto operator!() const {
+            if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>)
+                return ItemOccurs<Char, IsOption, std::less<unsigned>>(this->m_name, this->m_count);
+            else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>)
+                return ItemOccurs<Char, IsOption, std::greater<unsigned>>(this->m_name, this->m_count);
+            else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>)
+                return ItemOccurs<Char, IsOption, std::less_equal<unsigned>>(this->m_name, this->m_count);
+            else if constexpr (std::is_same_v<Comp, std::less<unsigned>>)
+                return ItemOccurs<Char, IsOption, std::greater_equal<unsigned>>(this->m_name, this->m_count);
+            else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>)
+                return ItemOccurs<Char, IsOption, std::not_equal_to<unsigned>>(this->m_name, this->m_count);
+            else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>)
+                return ItemOccurs<Char, IsOption, std::equal_to<unsigned>>(this->m_name, this->m_count);
+        }
 
-        friend auto describe(Indent<Char> indent, const OptionRequired<Char> & val)  {
+        friend auto describe(Indent<Char> indent, const ItemOccurs & val)  {
             return Printable([&, indent](std::basic_ostream<Char> & str) {
-                str << format(Messages<Char>::optionRequired(), indent, val.m_name);
+                constexpr auto inf = std::numeric_limits<unsigned>::max();
+                auto typeName = IsOption ? Messages<Char>::option() : Messages<Char>::positionalArg();
+                if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) switch(val.m_count) {
+                    break; case 0:   str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
+                    break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
+                    break; default:  str << format(Messages<Char>::itemOccursAtLeast(), indent, typeName, val.m_name, val.m_count);
+                    break; case inf: str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                }
+                else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) switch(val.m_count) {
+                    break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                    break; default:  str << format(Messages<Char>::itemOccursAtMost(), indent, typeName, val.m_name, val.m_count);
+                    break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
+                }
+                else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) switch(val.m_count) {
+                    break; case 0:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
+                    break; default:  str << format(Messages<Char>::itemOccursMoreThan(), indent, typeName, val.m_name, val.m_count);
+                    break; case inf: str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                }
+                else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) switch(val.m_count) {
+                    break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                    break; case 1:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                    break; default:  str << format(Messages<Char>::itemOccursLessThan(), indent, typeName, val.m_name, val.m_count);
+                    break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
+                }
+                else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>) switch(val.m_count) {
+                    break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                    break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
+                    break; default:  str << format(Messages<Char>::itemOccursExactly(), indent, typeName, val.m_name, val.m_count);
+                    break; case inf: str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                }
+                else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) switch(val.m_count) {
+                    break; case 0:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
+                    break; default:  str << format(Messages<Char>::itemDoesNotOccursExactly(), indent, typeName, val.m_name, val.m_count);
+                    break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
+                }
             });
         }
     private:
         std::basic_string<Char> m_name;
+        unsigned m_count;
     };
-    template<class Char> OptionRequired(const Char *) -> OptionRequired<Char>;
-    template<class Char> OptionRequired(const std::basic_string<Char> &) -> OptionRequired<Char>;
-    
-    template<class Char>
-    class OptionAbsent  {
-    public:
-        OptionAbsent(std::basic_string_view<Char> name) : m_name(name) {}
 
-        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
-            auto it = data.find(m_name);
-            if (it == data.end())
-                return true;
-            return it->second == 0;
-        }
-        
-        auto operator!() const -> OptionRequired<Char>;
 
-        friend auto describe(Indent<Char> indent, const OptionAbsent<Char> & val)  {
-            return Printable([&, indent](std::basic_ostream<Char> & str) {
-                str << format(Messages<Char>::optionMustNotBePresent(), indent, val.m_name);
-            });
-        }
-    private:
-        std::basic_string<Char> m_name;
-    };
-    template<class Char> OptionAbsent(const Char *) -> OptionAbsent<Char>;
-    template<class Char> OptionAbsent(const std::basic_string<Char> &) -> OptionAbsent<Char>;
-    
-    
-    template<class Char>
-    auto OptionRequired<Char>::operator!() const -> OptionAbsent<Char> {
-        return OptionAbsent<Char>(this->m_name);
+    template<StringLike S>
+    auto OptionRequired(S name) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::greater<unsigned>>(name, 0);
     }
-    
-    template<class Char>
-    auto OptionAbsent<Char>::operator!() const -> OptionRequired<Char> {
-        return OptionRequired<Char>(this->m_name);
+    template<StringLike S>
+    auto OptionAbsent(S name) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::equal_to<unsigned>>(name, 0);
+    }
+    template<StringLike S>
+    auto OptionOccursAtLeast(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::greater_equal<unsigned>>(name, count);
+    }
+    template<StringLike S>
+    auto OptionOccursAtMost(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::less_equal<unsigned>>(name, count);
+    }
+    template<StringLike S>
+    auto OptionOccursMoreThan(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::greater<unsigned>>(name, count);
+    }
+    template<StringLike S>
+    auto OptionOccursLessThan(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::less<unsigned>>(name, count);
+    }
+
+    template<StringLike S>
+    auto PositionalRequired(S name) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::greater<unsigned>>(name, 0);
+    }
+    template<StringLike S>
+    auto PositionalAbsent(S name) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::equal_to<unsigned>>(name, 0);
+    }
+    template<StringLike S>
+    auto PositionalOccursAtLeast(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::greater_equal<unsigned>>(name, count);
+    }
+    template<StringLike S>
+    auto PositionalOccursAtMost(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::less_equal<unsigned>>(name, count);
+    }
+    template<StringLike S>
+    auto PositionalOccursMoreThan(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::greater<unsigned>>(name, count);
+    }
+    template<StringLike S>
+    auto PositionalOccursLessThan(S name, unsigned count) {
+        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::less<unsigned>>(name, count);
     }
     
 }

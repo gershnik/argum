@@ -7,23 +7,19 @@ using namespace std;
 
 using namespace std::literals;
 
-template<class Char, DescribableParserValidator<Char> Validator>
-auto printValidator(const Validator & validator) {
-    return (std::basic_ostringstream<Char>() << describe(Indent<Char>{0}, validator)).str();
-}
 
 TEST_CASE( "Simple Validators" , "[validators]") {
 
     ParsingValidationData<char> data;
 
     auto required = OptionRequired("hah");
-    CHECK(printValidator<char>(required) == "option hah is required");
+    CHECK(describeToStr<char>(required) == "option hah is required");
     auto absent = OptionAbsent("hah");
-    CHECK(printValidator<char>(absent) == "option hah must not be present");
+    CHECK(describeToStr<char>(absent) == "option hah must not be present");
     auto notRequired = !required;
-    CHECK(printValidator<char>(notRequired) == "option hah must not be present");
+    CHECK(describeToStr<char>(notRequired) == "option hah must not be present");
     auto notAbsent = !absent;
-    CHECK(printValidator<char>(notAbsent) == "option hah is required");
+    CHECK(describeToStr<char>(notAbsent) == "option hah is required");
 
     CHECK(!required(data));
     CHECK((!required)(data));
@@ -31,21 +27,21 @@ TEST_CASE( "Simple Validators" , "[validators]") {
     CHECK(!notAbsent(data));
     
 
-    data["hah"] = 0;
+    data.optionCount("hah") = 0;
 
     CHECK(!required(data));
     CHECK(notRequired(data));
     CHECK(absent(data));
     CHECK(!notAbsent(data));
 
-    data["hah"] = 1;   
+    data.optionCount("hah") = 1;   
 
     CHECK(required(data));
     CHECK(!notRequired(data));
     CHECK(!absent(data));
     CHECK(notAbsent(data));
 
-    data["hah"] = 100;   
+    data.optionCount("hah") = 100;   
 
     CHECK(required(data));
     CHECK(!notRequired(data));
@@ -63,12 +59,12 @@ TEST_CASE( "Validators: anyOf" , "[validators]") {
     auto notAnyOfRequired = !anyOfRequired1;
 
 
-    CHECK(printValidator<char>(anyOfRequired1) ==
+    CHECK(describeToStr<char>(anyOfRequired1) ==
 R"(one or more of the following must be true:
     option hah is required
     option heh is required)");
-    CHECK(printValidator<char>(anyOfRequired2) == printValidator<char>(anyOfRequired1));
-    CHECK(printValidator<char>(notAnyOfRequired) ==
+    CHECK(describeToStr<char>(anyOfRequired2) == describeToStr<char>(anyOfRequired1));
+    CHECK(describeToStr<char>(notAnyOfRequired) ==
 R"(all of the following must be true:
     option hah must not be present
     option heh must not be present)");
@@ -77,26 +73,26 @@ R"(all of the following must be true:
     CHECK(!anyOfRequired2(data));
     CHECK(notAnyOfRequired(data));
 
-    data["hah"] = 0;
-    data["heh"] = 0;
+    data.optionCount("hah") = 0;
+    data.optionCount("heh") = 0;
 
     CHECK(!anyOfRequired1(data));
     CHECK(!anyOfRequired2(data));
     CHECK(notAnyOfRequired(data));
     
-    data["hah"] = 1;
+    data.optionCount("hah") = 1;
 
     CHECK(anyOfRequired1(data));
     CHECK(anyOfRequired2(data));
     CHECK(!notAnyOfRequired(data));
 
-    data["heh"] = 1;
+    data.optionCount("heh") = 1;
 
     CHECK(anyOfRequired1(data));
     CHECK(anyOfRequired2(data));
     CHECK(!notAnyOfRequired(data));
 
-    data["hah"] = 0;
+    data.optionCount("hah") = 0;
 
     CHECK(anyOfRequired1(data));
     CHECK(anyOfRequired2(data));

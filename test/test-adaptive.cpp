@@ -51,7 +51,7 @@ TEST_CASE( "xxx" , "[sequential]") {
     std::cout << '\n';
     parser.printUsage(std::cout, "ggg");
 
-    const char * argv[] = { "-v", "hello" };
+    const char * argv[] = { "-v" };
     try {
         parser.parse(std::begin(argv), std::end(argv));
     } catch (ParsingException & ex) {

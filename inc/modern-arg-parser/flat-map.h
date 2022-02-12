@@ -49,6 +49,14 @@ namespace MArgP {
         }
 
         template<class KeyArg>
+        auto operator[](const KeyArg & key) -> Value & {
+            auto it = std::lower_bound(this->m_data.begin(), this->m_data.end(), key, Comparator());
+            if (it == this->m_data.end() || it->key() != key)
+                it = this->m_data.emplace(it, std::move(key), Value());
+            return it->value();
+        }
+
+        template<class KeyArg>
         auto find(const KeyArg & key) const -> const_iterator {
             auto it = std::lower_bound(this->m_data.begin(), this->m_data.end(), key, Comparator());
             if (it == this->m_data.end() || it->key() != key)
