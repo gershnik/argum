@@ -332,17 +332,16 @@ namespace MArgP {
                     break; case 0:   str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
                     break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
                     break; default:  str << format(Messages<Char>::itemOccursAtLeast(), indent, typeName, val.m_name, val.m_count);
-                    break; case inf: str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
                 }
                 else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) switch(val.m_count) {
                     break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
+                    break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
                     break; default:  str << format(Messages<Char>::itemOccursAtMost(), indent, typeName, val.m_name, val.m_count);
                     break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
                 }
                 else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) switch(val.m_count) {
                     break; case 0:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
                     break; default:  str << format(Messages<Char>::itemOccursMoreThan(), indent, typeName, val.m_name, val.m_count);
-                    break; case inf: str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
                 }
                 else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) switch(val.m_count) {
                     break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
@@ -354,7 +353,6 @@ namespace MArgP {
                     break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
                     break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
                     break; default:  str << format(Messages<Char>::itemOccursExactly(), indent, typeName, val.m_name, val.m_count);
-                    break; case inf: str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
                 }
                 else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) switch(val.m_count) {
                     break; case 0:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
