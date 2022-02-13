@@ -306,7 +306,10 @@ namespace MArgP {
         ItemOccurs(std::basic_string_view<Char> name, unsigned count) : m_name(name), m_count(count) {}
 
         auto operator()(const ParsingValidationData<Char> & data) const -> bool {
-            return Comp()(data.optionCount(this->m_name), this->m_count);
+            if constexpr (IsOption)
+                return Comp()(data.optionCount(this->m_name), this->m_count);
+            else
+                return Comp()(data.positionalCount(this->m_name), this->m_count);
         }
         
         auto operator!() const {

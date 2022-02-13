@@ -13,13 +13,13 @@ TEST_CASE( "Simple Validators" , "[validators]") {
     ParsingValidationData<char> data;
 
     auto required = OptionRequired("hah");
-    CHECK(describeToStr<char>(required) == "option hah is required");
+    CHECK(describeToStr<char>(required) == "option hah must be present");
     auto absent = OptionAbsent("hah");
     CHECK(describeToStr<char>(absent) == "option hah must not be present");
     auto notRequired = !required;
     CHECK(describeToStr<char>(notRequired) == "option hah must not be present");
     auto notAbsent = !absent;
-    CHECK(describeToStr<char>(notAbsent) == "option hah is required");
+    CHECK(describeToStr<char>(notAbsent) == "option hah must be present");
 
     CHECK(!required(data));
     CHECK((!required)(data));
@@ -61,8 +61,8 @@ TEST_CASE( "Validators: anyOf" , "[validators]") {
 
     CHECK(describeToStr<char>(anyOfRequired1) ==
 R"(one or more of the following must be true:
-    option hah is required
-    option heh is required)");
+    option hah must be present
+    option heh must be present)");
     CHECK(describeToStr<char>(anyOfRequired2) == describeToStr<char>(anyOfRequired1));
     CHECK(describeToStr<char>(notAnyOfRequired) ==
 R"(all of the following must be true:

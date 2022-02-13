@@ -184,10 +184,12 @@ namespace MArgP {
             this->m_tokenizer.add(this->m_options.back().names);
             if (added.repeated.min() > 0)
                 addValidator(OptionOccursAtLeast(added.names.main(), added.repeated.min()));
+            ++m_updateCount;
         }
         
         auto add(Positional positional) {
             this->m_positionals.emplace_back(std::move(positional));
+            ++m_updateCount;
         }
 
         template<ParserValidator<CharType> Validator>
@@ -238,7 +240,9 @@ namespace MArgP {
     private:
         class ParsingState {
         public:
-            ParsingState(BasicAdaptiveParser & owner): m_owner(owner) {
+            ParsingState(BasicAdaptiveParser & owner): 
+                m_owner(owner),
+                m_updateCountAtLastRecalc(owner.m_updateCount - 1) {
             }
 
             auto parse(const CharType * const * argFirst, const CharType * const * argLast) {
@@ -353,7 +357,7 @@ namespace MArgP {
                     return;
 
                 calculateRemainingPositionals(remainingArgFirst, argLast);
-
+                
                 const Positional * positional = nullptr;
                 if (m_positionalIndex >= 0) {
                     if (unsigned(m_positionalIndex) >= m_positionalSizes.size())
@@ -389,6 +393,9 @@ namespace MArgP {
 
             auto calculateRemainingPositionals(const CharType * const * remainingArgFirst, const CharType * const * argLast)  {
 
+                if (m_updateCountAtLastRecalc == m_owner.m_updateCount)
+                    return;
+                
                 //1. Count remaining positional arguments
                 unsigned remainingPositionalCount = countRemainingPositionals(remainingArgFirst, argLast);
                 
@@ -418,6 +425,8 @@ namespace MArgP {
                 //4. Fill in expected sizes based on regex matches
                 m_positionalSizes.resize(m_owner.m_positionals.size());
                 std::copy(res->begin(), res->end() - 1, m_positionalSizes.begin() + fillStartIndex);
+
+                this->m_updateCountAtLastRecalc = m_owner.m_updateCount;
             }
             
             auto countRemainingPositionals(const CharType * const * remainingArgFirst, const CharType * const * argLast) -> unsigned {
@@ -471,6 +480,7 @@ namespace MArgP {
 
         private:
             const BasicAdaptiveParser & m_owner;
+            size_t m_updateCountAtLastRecalc;
 
             int m_optionIndex = -1;
             StringViewType m_optionName;
@@ -488,6 +498,7 @@ namespace MArgP {
         std::vector<Positional> m_positionals;
         ArgumentTokenizer m_tokenizer;
         std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
+        size_t m_updateCount = 0;
     };
 
     MARGP_DECLARE_FRIENDLY_NAMES(AdaptiveParser);
