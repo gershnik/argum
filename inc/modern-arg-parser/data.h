@@ -52,7 +52,7 @@ namespace MArgP {
         constexpr explicit Repeated(unsigned val): m_min(val), m_max(val) {
         }
         constexpr Repeated(unsigned min, unsigned max): m_min(min), m_max(max) {
-            MARGP_ALWAYS_ASSERT(min <= max);
+            //MARGP_ALWAYS_ASSERT(min <= max);
         }
 
         static const Repeated zeroOrOnce;
@@ -73,10 +73,10 @@ namespace MArgP {
         unsigned m_max = 0;
     };
 
-    constexpr Repeated Repeated::zeroOrOnce = Repeated(0, 1);
-    constexpr Repeated Repeated::once       = Repeated(1, 1);
-    constexpr Repeated Repeated::zeroOrMore = Repeated(0, Repeated::infinity);
-    constexpr Repeated Repeated::oneOrMore  = Repeated(1, Repeated::infinity);
+    inline constexpr Repeated Repeated::zeroOrOnce = Repeated(0, 1);
+    inline constexpr Repeated Repeated::once       = Repeated(1, 1);
+    inline constexpr Repeated Repeated::zeroOrMore = Repeated(0, Repeated::infinity);
+    inline constexpr Repeated Repeated::oneOrMore  = Repeated(1, Repeated::infinity);
 
     template<class Char>
     class BasicParsingException : public std::runtime_error {

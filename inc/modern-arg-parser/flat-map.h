@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+#include <vector>
+
 namespace MArgP {
 
     template<class Key, class Value>

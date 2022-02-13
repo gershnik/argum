@@ -15,6 +15,8 @@
 #include <variant>
 #include <ostream>
 #include <sstream>
+#include <functional>
+#include <algorithm>
 #include <concepts>
 
 
@@ -502,7 +504,7 @@ namespace MArgP {
                 }
 
                 if (!positional) {
-                    auto next = std::find_if(m_positionalSizes.begin() + m_positionalIndex + 1, m_positionalSizes.end(), [](const unsigned val) {
+                    auto next = std::find_if(m_positionalSizes.begin() + (m_positionalIndex + 1), m_positionalSizes.end(), [](const unsigned val) {
                         return val > 0;
                     });
                     m_positionalIndex = int(next - m_positionalSizes.begin());
@@ -544,7 +546,7 @@ namespace MArgP {
                         --fillStartIndex;
                     }
                 }
-                std::for_each(m_owner.m_positionals.begin() + m_positionalIndex + 1, m_owner.m_positionals.end(),
+                std::for_each(m_owner.m_positionals.begin() + (m_positionalIndex + 1), m_owner.m_positionals.end(),
                                 [&] (const Positional & positional) {
                     partitioner.addRange(positional.repeated.min(), positional.repeated.max());
                 });

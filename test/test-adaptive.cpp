@@ -35,7 +35,7 @@ TEST_CASE( "xxx" , "[sequential]") {
         Positional("bob")
         .set(Repeated(0, 25))
         .setDescription("hohahaha")
-        .setHandler([](unsigned idx, string_view value) {
+        .setHandler([](unsigned idx, string_view) {
             CHECK(idx == 0);
         })
     );
@@ -43,7 +43,7 @@ TEST_CASE( "xxx" , "[sequential]") {
         Positional("fob")
         .set(Repeated(1,1))
         .setDescription("ghakl\njdks")
-        .setHandler([](unsigned idx, string_view value) {
+        .setHandler([](unsigned, string_view) {
         
         })
     );
