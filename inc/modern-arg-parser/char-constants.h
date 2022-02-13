@@ -15,7 +15,9 @@ namespace MArgP {
         static constexpr auto space                         = prefix ## ' '; \
         static constexpr auto optBracketOpen                = prefix ## '['; \
         static constexpr auto optBracketClose               = prefix ## ']'; \
-        static constexpr auto indentation                   = prefix ## "    ";\
+        static constexpr auto endl                          = prefix ## '\n'; \
+        static constexpr auto comma                         = prefix ## ','; \
+        static constexpr auto ellipsis                      = prefix ## "..."; \
     };
 
     MARGP_DEFINE_CHAR_CONSTANTS(char, )

@@ -43,10 +43,10 @@ namespace MArgP {
         std::basic_string_view<Char> fmt;
         std::tuple<Args && ...> args;
 
-        friend auto operator<<(std::basic_ostream<Char> & str, const Formatter & formatter) -> std::basic_ostream<Char> & {
-            auto outStart = formatter.fmt.data();
+        auto format(std::basic_ostream<Char> & str) -> std::basic_ostream<Char> & {
+            auto outStart = this->fmt.data();
             auto current = outStart;
-            const auto last = current + formatter.fmt.size();
+            const auto last = current + this->fmt.size();
 
             auto flush = [&](auto end) {
                 assert(end >= outStart);
@@ -74,7 +74,7 @@ namespace MArgP {
                             continue;
 
                         flush(current - 1);
-                        print(str, *maybeArgIdx - 1, formatter.args);
+                        print(str, *maybeArgIdx - 1, this->args);
                         current = placeholderEnd + 1;
                         outStart = current;
                 } else {
@@ -83,10 +83,6 @@ namespace MArgP {
             }
             flush(last);
             return str;
-        }
-
-        operator std::basic_string<Char>() const {
-            return (std::basic_ostringstream<Char>() << *this).str();
         }
     private:
         static auto parsePlaceholder(const Char * first, const Char * last) -> std::optional<size_t> {
@@ -137,38 +133,13 @@ namespace MArgP {
         }
     };
 
-    template<Character Char, StreamPrintable<Char>... Args>
-    auto format(std::basic_string_view<Char> fmt, Args && ...args)  {
+    template<StringLike Fmt, StreamPrintable<std::decay_t<decltype(std::declval<Fmt>()[0])>>... Args>
+    auto format(Fmt fmt, Args && ...args)  {
 
-        return Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}};
-    }
-
-    template<Character Char, StreamPrintable<Char>... Args>
-    auto format(const Char * fmt, Args && ...args)  {
-
-        return Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}};
-    }
-    
-    template<Character Char, StreamPrintable<Char>... Args>
-    auto format(const std::basic_string<Char> & fmt, Args && ...args)  {
-
-        return Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}};
-    }
-
-    template<Character Char, StreamPrintable<Char>... Args>
-    auto formatToString(std::basic_string_view<Char> fmt, Args && ...args)  {
-
-        return (std::basic_ostringstream<Char>() << format(fmt, std::forward<Args>(args)...)).str();
-    }
-    template<Character Char, StreamPrintable<Char>... Args>
-    auto formatToString(const Char * fmt, Args && ...args)  {
-
-        return (std::basic_ostringstream<Char>() << format(fmt, std::forward<Args>(args)...)).str();
-    }
-    template<Character Char, StreamPrintable<Char>... Args>
-    auto formatToString(const std::basic_string<Char> & fmt, Args && ...args)  {
-
-        return (std::basic_ostringstream<Char>() << format(fmt, std::forward<Args>(args)...)).str();
+        using Char = std::decay_t<decltype(fmt[0])>;
+        std::basic_ostringstream<Char> str;
+        Formatter<Char, Args...>{fmt, {std::forward<Args>(args)...}}.format(str);
+        return str.str();
     }
 
     template<class T>
@@ -187,22 +158,69 @@ namespace MArgP {
     };
 
     template<Character Char>
-    struct Indent {
-        int count = 0;
+    class Indent {
+    public:
+        static constexpr unsigned defaultValue = 4;
+
+        Indent() : m_count(Indent::defaultValue) {}
+        Indent(unsigned c) : m_count(c) {}
 
         friend auto operator<<(std::basic_ostream<Char> & str, Indent val) -> std::basic_ostream<Char> & {
-            for(int i = 0; i < val.count; ++i)
-                str << CharConstants<char>::indentation;
+            for(unsigned i = 0; i < val.m_count; ++i)
+                str << CharConstants<char>::space;
             return str;
         }
 
-        auto operator+(int rhs) const {
-            return Indent{this->count + rhs};
+        auto operator+(unsigned rhs) const {
+            return Indent{this->m_count + rhs};
         }
-        auto operator-(int rhs) const {
-            return Indent{this->count - rhs};
+        auto operator-(unsigned rhs) const {
+            return Indent{this->m_count > rhs ? this->m_count - rhs : 0};
         }
+        auto operator*(unsigned rhs) const {
+            return Indent{this->m_count * rhs};
+        }
+    private:
+        unsigned m_count = 0;
     };
+
+    template<class T, class Char>
+    concept Describable = 
+        requires(const T & val) {
+            { describe(Indent<Char>{0}, val) } -> StreamPrintable<Char>;
+        };
+
+    template<class Char, StringLike T>
+    auto describe(Indent<Char> indent, T val) {
+        return Printable([=, val=std::move(val)](std::basic_ostream<Char> & str) {
+            std::basic_string_view<Char> view(val);
+            size_t start = 0;
+            for ( ; ; ) {
+                auto lineEnd = view.find(CharConstants<Char>::endl, start);
+                str << view.substr(start, lineEnd);
+                if (lineEnd == view.npos)
+                    break;
+                str << CharConstants<Char>::endl << indent;
+                start = lineEnd + 1;
+            }
+        });
+    }
+
+    template<class Char, StreamPrintable<Char> T>
+    requires(!StringLike<T>)
+    auto describe(Indent<Char> indent, const T & val) {
+        return describe(indent, (std::basic_ostringstream<Char>() << val).str());
+    }
+
+    template<class Char, Describable<Char> T>
+    auto describe(const T & val) {
+        return describe(Indent<Char>{0}, val);
+    }
+
+    template<class Char, Describable<Char> T>
+    auto describeToStr(const T & val) {
+        return (std::basic_ostringstream<Char>() << describe<Char>(val)).str();
+    }
 
 }
 

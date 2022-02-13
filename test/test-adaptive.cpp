@@ -21,17 +21,20 @@ TEST_CASE( "xxx" , "[sequential]") {
 
     parser.add(
         Option("-v")
+        .setDescription("xcbfdjd")
         .setHandler([&]() {
             ++verbosity;
         }));
     parser.add(
         Option("--name", "-n")
+        .setDescription("dfsd\nhjjkll")
         .setHandler([&](string_view value) {
             name = value;
         }));
     parser.add(
         Positional("bob")
         .set(Repeated(0, 25))
+        .setDescription("hohahaha")
         .setHandler([](unsigned idx, string_view value) {
             CHECK(idx == 0);
         })
@@ -39,6 +42,7 @@ TEST_CASE( "xxx" , "[sequential]") {
     parser.add(
         Positional("fob")
         .set(Repeated(1,1))
+        .setDescription("ghakl\njdks")
         .setHandler([](unsigned idx, string_view value) {
         
         })
@@ -51,7 +55,7 @@ TEST_CASE( "xxx" , "[sequential]") {
     std::cout << '\n';
     parser.printUsage(std::cout, "ggg");
 
-    const char * argv[] = { "-v" };
+    const char * argv[] = { "-v", "hhh", "jjj" };
     try {
         parser.parse(std::begin(argv), std::end(argv));
     } catch (ParsingException & ex) {

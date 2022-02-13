@@ -41,10 +41,7 @@ namespace MArgP {
     concept ParserValidator = std::is_invocable_r_v<bool, T, const ParsingValidationData<Char>>;
     
     template<class T, class Char>
-    concept DescribableParserValidator = ParserValidator<T, Char> &&
-        requires(const T & val) {
-            { describe(Indent<Char>{0}, val) } -> StreamPrintable<Char>;
-        };
+    concept DescribableParserValidator = ParserValidator<T, Char> && Describable<T, Char>;
     
     template<class Char, class First, class... Rest>
     constexpr bool CompatibleParserValidators = ParserValidator<First, Char> && (ParserValidator<Rest, Char> && ...);
@@ -70,19 +67,6 @@ namespace MArgP {
         CompatibleParserValidators<char16_t, First, Rest...> ||
         CompatibleParserValidators<char32_t, First, Rest...>;
 
-    //MARK: - Describe wrappers
-
-    template<class Char, DescribableParserValidator<Char> Validator>
-    auto describe(const Validator & val) {
-        return describe(Indent<Char>{0}, val);
-    }
-
-    template<class Char, DescribableParserValidator<Char> Validator>
-    auto describeToStr(const Validator & val) {
-        return (std::basic_ostringstream<Char>() << describe<Char>(val)).str();
-    }
-    
-
     //MARK: - NotValidator
 
     template<AnyParserValidator Impl>
@@ -101,9 +85,8 @@ namespace MArgP {
         template<class Char, DescribableParserValidator<Char> ImplD>
         friend auto describe(Indent<Char> indent, const NotValidator<ImplD> & val)  {
         
-            return Printable([&, indent](std::basic_ostream<Char> & str) {
-                str << format(Messages<Char>::negationDesc(), indent, describe(indent, val.m_impl));
-            });
+            return describe(indent, format(Messages<Char>::negationDesc(), val.m_impl));
+
         }
     private:
         Impl m_impl;
@@ -184,19 +167,21 @@ namespace MArgP {
     template<class Char, ValidatorCombination Comb, DescribableParserValidator<Char>... Args>
     auto describe(Indent<Char> indent, const CombinedValidator<Comb, Args...> & val)  {
 
-        return Printable([&, indent](std::basic_ostream<Char> & str) {
-            if constexpr (Comb == ValidatorCombination::And)
-                str << format(Messages<Char>::allMustBeTrue(), indent);
-            else if constexpr (Comb == ValidatorCombination::Or)
-                str << format(Messages<Char>::oneOrMoreMustBeTrue(), indent);
-            else if constexpr (Comb == ValidatorCombination::Xor)
-                str << format(Messages<Char>::onlyOneMustBeTrue(), indent);
-            else if constexpr (Comb == ValidatorCombination::NXor)
-                str << format(Messages<Char>::allOrNoneMustBeTrue(), indent);
-            std::apply([&str,indent] (const Args & ...args) {
-                ((str << std::endl << (indent + 1) << describe(indent + 2, args)), ...);
-            }, val.items());
-        });
+        std::basic_ostringstream<Char> str;
+
+        if constexpr (Comb == ValidatorCombination::And)
+            str << describe(indent, Messages<Char>::allMustBeTrue());
+        else if constexpr (Comb == ValidatorCombination::Or)
+            str << describe(indent, Messages<Char>::oneOrMoreMustBeTrue());
+        else if constexpr (Comb == ValidatorCombination::Xor)
+            str << describe(indent, Messages<Char>::onlyOneMustBeTrue());
+        else if constexpr (Comb == ValidatorCombination::NXor)
+            str << describe(indent, Messages<Char>::allOrNoneMustBeTrue());
+        std::apply([&str,indent] (const Args & ...args) {
+            ((str << CharConstants<Char>::endl << (indent + indent.defaultValue) << describe(indent + 2 * indent.defaultValue, args)), ...);
+        }, val.items());
+
+        return str.str();
     }
 
     template<ValidatorCombination Comb, class V1, class V2>
@@ -328,41 +313,43 @@ namespace MArgP {
         }
 
         friend auto describe(Indent<Char> indent, const ItemOccurs & val)  {
-            return Printable([&, indent](std::basic_ostream<Char> & str) {
-                constexpr auto inf = std::numeric_limits<unsigned>::max();
-                auto typeName = IsOption ? Messages<Char>::option() : Messages<Char>::positionalArg();
-                if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) switch(val.m_count) {
-                    break; case 0:   str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
-                    break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
-                    break; default:  str << format(Messages<Char>::itemOccursAtLeast(), indent, typeName, val.m_name, val.m_count);
-                }
-                else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) switch(val.m_count) {
-                    break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
-                    break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
-                    break; default:  str << format(Messages<Char>::itemOccursAtMost(), indent, typeName, val.m_name, val.m_count);
-                    break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
-                }
-                else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) switch(val.m_count) {
-                    break; case 0:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
-                    break; default:  str << format(Messages<Char>::itemOccursMoreThan(), indent, typeName, val.m_name, val.m_count);
-                }
-                else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) switch(val.m_count) {
-                    break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
-                    break; case 1:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
-                    break; default:  str << format(Messages<Char>::itemOccursLessThan(), indent, typeName, val.m_name, val.m_count);
-                    break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
-                }
-                else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>) switch(val.m_count) {
-                    break; case 0:   str << format(Messages<Char>::itemMustNotBePresent(), indent, typeName, val.m_name);
-                    break; case 1:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
-                    break; default:  str << format(Messages<Char>::itemOccursExactly(), indent, typeName, val.m_name, val.m_count);
-                }
-                else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) switch(val.m_count) {
-                    break; case 0:   str << format(Messages<Char>::itemRequired(), indent, typeName, val.m_name);
-                    break; default:  str << format(Messages<Char>::itemDoesNotOccursExactly(), indent, typeName, val.m_name, val.m_count);
-                    break; case inf: str << format(Messages<Char>::itemUnrestricted(), indent, typeName, val.m_name);
-                }
-            });
+            std::basic_ostringstream<Char> str;
+
+            constexpr auto inf = std::numeric_limits<unsigned>::max();
+            auto typeName = IsOption ? Messages<Char>::option() : Messages<Char>::positionalArg();
+            if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) switch(val.m_count) {
+                break; case 0:   str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+                break; case 1:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
+                break; default:  str << describe(indent, format(Messages<Char>::itemOccursAtLeast(), typeName, val.m_name, val.m_count));
+            }
+            else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) switch(val.m_count) {
+                break; case 0:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
+                break; case 1:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
+                break; default:  str << describe(indent, format(Messages<Char>::itemOccursAtMost(), typeName, val.m_name, val.m_count));
+                break; case inf: str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+            }
+            else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) switch(val.m_count) {
+                break; case 0:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
+                break; default:  str << describe(indent, format(Messages<Char>::itemOccursMoreThan(), typeName, val.m_name, val.m_count));
+            }
+            else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) switch(val.m_count) {
+                break; case 0:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
+                break; case 1:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
+                break; default:  str << describe(indent, format(Messages<Char>::itemOccursLessThan(), typeName, val.m_name, val.m_count));
+                break; case inf: str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+            }
+            else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>) switch(val.m_count) {
+                break; case 0:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
+                break; case 1:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
+                break; default:  str << describe(indent, format(Messages<Char>::itemOccursExactly(), typeName, val.m_name, val.m_count));
+            }
+            else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) switch(val.m_count) {
+                break; case 0:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
+                break; default:  str << describe(indent, format(Messages<Char>::itemDoesNotOccursExactly(), typeName, val.m_name, val.m_count));
+                break; case inf: str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+            }
+            
+            return str.str();
         }
     private:
         std::basic_string<Char> m_name;

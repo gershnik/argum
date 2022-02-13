@@ -62,7 +62,7 @@ namespace MArgP {
         
         struct UnrecognizedOption : public ParsingException {
             UnrecognizedOption(StringViewType option_): 
-                ParsingException(formatToString(Messages::unrecognizedOptionError(), option_)),
+                ParsingException(format(Messages::unrecognizedOptionError(), option_)),
                 option(option_) {
             }
             StringType option;
@@ -70,7 +70,7 @@ namespace MArgP {
 
         struct MissingOptionArgument : public ParsingException {
             MissingOptionArgument(StringViewType option_): 
-                ParsingException(formatToString(Messages::missingOptionArgumentError(), option_)),
+                ParsingException(format(Messages::missingOptionArgumentError(), option_)),
                 option(option_) {
             }
             StringType option;
@@ -78,7 +78,7 @@ namespace MArgP {
 
         struct ExtraOptionArgument : public ParsingException {
             ExtraOptionArgument(StringViewType option_): 
-                ParsingException(formatToString(Messages::extraOptionArgumentError(), option_)),
+                ParsingException(format(Messages::extraOptionArgumentError(), option_)),
                 option(option_) {
             }
             StringType option;
@@ -86,7 +86,7 @@ namespace MArgP {
 
         struct ExtraPositional : public ParsingException {
             ExtraPositional(StringViewType value_): 
-                ParsingException(formatToString(Messages::extraPositionalError(), value_)),
+                ParsingException(format(Messages::extraPositionalError(), value_)),
                 value(value_) {
             }
             StringType value;
@@ -94,7 +94,7 @@ namespace MArgP {
         
         struct ValidationError : public ParsingException {
             ValidationError(StringViewType message):
-                ParsingException(formatToString(Messages::validationError(), message)) {
+                ParsingException(format(Messages::validationError(), message)) {
             }
             template<DescribableParserValidator<CharType> Validator>
             ValidationError(Validator validator):
@@ -203,44 +203,176 @@ namespace MArgP {
             m_validators.emplace_back(std::move(v), std::move(desc));
         }
 
-        auto parse(CharType * const * argFirst, CharType * const * argLast) {
+        auto parse(CharType * const * argFirst, CharType * const * argLast) const {
             return this->parse(const_cast<const CharType **>(argFirst), const_cast<const CharType **>(argLast));
         }
 
-
-        auto parse(const CharType * const * argFirst, const CharType * const * argLast) {
+        auto parse(const CharType * const * argFirst, const CharType * const * argLast) const {
             
             ParsingState parsingState(*this);
 
             parsingState.parse(argFirst, argLast);
         }
 
-        auto printUsage(std::basic_ostream<Char> & str, StringViewType progName) {
+        auto printUsage(std::basic_ostream<Char> & str, StringViewType progName) const {
 
-            str << Messages::usageStart() << progName;
+            constexpr auto endl = CharConstants::endl;
+
+            str << Messages::usageStart();
+            this->printSyntax(str, progName);
+            str << endl << endl;
+
+            auto calcRes = this->calculateDescriptionNames();
+            auto & [maxNameLen, optionNames] = calcRes;
+            if (maxNameLen > 21)
+                maxNameLen = 21;
+
+            if (!this->m_positionals.empty()) {
+                str << "positional arguments:";
+                for(auto & pos: this->m_positionals) {
+                    str << endl;
+                    this->printItemDescription(str, pos.name, pos.description, 2, maxNameLen);
+                }
+                str << endl << endl;
+            }
+
+            if (!this->m_options.empty()) {
+                str << "options:";
+                for(size_t idx = 0; idx < this->m_options.size(); ++idx) {
+                    auto & opt = this->m_options[idx];
+                    auto name = optionNames[idx];
+                    str << endl;
+                    this->printItemDescription(str, name, opt.description, 2, maxNameLen);
+                }
+                str << endl << endl;
+            }
+        }
+
+        auto printSyntax(std::basic_ostream<Char> & str, StringViewType progName) const {
+
+            constexpr auto space = CharConstants::space;
+
+            str << progName;
 
             for(auto & opt: this->m_options) {
-                if (opt.repeated.min() == 0)
-                    str << CharConstants::optBracketOpen;
-                str << CharConstants::space << opt.names.main();
-                std::visit([&](const auto & handler) {
-                    using HandlerType = std::decay_t<decltype(handler)>;
-                    if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
-                        str << CharConstants::space << CharConstants::optBracketOpen << opt.argName << CharConstants::optBracketClose;
-                    } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Required>>)  {
-                        str << CharConstants::space << opt.argName;
-                    }
-                }, opt.handler);
-                if (opt.repeated.min() == 0)
-                    str << CharConstants::optBracketClose;
+                str << space;
+                this->printOptionSyntax(str, opt);
             }
-            str << std::endl << std::endl;
+
+            for (auto & pos: this->m_positionals) {
+                str << space;
+                this->printPositionalSyntax(str, pos);
+            }
+        }
+
+        auto printOptionSyntax(std::basic_ostream<Char> & str, const Option & opt) const {
+            constexpr auto brop = CharConstants::optBracketOpen;
+            constexpr auto brcl = CharConstants::optBracketClose;
+
+            if (opt.repeated.min() == 0)
+                str << brop;
+            str << opt.names.main();
+            this->printOptionArgSyntax(str, opt);
+            if (opt.repeated.min() == 0)
+                str << brcl;
+        }
+
+        auto printPositionalSyntax(std::basic_ostream<Char> & str, const Positional & pos) const {
+            constexpr auto space = CharConstants::space;
+            constexpr auto brop = CharConstants::optBracketOpen;
+            constexpr auto brcl = CharConstants::optBracketClose;
+            constexpr auto ellipsis = CharConstants::ellipsis;
+
+            if (pos.repeated.min() == 0)
+                str << brop;
+            str << pos.name;
+            unsigned idx = 1;
+            for (; idx < pos.repeated.min(); ++idx)
+                str << space << pos.name;
+            if (idx != pos.repeated.min()) {
+                str << space << brop << pos.name;
+                if (pos.repeated.max() != pos.repeated.infinity) {
+                    for (++idx; idx < pos.repeated.max(); ++idx)
+                        str << space << pos.name;
+                } else {
+                    str << space << ellipsis;
+                }
+                str << brcl;
+            }
+            if (pos.repeated.min() == 0)
+                str << brcl;
+        }
+
+        auto calculateDescriptionNames() const -> std::pair<size_t, std::vector<StringType>> {
+            size_t maxNameLen = 0;
+            std::vector<StringType> optionNames;
+
+            std::for_each(this->m_positionals.begin(), this->m_positionals.end(), [&](auto & pos){
+                if (pos.name.length() > maxNameLen)
+                    maxNameLen = pos.name.length();
+            });
+            std::for_each(this->m_options.begin(), this->m_options.end(), [&](auto & opt){
+                std::basic_ostringstream<CharType> buf;
+                this->printOptionNameForDescription(buf, opt);
+                optionNames.emplace_back(buf.str());
+                if (optionNames.back().length() > maxNameLen)
+                    maxNameLen = optionNames.back().length();
+            });
+            return {maxNameLen, std::move(optionNames)};
+        }
+
+        auto printOptionNameForDescription(std::basic_ostream<Char> & str, const Option & opt) const {
+            constexpr auto space = CharConstants::space;
+            constexpr auto comma = CharConstants::comma;
+
+            str << opt.names.all().front();
+            this->printOptionArgSyntax(str, opt);
+            std::for_each(opt.names.all().begin() + 1, opt.names.all().end(), [&](const auto & name) {
+                str << comma << space << name;
+                this->printOptionArgSyntax(str, opt);
+            });
+        }
+
+        auto printItemDescription(std::basic_ostream<Char> & str, 
+                                  StringViewType name, 
+                                  StringViewType description, 
+                                  size_t leadingSpaceCount,
+                                  size_t maxNameLen) const {
+            constexpr auto space = CharConstants::space;
+            constexpr auto endl = CharConstants::endl;
+
+            Indent<CharType> descIndent{unsigned(maxNameLen + leadingSpaceCount + 2)};
+
+            str << Indent<CharType>(unsigned(leadingSpaceCount)) << name;
+            if (name.length() > maxNameLen) {
+                str << endl << descIndent;
+            } else {
+                for(auto i = name.length(); i < maxNameLen; ++i)
+                    str << space;
+                str << space << space;
+            }
+            str << describe(descIndent, description);
+        }
+
+        auto printOptionArgSyntax(std::basic_ostream<Char> & str, const Option & opt) const {
+            constexpr auto space = CharConstants::space;
+            constexpr auto brop = CharConstants::optBracketOpen;
+            constexpr auto brcl = CharConstants::optBracketClose;
+
+            std::visit([&](const auto & handler) {
+                using HandlerType = std::decay_t<decltype(handler)>;
+                if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
+                    str << space << brop << opt.argName << brcl;
+                } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Required>>)  {
+                    str << space << opt.argName;
+                }
+            }, opt.handler);
         }
 
     private:
         class ParsingState {
         public:
-            ParsingState(BasicAdaptiveParser & owner): 
+            ParsingState(const BasicAdaptiveParser & owner): 
                 m_owner(owner),
                 m_updateCountAtLastRecalc(owner.m_updateCount - 1) {
             }
