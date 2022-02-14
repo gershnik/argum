@@ -30,7 +30,7 @@ jobs:
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DMODERN_ARG_PARSER_TEST=1
 
     - name: Build and Test
       working-directory: ${{runner.workspace}}/build
@@ -51,7 +51,7 @@ jobs:
         script: |
             mkdir -p ${{runner.workspace}}/build
             cd ${{runner.workspace}}/build
-            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=19 -DANDROID_STL:STRING=c++_static
+            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DMODERN_ARG_PARSER_TEST=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=19 -DANDROID_STL:STRING=c++_static
             cmake --build . --config $BUILD_TYPE --target run-test
 
     
