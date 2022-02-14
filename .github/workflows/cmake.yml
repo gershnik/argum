@@ -10,8 +10,10 @@ on:
 
 env:
   BUILD_TYPE: Release
-  NDK_VER: 21.3.6528147
+  NDK_VER: 23.1.7779620
   NDK_ARCH: x86_64
+  NDK_API: 29
+  GCC_VER: 11
 
 jobs:
   desktop:
@@ -19,10 +21,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-2022]
     
     steps:
     - uses: actions/checkout@v2
+
+    - name: Setup dependencies
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+         sudo apt-get install -y gcc-$GCC_VER 
+         sudo update-alternatives \
+            --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VER 100 \
+            --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-$GCC_VER \
+            --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-$GCC_VER \
+            --slave /usr/bin/gcov gcov /usr/bin/gcov-$GCC_VER
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
@@ -44,7 +56,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: 29
+        api-level: ${{env.NDK_API}}
         arch: ${{env.NDK_ARCH}}
         target: google_apis
         ndk: ${{env.NDK_VER}}
