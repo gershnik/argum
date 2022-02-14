@@ -2,6 +2,7 @@
 #define HEADER_MARGP_DATA_H_INCLUDED
 
 #include "char-constants.h"
+#include "formatting.h"
 
 #include <string>
 #include <string_view>
