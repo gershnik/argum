@@ -52,7 +52,7 @@ namespace MArgP {
         constexpr explicit Repeated(unsigned val): m_min(val), m_max(val) {
         }
         constexpr Repeated(unsigned min, unsigned max): m_min(min), m_max(max) {
-            //MARGP_ALWAYS_ASSERT(min <= max);
+            MARGP_ALWAYS_ASSERT(min <= max);
         }
 
         static const Repeated zeroOrOnce;
