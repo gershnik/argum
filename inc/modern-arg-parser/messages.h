@@ -32,6 +32,8 @@ namespace MArgP {
         static constexpr auto itemDoesNotOccursExactly()    { return pr ## "{1} {2} must NOT occur {3} times"; }\
         static constexpr auto usageStart()                  { return pr ## "Usage: "; }\
         static constexpr auto defaultArgName()              { return pr ## "ARG"; }\
+        static constexpr auto positionalHeader()            { return pr ## "positional arguments:"; }\
+        static constexpr auto optionsHeader()               { return pr ## "options:"; }\
     };
 
     MARGP_DEFINE_MESSAGES(char, )

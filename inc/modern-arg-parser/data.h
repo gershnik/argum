@@ -7,7 +7,6 @@
 #include <string_view>
 #include <vector>
 #include <stdexcept>
-#include <sstream>
 
 namespace MArgP {
 
@@ -87,7 +86,7 @@ namespace MArgP {
         
     protected:
         BasicParsingException(std::basic_string_view<Char> message) : 
-            std::runtime_error((std::ostringstream() << message).str()),
+            std::runtime_error(toString<Char>(message)),
             m_message(message) {
         }
 

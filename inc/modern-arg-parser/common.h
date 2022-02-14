@@ -3,7 +3,6 @@
 
 #include <type_traits>
 #include <string_view>
-#include <ostream>
 #include <concepts>
 
 #include <assert.h>
@@ -50,10 +49,13 @@ namespace MArgP {
         std::is_convertible_v<X, std::basic_string_view<std::decay_t<decltype(name[0])>>>;
     };
 
-    template<class T, class Char>
-    concept StreamPrintable = Character<Char> && requires(std::basic_ostream<Char> & str, T && val) {
-        { str << val } -> std::same_as<std::basic_ostream<Char> &>;
+    template<StringLike S> using CharTypeOf = std::decay_t<decltype(std::declval<S>()[0])>;
+
+    template<class X, class Char>
+    concept StringLikeOf = Character<Char> && requires(X name) {
+        std::is_convertible_v<X, std::basic_string_view<Char>>;
     };
+    
 }
 
 #endif

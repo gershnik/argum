@@ -41,7 +41,10 @@ namespace MArgP {
     concept ParserValidator = std::is_invocable_r_v<bool, T, const ParsingValidationData<Char>>;
     
     template<class T, class Char>
-    concept DescribableParserValidator = ParserValidator<T, Char> && Describable<T, Char>;
+    concept DescribableParserValidator = ParserValidator<T, Char> && 
+        requires(const T & val) {
+            { describe<Char>(val) } -> std::same_as<std::basic_string<Char>>;
+        };
     
     template<class Char, class First, class... Rest>
     constexpr bool CompatibleParserValidators = ParserValidator<First, Char> && (ParserValidator<Rest, Char> && ...);
@@ -83,10 +86,9 @@ namespace MArgP {
         }
         
         template<class Char, DescribableParserValidator<Char> ImplD>
-        friend auto describe(Indent<Char> indent, const NotValidator<ImplD> & val)  {
+        friend auto describe(const NotValidator<ImplD> & val)  {
         
-            return describe(indent, format(Messages<Char>::negationDesc(), val.m_impl));
-
+            return format(Messages<Char>::negationDesc(), val.m_impl);
         }
     private:
         Impl m_impl;
@@ -165,23 +167,31 @@ namespace MArgP {
     };
 
     template<class Char, ValidatorCombination Comb, DescribableParserValidator<Char>... Args>
-    auto describe(Indent<Char> indent, const CombinedValidator<Comb, Args...> & val)  {
+    auto describe(const CombinedValidator<Comb, Args...> & val)  {
 
-        std::basic_ostringstream<Char> str;
+        std::basic_string<Char> str;
+        
+        auto formatEntry = [&str](const auto & arg) {
+            std::basic_string<Char> entry;
+            entry += CharConstants<Char>::endl;
+            Indent<Char> indent(indent.defaultValue);
+            entry.append(indent.apply(describe<Char>(arg)));
+            str.append(indent.apply(entry));
+        };
 
         if constexpr (Comb == ValidatorCombination::And)
-            str << describe(indent, Messages<Char>::allMustBeTrue());
+            str = Messages<Char>::allMustBeTrue();
         else if constexpr (Comb == ValidatorCombination::Or)
-            str << describe(indent, Messages<Char>::oneOrMoreMustBeTrue());
+            str = Messages<Char>::oneOrMoreMustBeTrue();
         else if constexpr (Comb == ValidatorCombination::Xor)
-            str << describe(indent, Messages<Char>::onlyOneMustBeTrue());
+            str = Messages<Char>::onlyOneMustBeTrue();
         else if constexpr (Comb == ValidatorCombination::NXor)
-            str << describe(indent, Messages<Char>::allOrNoneMustBeTrue());
-        std::apply([&str,indent] (const Args & ...args) {
-            ((str << CharConstants<Char>::endl << (indent + indent.defaultValue) << describe(indent + 2 * indent.defaultValue, args)), ...);
+            str = Messages<Char>::allOrNoneMustBeTrue();
+        std::apply([formatEntry] (const Args & ...args) {
+            (formatEntry(args), ...);
         }, val.items());
 
-        return str.str();
+        return str;
     }
 
     template<ValidatorCombination Comb, class V1, class V2>
@@ -312,44 +322,44 @@ namespace MArgP {
                 return ItemOccurs<Char, IsOption, std::equal_to<unsigned>>(this->m_name, this->m_count);
         }
 
-        friend auto describe(Indent<Char> indent, const ItemOccurs & val)  {
-            std::basic_ostringstream<Char> str;
+        template<class ResChar>
+        friend auto describe(const ItemOccurs & val)  {
 
+            using Messages = Messages<ResChar>;
             constexpr auto inf = std::numeric_limits<unsigned>::max();
-            auto typeName = IsOption ? Messages<Char>::option() : Messages<Char>::positionalArg();
+
+            auto typeName = IsOption ? Messages::option() : Messages::positionalArg();
             if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) switch(val.m_count) {
-                break; case 0:   str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
-                break; case 1:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
-                break; default:  str << describe(indent, format(Messages<Char>::itemOccursAtLeast(), typeName, val.m_name, val.m_count));
+                break; case 0:   return format(Messages::itemUnrestricted(), typeName, val.m_name);
+                break; case 1:   return format(Messages::itemRequired(), typeName, val.m_name);
+                break; default:  return format(Messages::itemOccursAtLeast(), typeName, val.m_name, val.m_count);
             }
             else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) switch(val.m_count) {
-                break; case 0:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
-                break; case 1:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
-                break; default:  str << describe(indent, format(Messages<Char>::itemOccursAtMost(), typeName, val.m_name, val.m_count));
-                break; case inf: str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+                break; case 0:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
+                break; case 1:   return format(Messages::itemRequired(), typeName, val.m_name);
+                break; default:  return format(Messages::itemOccursAtMost(), typeName, val.m_name, val.m_count);
+                break; case inf: return format(Messages::itemUnrestricted(), typeName, val.m_name);
             }
             else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) switch(val.m_count) {
-                break; case 0:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
-                break; default:  str << describe(indent, format(Messages<Char>::itemOccursMoreThan(), typeName, val.m_name, val.m_count));
+                break; case 0:   return format(Messages::itemRequired(), typeName, val.m_name);
+                break; default:  return format(Messages::itemOccursMoreThan(), typeName, val.m_name, val.m_count);
             }
             else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) switch(val.m_count) {
-                break; case 0:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
-                break; case 1:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
-                break; default:  str << describe(indent, format(Messages<Char>::itemOccursLessThan(), typeName, val.m_name, val.m_count));
-                break; case inf: str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+                break; case 0:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
+                break; case 1:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
+                break; default:  return format(Messages::itemOccursLessThan(), typeName, val.m_name, val.m_count);
+                break; case inf: return format(Messages::itemUnrestricted(), typeName, val.m_name);
             }
             else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>) switch(val.m_count) {
-                break; case 0:   str << describe(indent, format(Messages<Char>::itemMustNotBePresent(), typeName, val.m_name));
-                break; case 1:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
-                break; default:  str << describe(indent, format(Messages<Char>::itemOccursExactly(), typeName, val.m_name, val.m_count));
+                break; case 0:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
+                break; case 1:   return format(Messages::itemRequired(), typeName, val.m_name);
+                break; default:  return format(Messages::itemOccursExactly(), typeName, val.m_name, val.m_count);
             }
             else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) switch(val.m_count) {
-                break; case 0:   str << describe(indent, format(Messages<Char>::itemRequired(), typeName, val.m_name));
-                break; default:  str << describe(indent, format(Messages<Char>::itemDoesNotOccursExactly(), typeName, val.m_name, val.m_count));
-                break; case inf: str << describe(indent, format(Messages<Char>::itemUnrestricted(), typeName, val.m_name));
+                break; case 0:   return format(Messages::itemRequired(), typeName, val.m_name);
+                break; default:  return format(Messages::itemDoesNotOccursExactly(), typeName, val.m_name, val.m_count);
+                break; case inf: return format(Messages::itemUnrestricted(), typeName, val.m_name);
             }
-            
-            return str.str();
         }
     private:
         std::basic_string<Char> m_name;
@@ -359,52 +369,52 @@ namespace MArgP {
 
     template<StringLike S>
     auto OptionRequired(S name) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::greater<unsigned>>(name, 0);
+        return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, 0);
     }
     template<StringLike S>
     auto OptionAbsent(S name) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::equal_to<unsigned>>(name, 0);
+        return ItemOccurs<CharTypeOf<S>, true, std::equal_to<unsigned>>(name, 0);
     }
     template<StringLike S>
     auto OptionOccursAtLeast(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::greater_equal<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, true, std::greater_equal<unsigned>>(name, count);
     }
     template<StringLike S>
     auto OptionOccursAtMost(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::less_equal<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, true, std::less_equal<unsigned>>(name, count);
     }
     template<StringLike S>
     auto OptionOccursMoreThan(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::greater<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, count);
     }
     template<StringLike S>
     auto OptionOccursLessThan(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, true, std::less<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, true, std::less<unsigned>>(name, count);
     }
 
     template<StringLike S>
     auto PositionalRequired(S name) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::greater<unsigned>>(name, 0);
+        return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, 0);
     }
     template<StringLike S>
     auto PositionalAbsent(S name) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::equal_to<unsigned>>(name, 0);
+        return ItemOccurs<CharTypeOf<S>, false, std::equal_to<unsigned>>(name, 0);
     }
     template<StringLike S>
     auto PositionalOccursAtLeast(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::greater_equal<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, false, std::greater_equal<unsigned>>(name, count);
     }
     template<StringLike S>
     auto PositionalOccursAtMost(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::less_equal<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, false, std::less_equal<unsigned>>(name, count);
     }
     template<StringLike S>
     auto PositionalOccursMoreThan(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::greater<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, count);
     }
     template<StringLike S>
     auto PositionalOccursLessThan(S name, unsigned count) {
-        return ItemOccurs<std::decay_t<decltype(name[0])>, false, std::less<unsigned>>(name, count);
+        return ItemOccurs<CharTypeOf<S>, false, std::less<unsigned>>(name, count);
     }
     
 }

@@ -52,8 +52,7 @@ TEST_CASE( "xxx" , "[sequential]") {
 
     parser.addValidator([](const auto &) { return true; }, "hello");
 
-    std::cout << '\n';
-    parser.printUsage(std::cout, "ggg");
+    std::cout << '\n' << parser.formatUsage("ggg");
 
     const char * argv[] = { "-v", "hhh", "jjj" };
     try {
