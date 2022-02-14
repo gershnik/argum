@@ -77,7 +77,7 @@ auto testTokenizer(const ArgumentTokenizer & t, size_t argc, const char ** argv,
     size_t current = 0;
     auto res = t.tokenize(argv, argv + argc, [&](const auto & token) {
         REQUIRE(current < N);
-        INFO("token index: " << current);
+        INFO("token index: " << current); 
         CHECK(Token(token) == expectedTokens[current]);
         ++current;
         return ArgumentTokenizer::Continue;
