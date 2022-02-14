@@ -53,8 +53,10 @@ if (MODERN_ARG_PARSER_TEST)
                 -Wno-c++98-compat-pedantic 
                 -Wno-old-style-cast 
                 -Wno-ctad-maybe-unsupported
+                -Wno-return-std-move-in-c++11
                 -Wno-padded 
                 -Wno-weak-vtables> 
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4 /WX>
     )
 

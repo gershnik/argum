@@ -68,7 +68,7 @@ namespace MArgP {
             
             for( ; ; ) {
                 if (stack.empty())
-                    return std::move(results);
+                    return results;
 
                 size_t idx = stack.size() - 1;
                 auto & state = stack[idx];

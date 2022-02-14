@@ -8,6 +8,7 @@
 #include <concepts>
 #include <tuple>
 #include <map>
+#include <limits>
 
 namespace MArgP {
 

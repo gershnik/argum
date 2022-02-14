@@ -12,6 +12,7 @@
     #include <cuchar>
 #endif
 
+#include <limits.h>
 #include <assert.h>
 
 namespace MArgP {
@@ -104,7 +105,7 @@ namespace MArgP {
             char * bufferCurrent = bufferStart;
             std::mbstate_t state = {};
             for ( ; first != last; ++first) {
-                if (bufferEnd - bufferCurrent < MB_CUR_MAX)
+                if (size_t(bufferEnd - bufferCurrent) < size_t(MB_CUR_MAX))
                     return std::nullopt;
 
                 size_t written;

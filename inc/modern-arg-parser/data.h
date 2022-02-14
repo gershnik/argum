@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 #include <stdexcept>
+#include <limits>
 
 namespace MArgP {
 
@@ -18,7 +19,7 @@ namespace MArgP {
         using CharType = Char;
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
-        using CharConstants = CharConstants<Char>;
+        using CharConstants = MArgP::CharConstants<Char>;
     public:
         template<class First, class... Rest>
         requires(std::is_convertible_v<First, StringViewType> && (std::is_convertible_v<Rest, StringViewType> && ...))

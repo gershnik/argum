@@ -17,7 +17,7 @@ namespace MArgP {
     class BasicArgumentTokenizer final {
 
     private:
-        using CharConstants = CharConstants<Char>;
+        using CharConstants = MArgP::CharConstants<Char>;
 
     public:
         using CharType = Char;

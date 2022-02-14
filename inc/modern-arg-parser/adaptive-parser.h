@@ -31,32 +31,32 @@ namespace MArgP {
         using ParsingException = BasicParsingException<Char>;
 
     private:
-        using CharConstants = CharConstants<CharType>;
-        using Messages = Messages<CharType>;
+        using CharConstants = MArgP::CharConstants<CharType>;
+        using Messages = MArgP::Messages<CharType>;
 
         using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
 
 
-        template<OptionArgument Argument> struct OptionHandlerDeducer;
+        template<class C, OptionArgument Argument> struct OptionHandlerDeducer;
 
-        template<>
-        struct OptionHandlerDeducer<OptionArgument::None> { 
+        template<class C>
+        struct OptionHandlerDeducer<C, OptionArgument::None> { 
             using Type = std::function<void ()>; 
         };
-        template<>
-        struct OptionHandlerDeducer<OptionArgument::Optional> { 
-            using Type = std::function<void (std::optional<StringViewType>)>; 
+        template<class C>
+        struct OptionHandlerDeducer<C, OptionArgument::Optional> { 
+            using Type = std::function<void (std::optional<std::basic_string_view<C>>)>; 
         };
-        template<>
-        struct OptionHandlerDeducer<OptionArgument::Required> { 
-            using Type = std::function<void (StringViewType)>; 
+        template<class C>
+        struct OptionHandlerDeducer<C, OptionArgument::Required> { 
+            using Type = std::function<void (std::basic_string_view<C>)>; 
         };
 
         using ArgumentTokenizer = BasicArgumentTokenizer<Char>;
         using ValidationData = ParsingValidationData<Char>;
 
     public:
-        template<OptionArgument Argument> using OptionHandler = typename OptionHandlerDeducer<Argument>::Type;
+        template<OptionArgument Argument> using OptionHandler = typename OptionHandlerDeducer<CharType, Argument>::Type;
 
         using PositionalHandler = std::function<void (unsigned, StringViewType)>;
         
