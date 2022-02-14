@@ -64,8 +64,7 @@ jobs:
         ndk: ${{env.NDK_VER}}
         script: |
             mkdir -p ${{runner.workspace}}/build
-            cd ${{runner.workspace}}/build
-            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DMODERN_ARG_PARSER_TEST=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=19 -DANDROID_STL:STRING=c++_static
-            cmake --build . --config $BUILD_TYPE --target run-test
+            cmake -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DMODERN_ARG_PARSER_TEST=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=19 -DANDROID_STL:STRING=c++_static
+            cmake --build $GITHUB_WORKSPACE/build --config $BUILD_TYPE --target run-test
 
     
