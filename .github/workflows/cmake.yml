@@ -29,12 +29,14 @@ jobs:
     - name: Setup dependencies
       if: startsWith(matrix.os, 'ubuntu')
       run: |
-         sudo apt-get install -y gcc-$GCC_VER 
+         sudo apt-get install -y g++-$GCC_VER gcc-$GCC_VER 
          sudo update-alternatives \
             --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VER 100 \
             --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-$GCC_VER \
             --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-$GCC_VER \
             --slave /usr/bin/gcov gcov /usr/bin/gcov-$GCC_VER
+          sudo update-alternatives \
+            --install /usr/bin/g++ g++ /usr/bin/g++-$GCC_VER 100
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
