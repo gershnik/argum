@@ -62,4 +62,22 @@ TEST_CASE( "xxx" , "[sequential]") {
     }
     CHECK(verbosity == 2);
     CHECK(name == "world");
+
+    using WPositional = WAdaptiveParser::Positional;
+
+    WAdaptiveParser wparser;
+    wparser.add(
+        WPositional(L"fob")
+        .set(Repeated(7,7))
+        .setDescription(L"ghakl\njdks")
+        .setHandler([](unsigned, wstring_view) {
+
+            })
+    );
+    const wchar_t * wargv[] = { L"-v", L"hhh", L"jjj" };
+    try {
+        wparser.parse(std::begin(wargv), std::end(wargv));
+    } catch (WParsingException & ex) {
+        std::wcout << ex.message();
+    }
 }

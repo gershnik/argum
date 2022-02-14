@@ -21,7 +21,7 @@
 #else
     #define MARGP_DECLARE_FRIENDLY_NAMES(stem) \
         MARGP_DECLARE_FRIENDLY_NAME(stem, char, ) \
-        MARGP_DECLARE_FRIENDLY_NAME(stem, wchar_t, L)
+        MARGP_DECLARE_FRIENDLY_NAME(stem, wchar_t, W)
 #endif
 
 #ifndef NDEBUG
@@ -52,9 +52,7 @@ namespace MArgP {
     template<StringLike S> using CharTypeOf = std::decay_t<decltype(std::declval<S>()[0])>;
 
     template<class X, class Char>
-    concept StringLikeOf = Character<Char> && requires(X name) {
-        std::is_convertible_v<X, std::basic_string_view<Char>>;
-    };
+    concept StringLikeOf = Character<Char> && std::is_convertible_v<X, std::basic_string_view<Char>>;
     
 }
 

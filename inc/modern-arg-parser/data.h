@@ -86,7 +86,7 @@ namespace MArgP {
         
     protected:
         BasicParsingException(std::basic_string_view<Char> message) : 
-            std::runtime_error(toString<Char>(message)),
+            std::runtime_error(toString<char>(message)),
             m_message(message) {
         }
 

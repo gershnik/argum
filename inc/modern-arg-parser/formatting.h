@@ -34,24 +34,24 @@ namespace MArgP {
         return dest += std::forward<T>(val);
     }
 
-    inline auto append(std::string & dest, const std::wstring & val) -> std::string & {
+    inline auto append(std::string & dest, std::wstring_view view) -> std::string & {
         
         std::mbstate_t state {};
         char buf[MB_LEN_MAX];
-        for(wchar_t wc : val) {
+        for(wchar_t wc : view) {
             std::size_t ret = std::wcrtomb(&buf[0], wc, &state);
             dest.append(buf, ret);
         }
         return dest;
     }
 
-    inline auto append(std::wstring & dest, const std::string & val) -> std::wstring & {
+    inline auto append(std::wstring & dest, std::string_view view) -> std::wstring & {
         
         std::mbstate_t state = std::mbstate_t(); 
-        for(size_t i = 0; i < val.size(); ) {
+        for(size_t i = 0; i < view.size(); ) {
             wchar_t wc;
-            auto len = std::mbrtowc(&wc, &val[i], val.size() - i, &state);
-            if (ssize_t(len) <= 0)
+            auto len = std::mbrtowc(&wc, &view[i], view.size() - i, &state);
+            if (std::make_signed_t<decltype(len)>(len) <= 0)
                 break;
             dest += wc;
             i += len;
@@ -60,19 +60,25 @@ namespace MArgP {
     }
 
     template<class T, class Char>
-    concept Formattable = Character<Char> && 
-            requires(std::basic_string<Char> & str, T && val) {
-                { append(str, std::forward<T>(val)) } -> std::same_as<std::basic_string<Char> &>;
-            };
+    concept StringAppendable = Character<Char> && 
+        requires(std::basic_string<Char> & str, T && val) {
+            { append(str, std::forward<T>(val)) } -> std::same_as<std::basic_string<Char> &>;
+    };
 
-    template<class Char, Formattable<Char> T>
+    template<class Char, StringAppendable<Char> T>
     auto toString(T && val) -> std::basic_string<Char> {
         std::basic_string<Char> ret;
         append(ret, std::forward<T>(val));
         return ret;
     }
+    
+    template<Character Char>
+    auto appendByIndex(std::basic_string<Char> & /*dest*/, size_t /*idx*/) {
 
-    template<Character Char, Formattable<Char> First, Formattable<Char>... Rest>
+        //do nothing
+    }
+
+    template<Character Char, StringAppendable<Char> First, StringAppendable<Char>... Rest>
     auto appendByIndex(std::basic_string<Char> & dest, size_t idx, First && first, Rest && ...rest) {
 
         if (idx == 0) {
@@ -80,14 +86,7 @@ namespace MArgP {
             return;
         }
 
-        if constexpr (sizeof...(Rest) > 0)
-            appendByIndex(dest, idx - 1, rest...);
-    }
-
-    template<Character Char>
-    auto appendByIndex(std::basic_string<Char> & /*dest*/, size_t /*idx*/) {
-
-        //do nothing
+        appendByIndex(dest, idx - 1, rest...);
     }
 
     template<Character Char>
@@ -138,7 +137,7 @@ namespace MArgP {
         return ret;
     }
 
-    template<StringLike Fmt, Formattable<CharTypeOf<Fmt>>... Args>
+    template<StringLike Fmt, StringAppendable<CharTypeOf<Fmt>>... Args>
     auto format(Fmt && fmt, Args && ...args)  {
 
         using CharType = CharTypeOf<Fmt>;

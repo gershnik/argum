@@ -101,7 +101,7 @@ namespace MArgP {
 
             for( ; argCurrent != argLast; ++argCurrent) {
                 auto argp = *argCurrent;
-                StringViewType arg = { argp, strlen(argp) };
+                StringViewType arg = argp;
 
                 if (!noMoreOptions && arg.size() > 1 && arg[0] == CharConstants::optionStart) {
 
