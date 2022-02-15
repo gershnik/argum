@@ -637,7 +637,7 @@ namespace MArgP {
         size_t m_updateCount = 0;
     };
 
-    MARGP_DECLARE_FRIENDLY_NAMES(AdaptiveParser);
+    MARGP_DECLARE_FRIENDLY_NAMES(AdaptiveParser)
 
 }
 

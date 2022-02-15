@@ -109,8 +109,8 @@ namespace MArgP {
     };
     
 
-    MARGP_DECLARE_FRIENDLY_NAMES(OptionNames);
-    MARGP_DECLARE_FRIENDLY_NAMES(ParsingException);
+    MARGP_DECLARE_FRIENDLY_NAMES(OptionNames)
+    MARGP_DECLARE_FRIENDLY_NAMES(ParsingException)
 }
 
 

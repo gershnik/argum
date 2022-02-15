@@ -233,7 +233,7 @@ namespace MArgP {
         FlatMap<StringType, int> m_longs;
     };
 
-    MARGP_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer);
+    MARGP_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer)
 }
 
 #endif
