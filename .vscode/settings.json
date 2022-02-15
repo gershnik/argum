@@ -88,7 +88,10 @@
         "__functional_base_03": "cpp",
         "span": "cpp",
         "concepts": "cpp",
-        "charconv": "cpp"
+        "charconv": "cpp",
+        "compare": "cpp",
+        "memory_resource": "cpp",
+        "version": "cpp"
     },
     "cmake.configureOnOpen": true
 }
