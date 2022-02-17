@@ -57,6 +57,7 @@ if (MODERN_ARG_PARSER_TEST)
                 -Wno-ctad-maybe-unsupported
                 -Wno-return-std-move-in-c++11
                 -Wno-extra-semi-stmt
+                -Wno-shadow-uncaptured-local
                 -Wno-padded 
                 -Wno-weak-vtables> 
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>

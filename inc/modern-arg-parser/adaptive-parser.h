@@ -180,7 +180,6 @@ namespace MArgP {
         auto add(Option option) -> void {
 
             auto & added = this->m_options.emplace_back(std::move(option));
-            this->m_optionsByName.add(added.names.main(), unsigned(this->m_options.size()) - 1);
             this->m_tokenizer.add(this->m_options.back().names);
             if (added.repeated.min() > 0)
                 addValidator(OptionOccursAtLeast(added.names.main(), added.repeated.min()));
@@ -389,9 +388,7 @@ namespace MArgP {
 
                     if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
-                        auto idxIt = m_owner.m_optionsByName.find(token.name);
-                        MARGP_ALWAYS_ASSERT(idxIt != m_owner.m_optionsByName.end());
-                        resetOption(idxIt->value(), token.usedName, token.argument);
+                        resetOption(token.idx, token.usedName, token.argument);
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
 
@@ -520,9 +517,8 @@ namespace MArgP {
                 ++count;
             }
 
-            auto handleUnknownOption(StringViewType name, StringViewType fullText) {
-                if (completeOptionUsingArgument(fullText))
-                    return;
+            auto handleUnknownOption(StringViewType name, StringViewType /*fullText*/) {
+                completeOption();
 
                 throw UnrecognizedOption(name);
             }
@@ -574,9 +570,7 @@ namespace MArgP {
 
                     if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
-                        auto idxIt = m_owner.m_optionsByName.find(token.name);
-                        MARGP_ALWAYS_ASSERT(idxIt != m_owner.m_optionsByName.end());
-                        auto & option = m_owner.m_options[idxIt->value()];
+                        auto & option = m_owner.m_options[token.idx];
                         if (!std::holds_alternative<OptionHandler<OptionArgument::None>>(option.handler)) {
                             currentOptionExpectsArgument = true;
                         }
@@ -619,8 +613,8 @@ namespace MArgP {
             size_t m_updateCountAtLastRecalc;
 
             int m_optionIndex = -1;
-            StringViewType m_optionName;
-            std::optional<StringViewType> m_optionArgument;
+            StringType m_optionName;
+            std::optional<StringType> m_optionArgument;
 
             int m_positionalIndex = -1;
             std::vector<unsigned> m_positionalSizes;
@@ -630,7 +624,6 @@ namespace MArgP {
 
     private:
         std::vector<Option> m_options;
-        FlatMap<StringType, unsigned> m_optionsByName;
         std::vector<Positional> m_positionals;
         ArgumentTokenizer m_tokenizer;
         std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
