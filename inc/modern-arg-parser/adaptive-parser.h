@@ -400,7 +400,7 @@ namespace MArgP {
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
 
-                        handleUnknownOption(token.name, *token.containingArg);
+                        handleUnknownOption(token.name, token.containingArg, argLast);
                     }
                     return ArgumentTokenizer::Continue;
                 });
@@ -517,10 +517,16 @@ namespace MArgP {
                 ++count;
             }
 
-            auto handleUnknownOption(StringViewType name, StringViewType /*fullText*/) {
-                completeOption();
+            auto handleUnknownOption(StringViewType name, const CharType * const * remainingArgFirst, const CharType * const * argLast) {
 
-                throw UnrecognizedOption(name);
+                StringViewType fullText = *remainingArgFirst;
+                if (m_owner.m_shouldTreatUnknownOptionAsPositional(name, fullText)) {
+                    handlePositional(fullText, remainingArgFirst, argLast);
+                } else {
+                    completeOption();
+
+                    throw UnrecognizedOption(name);
+                }
             }
 
             auto calculateRemainingPositionals(const CharType * const * remainingArgFirst, const CharType * const * argLast)  {
@@ -628,6 +634,8 @@ namespace MArgP {
         ArgumentTokenizer m_tokenizer;
         std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
         size_t m_updateCount = 0;
+        std::function<bool (StringViewType /*name*/, StringViewType /*fullText*/)> m_shouldTreatUnknownOptionAsPositional = 
+            [](StringViewType, StringViewType) { return false; };
     };
 
     MARGP_DECLARE_FRIENDLY_NAMES(AdaptiveParser)
