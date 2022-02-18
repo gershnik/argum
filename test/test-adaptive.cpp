@@ -71,7 +71,7 @@ namespace std {
         arg ? results[n].push_back(string(*arg)) : results[n].push_back(nullopt); \
     })
 
-TEST_CASE( "Option Signle Dash" , "[adaptive]") {
+TEST_CASE( "Option with a single-dash option string" , "[adaptive]") {
 
     map<string, vector<Value>> results;
 
@@ -91,7 +91,7 @@ TEST_CASE( "Option Signle Dash" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-x-1"), RESULTS({"-x", {"-1"}}))
 }
 
-TEST_CASE( "Option Signle Dash Combined" , "[adaptive]") {
+TEST_CASE( "Combined single-dash options" , "[adaptive]") {
 
     map<string, vector<Value>> results;
 
@@ -126,7 +126,7 @@ TEST_CASE( "Option Signle Dash Combined" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-x", "-yyy", "-z", "a"), RESULTS({"-x", {"+"}}, {"-yyy", {"+"}}, {"-z", {"a"}}))
 }
 
-TEST_CASE( "Option Single Dash Long" , "[adaptive]") {
+TEST_CASE( "Option with a multi-character single-dash option string" , "[adaptive]") {
 
     map<string, vector<Value>> results;
 
@@ -147,7 +147,7 @@ TEST_CASE( "Option Single Dash Long" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-f", "a"), RESULTS({"-foo", {"a"}}))
 }
 
-TEST_CASE( "Option Single Dash Subset Ambiguous" , "[adaptive]") {
+TEST_CASE( "Single dash options where option strings are subsets of each other" , "[adaptive]") {
 
     map<string, vector<Value>> results;
 
@@ -173,7 +173,7 @@ TEST_CASE( "Option Single Dash Subset Ambiguous" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
-TEST_CASE( "Option Single Dash Ambiguous" , "[adaptive]") {
+TEST_CASE( "Single dash options that partially match but are not subsets" , "[adaptive]") {
 
     map<string, vector<Value>> results;
 
@@ -198,7 +198,7 @@ TEST_CASE( "Option Single Dash Ambiguous" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
-TEST_CASE( "Option Single Dash Numeric" , "[adaptive]") {
+TEST_CASE( "Short option with a numeric option string" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -219,7 +219,7 @@ TEST_CASE( "Option Single Dash Numeric" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-1-2"), RESULTS({"-1", {"-2"}}))
 }
 
-TEST_CASE( "Option Double Dash" , "[adaptive]") {
+TEST_CASE( "Option with a double-dash option string" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -237,6 +237,28 @@ TEST_CASE( "Option Double Dash" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("--foo=a"), RESULTS({"--foo", {"a"}}))
     EXPECT_SUCCESS(parser, ARGS("--foo", "-2.5"), RESULTS({"--foo", {"-2.5"}}))
     EXPECT_SUCCESS(parser, ARGS("--foo=-2.5"), RESULTS({"--foo", {"-2.5"}}))
+}
+
+TEST_CASE( "Partial matching with a double-dash option string" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_NO_ARG("--badger"));
+    parser.add(OPTION_REQ_ARG("--bat"));
+
+    EXPECT_FAILURE(parser, ARGS("--bar"), UNRECOGNIZED_OPTION("--bar"))
+    EXPECT_FAILURE(parser, ARGS("--b"), AMBIGUOUS_OPTION("--b", "--badger", "--bat"))
+    EXPECT_FAILURE(parser, ARGS("--ba"), AMBIGUOUS_OPTION("--ba", "--badger", "--bat"))
+    EXPECT_FAILURE(parser, ARGS("--b=2"), AMBIGUOUS_OPTION("--b", "--badger", "--bat"))
+    EXPECT_FAILURE(parser, ARGS("--ba=4"), AMBIGUOUS_OPTION("--ba", "--badger", "--bat"))
+    EXPECT_FAILURE(parser, ARGS("--badge", "5"), EXTRA_POSITIONAL("5"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("--bat", "X"), RESULTS({"--bat", {"X"}}))
+    EXPECT_SUCCESS(parser, ARGS("--bad"), RESULTS({"--badger", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--badg"), RESULTS({"--badger", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--badge"), RESULTS({"--badger", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--badger"), RESULTS({"--badger", {"+"}}))
 }
 
 
