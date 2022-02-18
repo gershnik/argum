@@ -64,7 +64,7 @@ if (MODERN_ARG_PARSER_TEST)
                 # -Wno-weak-vtables
             > 
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>
-            $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4 /WX>
+            $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /Zc:preprocessor /W4 /WX>
     )
 
     target_sources(test 
