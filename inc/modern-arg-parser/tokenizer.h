@@ -97,6 +97,10 @@ namespace MArgP {
             this->m_names.emplace_back(names.main());
         }
 
+        auto allowShortLongs(bool value) {
+             this->m_allowShortLongs = value;
+        }
+
         template<class Func>
         auto tokenize(CharType * const * argFirst, CharType * const * argLast, Func handler) const -> std::vector<StringType> {
             return this->tokenize(const_cast<const CharType **>(argFirst), const_cast<const CharType **>(argLast), handler);
@@ -200,7 +204,7 @@ namespace MArgP {
             if (auto assignPos = option.find(CharConstants::argAssignment, nameStart); 
                 assignPos != option.npos) {
 
-                name = option.substr(nameStart, assignPos);
+                name = option.substr(nameStart, assignPos - nameStart);
                 arg = option.substr(assignPos + 1);
             } else {
                 name = option.substr(nameStart);
@@ -312,16 +316,25 @@ namespace MArgP {
             errno = 0;
             const CharType * p = *argCurrent;
             CharType * pEnd;
-            long long res;
+            long long lres;
             if constexpr (std::is_same_v<CharType, char>)
-                res = strtoll(p, &pEnd, 0);
+                lres = strtoll(p, &pEnd, 0);
             else 
-                res = wcstoll(p, &pEnd, 0);
+                lres = wcstoll(p, &pEnd, 0);
 
-            if (size_t(pEnd - p) != option.size() || errno == ERANGE)
-                return std::nullopt;
-    
-            return ArgumentToken{argCurrent, option};
+            if (size_t(pEnd - p) == option.size() && errno != ERANGE)
+                return ArgumentToken{argCurrent, option};
+
+            long double dres;
+            if constexpr (std::is_same_v<CharType, char>)
+                dres = strtold(p, &pEnd);
+            else 
+                dres = wcstold(p, &pEnd);
+
+            if (size_t(pEnd - p) == option.size() && dres != HUGE_VALL)
+                return ArgumentToken{argCurrent, option};
+                
+            return std::nullopt;
         }
 
         template<class Value, class Arg>
@@ -336,7 +349,7 @@ namespace MArgP {
         FlatMap<StringType, unsigned> m_multiShorts;
         FlatMap<StringType, unsigned> m_longs;
 
-        bool m_allowShortLongs = true;
+        bool m_allowShortLongs = false;
     };
 
     MARGP_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer)

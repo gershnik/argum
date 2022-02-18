@@ -173,6 +173,72 @@ TEST_CASE( "Option Single Dash Subset Ambiguous" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
+TEST_CASE( "Option Single Dash Ambiguous" , "[adaptive]") {
+
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("-foobar"));
+    parser.add(OPTION_REQ_ARG("-foorab"));
+
+    EXPECT_FAILURE(parser, ARGS("-f"), AMBIGUOUS_OPTION("-f", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-f", "a"), AMBIGUOUS_OPTION("-f", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-fa"), UNRECOGNIZED_OPTION("-fa"))
+    EXPECT_FAILURE(parser, ARGS("-foa"), UNRECOGNIZED_OPTION("-foa"))
+    EXPECT_FAILURE(parser, ARGS("-foo"), AMBIGUOUS_OPTION("-foo", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-fo"), AMBIGUOUS_OPTION("-fo", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-foo", "b"), AMBIGUOUS_OPTION("-foo", "-foobar", "-foorab"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-foob", "a"), RESULTS({"-foobar", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foor", "a"), RESULTS({"-foorab", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-fooba", "a"), RESULTS({"-foobar", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foora", "a"), RESULTS({"-foorab", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foobar", "a"), RESULTS({"-foobar", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
+}
+
+TEST_CASE( "Option Single Dash Numeric" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("-1"));
+
+    EXPECT_FAILURE(parser, ARGS("-1"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(parser, ARGS("-1", "--foo"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(parser, ARGS("-1", "-y"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(parser, ARGS("-1", "-1"), MISSING_OPTION_ARGUMENT("-1"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-1", "a"), RESULTS({"-1", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-1a"), RESULTS({"-1", {"a"}}))
+    //DIFFERENCE FROM ArgParse. This is failure there
+    EXPECT_SUCCESS(parser, ARGS("-1", "-2"), RESULTS({"-1", {"-2"}}))
+    //DIFFERENCE FROM ArgParse
+    EXPECT_SUCCESS(parser, ARGS("-1-2"), RESULTS({"-1", {"-2"}}))
+}
+
+TEST_CASE( "Option Double Dash" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("--foo"));
+
+    EXPECT_FAILURE(parser, ARGS("--foo"), MISSING_OPTION_ARGUMENT("--foo"))
+    EXPECT_FAILURE(parser, ARGS("-f"), UNRECOGNIZED_OPTION("-f"))
+    EXPECT_FAILURE(parser, ARGS("-f", "a"), UNRECOGNIZED_OPTION("-f"))
+    EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(parser, ARGS("--foo", "-x"), MISSING_OPTION_ARGUMENT("--foo"))
+    EXPECT_FAILURE(parser, ARGS("--foo", "--bar"), MISSING_OPTION_ARGUMENT("--foo"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("--foo", "a"), RESULTS({"--foo", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("--foo=a"), RESULTS({"--foo", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("--foo", "-2.5"), RESULTS({"--foo", {"-2.5"}}))
+    EXPECT_SUCCESS(parser, ARGS("--foo=-2.5"), RESULTS({"--foo", {"-2.5"}}))
+}
+
 
 // TEST_CASE( "xxx" , "[sequential]") {
 

@@ -197,6 +197,10 @@ namespace MArgP {
         };
 
     public:
+        auto allowShortLongs(bool value) {
+             this->m_tokenizer.allowShortLongs(value);
+        }
+
         auto add(Option option) -> void {
 
             auto & added = this->m_options.emplace_back(std::move(option));
