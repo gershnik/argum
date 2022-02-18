@@ -50,16 +50,19 @@ if (MODERN_ARG_PARSER_TEST)
 
     target_compile_options(test 
         PRIVATE
-            $<$<CXX_COMPILER_ID:AppleClang,Clang>:-Wall -Wextra -Wpedantic -Weverything 
-                -Wno-c++98-compat 
-                -Wno-c++98-compat-pedantic 
-                -Wno-old-style-cast 
-                -Wno-ctad-maybe-unsupported
-                -Wno-return-std-move-in-c++11
-                -Wno-extra-semi-stmt
-                -Wno-shadow-uncaptured-local
-                -Wno-padded 
-                -Wno-weak-vtables> 
+            $<$<CXX_COMPILER_ID:AppleClang,Clang>:-Wall -Wextra -Wpedantic 
+                -Wno-gnu-zero-variadic-macro-arguments #Clang bug - this is not an issue in C++20
+                # -Weverything 
+                # -Wno-c++98-compat 
+                # -Wno-c++98-compat-pedantic 
+                # -Wno-old-style-cast 
+                # -Wno-ctad-maybe-unsupported
+                # -Wno-return-std-move-in-c++11
+                # -Wno-extra-semi-stmt
+                # -Wno-shadow-uncaptured-local
+                # -Wno-padded 
+                # -Wno-weak-vtables
+            > 
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4 /WX>
     )

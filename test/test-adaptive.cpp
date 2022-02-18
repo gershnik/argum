@@ -58,14 +58,22 @@ namespace std {
 //#define WARGS(...) (initializer_list<const wchar_t *>{__VA_ARGS__})
 #define RESULTS(...) (initializer_list<pair<const string, vector<Value>>>{__VA_ARGS__})
 
+#define OPTION_NO_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](){ \
+        results[n].push_back("+"); \
+    })
+#define OPTION_REQ_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](string_view arg){ \
+        results[n].push_back(string(arg)); \
+    })
+#define OPTION_OPT_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](optional<string_view> arg){ \
+        arg ? results[n].push_back(string(*arg)) : results[n].push_back(nullopt); \
+    })
+
 TEST_CASE( "Option Signle Dash" , "[adaptive]") {
 
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(Option("-x").setHandler([&](string_view arg){
-        results["-x"].push_back(string(arg));
-    }));
+    parser.add(OPTION_REQ_ARG("-x"));
 
     EXPECT_FAILURE(parser, ARGS("-x"), MISSING_OPTION_ARGUMENT("-x"))
     EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a"))
@@ -85,15 +93,9 @@ TEST_CASE( "Option Signle Dash Combined" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(Option("-x").setHandler([&](){
-        results["-x"].push_back("+");
-    }));
-    parser.add(Option("-yyy").setHandler([&](){
-        results["-yyy"].push_back("+");
-    }));
-    parser.add(Option("-z").setHandler([&](string_view arg){
-        results["-z"].push_back(string(arg));
-    }));
+    parser.add(OPTION_NO_ARG("-x"));
+    parser.add(OPTION_NO_ARG("-yyy"));
+    parser.add(OPTION_REQ_ARG("-z"));
 
     EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a")) 
     EXPECT_FAILURE(parser, ARGS("--foo"), UNRECOGNIZED_OPTION("--foo")) 
@@ -101,10 +103,10 @@ TEST_CASE( "Option Signle Dash Combined" , "[adaptive]") {
     EXPECT_FAILURE(parser, ARGS("-x", "--foo"), UNRECOGNIZED_OPTION("--foo"))
     EXPECT_FAILURE(parser, ARGS("-x", "-z"), MISSING_OPTION_ARGUMENT("-z"))
     EXPECT_FAILURE(parser, ARGS("-z", "-x"), MISSING_OPTION_ARGUMENT("-z"))
-    EXPECT_FAILURE(parser, ARGS("-yx"), UNRECOGNIZED_OPTION("-y"))
-    EXPECT_FAILURE(parser, ARGS("-yz", "a"), UNRECOGNIZED_OPTION("-y"))
-    EXPECT_FAILURE(parser, ARGS("-yyyx"), UNRECOGNIZED_OPTION( "-y"))
-    EXPECT_FAILURE(parser, ARGS("-yyyza"), UNRECOGNIZED_OPTION( "-y"))
+    EXPECT_FAILURE(parser, ARGS("-yx"), UNRECOGNIZED_OPTION("-yx"))
+    EXPECT_FAILURE(parser, ARGS("-yz", "a"), UNRECOGNIZED_OPTION("-yz"))
+    EXPECT_FAILURE(parser, ARGS("-yyyx"), UNRECOGNIZED_OPTION( "-yyyx"))
+    EXPECT_FAILURE(parser, ARGS("-yyyza"), UNRECOGNIZED_OPTION( "-yyyza"))
     EXPECT_FAILURE(parser, ARGS("-xyza"), EXTRA_OPTION_ARGUMENT("-x"))
 
     EXPECT_SUCCESS(parser, ARGS(), RESULTS())
@@ -115,8 +117,48 @@ TEST_CASE( "Option Signle Dash Combined" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-xz", "a"), RESULTS({"-x", {"+"}}, {"-z", {"a"}}))
     EXPECT_SUCCESS(parser, ARGS("-x", "-za"), RESULTS({"-x", {"+"}}, {"-z", {"a"}}))
     EXPECT_SUCCESS(parser, ARGS("-x", "-z", "a"), RESULTS({"-x", {"+"}}, {"-z", {"a"}}))
-    //EXPECT_SUCCESS(parser, ARGS("-y"), RESULTS({"-yyy", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("-y"), RESULTS({"-yyy", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("-yyy"), RESULTS({"-yyy", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("-x", "-yyy", "-za"), RESULTS({"-x", {"+"}}, {"-yyy", {"+"}}, {"-z", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-x", "-yyy", "-z", "a"), RESULTS({"-x", {"+"}}, {"-yyy", {"+"}}, {"-z", {"a"}}))
 }
+
+TEST_CASE( "Option Single Dash Long" , "[adaptive]") {
+
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("-foo"));
+
+    EXPECT_FAILURE(parser, ARGS("-foo"), MISSING_OPTION_ARGUMENT("-foo"))
+    EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a")) 
+    EXPECT_FAILURE(parser, ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    EXPECT_FAILURE(parser, ARGS("-foo", "--foo"), MISSING_OPTION_ARGUMENT("-foo"))
+    EXPECT_FAILURE(parser, ARGS("-foo", "-y"), MISSING_OPTION_ARGUMENT("-foo"))
+    EXPECT_FAILURE(parser, ARGS("-fooa"), UNRECOGNIZED_OPTION("-fooa"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-foo", "a"), RESULTS({"-foo", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foo", "-1"), RESULTS({"-foo", {"-1"}}))
+    EXPECT_SUCCESS(parser, ARGS("-fo", "a"), RESULTS({"-foo", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-f", "a"), RESULTS({"-foo", {"a"}}))
+}
+
+// TEST_CASE( "Option Single Dash Subset Ambiguous" , "[adaptive]") {
+
+//     map<string, vector<Value>> results;
+
+//     AdaptiveParser parser;
+//     parser.add(OPTION_REQ_ARG("-f"));
+//     parser.add(OPTION_REQ_ARG("-foobar"));
+//     parser.add(OPTION_REQ_ARG("-foorab"));
+
+//     EXPECT_FAILURE(parser, ARGS("-f"), MISSING_OPTION_ARGUMENT("-f"))
+//     EXPECT_FAILURE(parser, ARGS("-fo"), MISSING_OPTION_ARGUMENT("-fo"))
+//     EXPECT_FAILURE(parser, ARGS("-foo"), MISSING_OPTION_ARGUMENT("-foo"))
+//     EXPECT_FAILURE(parser, ARGS("-foo", "b"), MISSING_OPTION_ARGUMENT("-foo"))
+
+// }
 
 
 // TEST_CASE( "xxx" , "[sequential]") {

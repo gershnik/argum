@@ -122,9 +122,18 @@ namespace MArgP {
             }
 
             template<class H>
-            auto setHandler(H handler_) -> Option &
-            requires(std::is_convertible_v<decltype(std::move(handler_)), Handler>) {
-                this->handler = std::move(handler_);
+            auto setHandler(H && handler_) -> Option &
+            requires(std::is_invocable_v<std::decay_t<decltype(handler_)>> ||
+                     std::is_invocable_v<std::decay_t<decltype(handler_)>, std::optional<StringViewType>> ||
+                     std::is_invocable_v<std::decay_t<decltype(handler_)>, StringViewType>) {
+
+                if constexpr (std::is_invocable_v<std::decay_t<decltype(handler_)>>) {
+                    this->handler.template emplace<OptionHandler<OptionArgument::None>>(std::forward<H>(handler_));
+                } else if constexpr (std::is_invocable_v<std::decay_t<decltype(handler_)>, std::optional<StringViewType>>)
+                    this->handler.template emplace<OptionHandler<OptionArgument::Optional>>(std::forward<H>(handler_));
+                else {
+                    this->handler.template emplace<OptionHandler<OptionArgument::Required>>(std::forward<H>(handler_));
+                }
                 return *this;
             }
 

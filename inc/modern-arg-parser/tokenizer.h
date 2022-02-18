@@ -150,12 +150,11 @@ namespace MArgP {
             if (name.size() == 0)
                 return handler(ArgumentToken{argCurrent, option});
 
-            if (auto maybeResult = this->handleLongOption(argCurrent, name, arg, handler)) {
-                return *maybeResult;
+            if (auto idx = this->findByPrefix(this->m_longs, name); idx >= 0) {
+                return handler(OptionToken{argCurrent, unsigned(idx), StringType(name), std::move(arg)});
             } 
             
             return handler(UnknownOptionToken{argCurrent, StringType(name), std::move(arg)});
-            
         }
 
         template<class Func>
@@ -167,12 +166,12 @@ namespace MArgP {
 
             if (this->m_allowShortLongs) {
 
-                const auto & [name, arg] = this->splitLongOption(option, nameStart);
+                auto [name, arg] = this->splitLongOption(option, nameStart);
                 if (name.size() == 0)
                     return handler(ArgumentToken{argCurrent, option});
 
-                if (auto maybeResult = this->handleLongOption(argCurrent, name, arg, handler)) {
-                    return *maybeResult;
+                if (auto idx = this->findByPrefix(this->m_longs, name); idx >= 0) {
+                    return handler(OptionToken{argCurrent, unsigned(idx), StringType(name), std::move(arg)});
                 } 
             }
 
@@ -184,10 +183,7 @@ namespace MArgP {
                 return handler(*maybeToken);
             }
 
-            if (nameStart + 1 == option.size())
-                return handler(UnknownOptionToken{argCurrent, StringType(option), std::nullopt});
-            else
-                return handler(UnknownOptionToken{argCurrent, StringType(option.substr(0, nameStart + 1)), option.substr(nameStart + 2)});
+            return handler(UnknownOptionToken{argCurrent, StringType(option), std::nullopt});
         }
 
         auto splitLongOption(StringViewType option, unsigned nameStart) const -> std::pair<StringViewType, std::optional<StringViewType>> {
@@ -207,19 +203,6 @@ namespace MArgP {
         }
 
         template<class Func>
-        auto handleLongOption(const CharType * const * argCurrent, 
-                              StringViewType name, 
-                              std::optional<StringViewType> arg,
-                              const Func & handler) const -> std::optional<TokenResult> {
-            
-            if (auto idx = this->findByPrefix(this->m_longs, name); idx >= 0) {
-                return handler(OptionToken{argCurrent, unsigned(idx), StringType(name), std::move(arg)});
-            } 
-
-            return std::nullopt;
-        }
-
-        template<class Func>
         auto handleShortOption(const CharType * const * argCurrent, 
                                StringViewType option, 
                                unsigned nameStart, 
@@ -229,6 +212,10 @@ namespace MArgP {
             auto prefix = StringType(option.substr(0, nameStart));
             StringViewType chars = option.substr(nameStart);
             assert(!chars.empty());
+
+            if (auto idx = this->findByPrefix(this->m_multiShorts, chars); idx >= 0) {
+                return handler(OptionToken{argCurrent, unsigned(idx), StringType(option), std::nullopt});
+            } 
 
             auto idx = this->find(this->m_singleShorts, chars[0]);
             if (idx < 0)
