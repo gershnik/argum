@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <algorithm>
 
 #include <assert.h>
 
