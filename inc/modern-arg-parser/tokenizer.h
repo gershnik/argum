@@ -60,6 +60,16 @@ namespace MArgP {
             auto operator!=(const UnknownOptionToken & rhs) const -> bool = default;
         };
 
+        struct AmbiguousOptionToken {
+            const CharType * const * containingArg;   //full argument containing the token in command line
+            StringType name;                          //option name
+            std::optional<StringViewType> argument;   //argument if included with the otpion via = syntax
+            std::vector<StringType> possibilities;    //possible completions
+
+            auto operator==(const AmbiguousOptionToken & rhs) const -> bool = default;
+            auto operator!=(const AmbiguousOptionToken & rhs) const -> bool = default;
+        };
+
 
         enum TokenResult {
             Stop,
@@ -69,7 +79,7 @@ namespace MArgP {
     public:
         auto add(const OptionNames & names)  {
 
-            int currentIndex = int(this->m_names.size());
+            auto currentIndex = unsigned(this->m_names.size());
             for(auto & opt: names.all()) {
                 MARGP_ALWAYS_ASSERT(opt.size() > 1 && opt[0] == CharConstants::optionStart);
 
@@ -150,11 +160,17 @@ namespace MArgP {
             if (name.size() == 0)
                 return handler(ArgumentToken{argCurrent, option});
 
-            if (auto idx = this->findByPrefix(this->m_longs, name); idx >= 0) {
-                return handler(OptionToken{argCurrent, unsigned(idx), StringType(name), std::move(arg)});
-            } 
+            const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_longs, name);
+            if (last - first == 1) {
+                return handler(OptionToken{argCurrent, first->value(), StringType(option.begin(), name.end()), std::move(arg)});
+            } else if (last != first) {
+                StringType prefix(option.substr(0, nameStart));
+                std::vector<StringType> candidates(last - first);
+                std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
+                return handler(AmbiguousOptionToken{argCurrent, StringType(option.begin(), name.end()), std::move(arg), candidates});
+            }
             
-            return handler(UnknownOptionToken{argCurrent, StringType(name), std::move(arg)});
+            return handler(UnknownOptionToken{argCurrent, StringType(option.begin(), name.end()), std::move(arg)});
         }
 
         template<class Func>
@@ -163,17 +179,6 @@ namespace MArgP {
                                unsigned nameStart,
                                const Func & handler, 
                                std::vector<StringType> & rest) const -> TokenResult {
-
-            if (this->m_allowShortLongs) {
-
-                auto [name, arg] = this->splitLongOption(option, nameStart);
-                if (name.size() == 0)
-                    return handler(ArgumentToken{argCurrent, option});
-
-                if (auto idx = this->findByPrefix(this->m_longs, name); idx >= 0) {
-                    return handler(OptionToken{argCurrent, unsigned(idx), StringType(name), std::move(arg)});
-                } 
-            }
 
             if (auto maybeResult = this->handleShortOption(argCurrent, option, nameStart, handler, rest)) {
                 return *maybeResult;
@@ -197,7 +202,7 @@ namespace MArgP {
                 name = option.substr(nameStart, assignPos);
                 arg = option.substr(assignPos + 1);
             } else {
-                name = option;
+                name = option.substr(nameStart);
             }
             return {std::move(name), std::move(arg)};
         }
@@ -209,30 +214,39 @@ namespace MArgP {
                                const Func & handler, 
                                std::vector<StringType> & rest) const -> std::optional<TokenResult> {
 
-            auto prefix = StringType(option.substr(0, nameStart));
             StringViewType chars = option.substr(nameStart);
             assert(!chars.empty());
 
-            if (auto idx = this->findByPrefix(this->m_multiShorts, chars); idx >= 0) {
-                return handler(OptionToken{argCurrent, unsigned(idx), StringType(option), std::nullopt});
-            } 
+            auto it = this->m_singleShorts.find(chars[0]);
+            bool singleLetterFound = (it != this->m_singleShorts.end());
 
-            auto idx = this->find(this->m_singleShorts, chars[0]);
-            if (idx < 0)
+            if (chars.size() > 1 || !singleLetterFound) {
+
+                if (auto res = this->handleMultiShortOption(argCurrent, option, nameStart, handler))
+                    return *res;
+            }
+
+            if (!singleLetterFound)
                 return std::nullopt;
             
+            auto prefix = StringType(option.substr(0, nameStart));
+            auto idx = it->value();
             do {
                 
-                auto currentIdx = unsigned(idx);
+                auto currentIdx = idx;
                 auto usedName = prefix + chars[0];
                 std::optional<StringViewType> arg;
 
                 unsigned consumed = 1;
                 if (chars.size() > 1) {
-                    idx = this->find(this->m_singleShorts, chars[1]);
-                    if (idx < 0) {
+
+                    it = this->m_singleShorts.find(chars[1]);
+                    if (it == this->m_singleShorts.end()) {
                         arg = chars.substr(1);
                         consumed = unsigned(chars.size());
+                    }
+                    else {
+                        idx = it->value();
                     }
                 }
 
@@ -247,6 +261,43 @@ namespace MArgP {
             } while(!chars.empty());
 
             return TokenResult::Continue;
+        }
+
+        template<class Func>
+        auto handleMultiShortOption(const CharType * const * argCurrent, 
+                                    StringViewType option,
+                                    unsigned nameStart,
+                                    const Func & handler) const -> std::optional<TokenResult> {
+
+            StringViewType chars = option.substr(nameStart);
+            const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_multiShorts, chars);
+            if (last - first == 1) {
+                return handler(OptionToken{argCurrent, first->value(), StringType(option), std::nullopt});
+            } else if (last != first) {
+                StringType prefix(option.substr(0, nameStart));
+                std::vector<StringType> candidates(last - first);
+                std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
+                return handler(AmbiguousOptionToken{argCurrent, StringType(option), std::nullopt, candidates});
+            }
+
+            if (this->m_allowShortLongs) {
+
+                auto [name, arg] = this->splitLongOption(option, nameStart);
+                if (name.size() == 0)
+                    return handler(ArgumentToken{argCurrent, option});
+
+                const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_longs, name);
+                if (last - first == 1) {
+                    return handler(OptionToken{argCurrent, first->value(), StringType(option.begin(), name.end()), std::move(arg)});
+                } else if (last != first) {
+                    StringType prefix(option.substr(0, nameStart));
+                    std::vector<StringType> candidates(last - first);
+                    std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
+                    return handler(AmbiguousOptionToken{argCurrent, StringType(option.begin(), name.end()), std::move(arg), candidates});
+                }
+            } 
+
+            return std::nullopt;
         }
 
         auto matchNumber(const CharType * const * argCurrent, 
@@ -271,29 +322,16 @@ namespace MArgP {
         }
 
         template<class Value, class Arg>
-        static auto add(FlatMap<Value, int> & map, Arg arg, int idx) -> void {
+        static auto add(FlatMap<Value, unsigned> & map, Arg arg, unsigned idx) -> void {
 
             auto [it, inserted] = map.add(arg, idx);
             MARGP_ALWAYS_ASSERT(inserted); //duplicate option if this fails
         }
-
-        template<class Value, class Arg>
-        static auto find(const FlatMap<Value, int> & map, Arg arg) -> int {
-            auto it = map.find(arg);
-            return it != map.end() ? it->value() : -1;
-        }
-
-        template<class Value, class Arg>
-        static auto findByPrefix(const FlatMap<Value, int> & map, Arg arg) -> int {
-            
-            auto it = findShortestMatchingPrefix(map, arg);
-            return it != map.end() ? it->value() : -1;
-        }
     private:
         std::vector<StringType> m_names;
-        FlatMap<CharType, int> m_singleShorts;
-        FlatMap<StringType, int> m_multiShorts;
-        FlatMap<StringType, int> m_longs;
+        FlatMap<CharType, unsigned> m_singleShorts;
+        FlatMap<StringType, unsigned> m_multiShorts;
+        FlatMap<StringType, unsigned> m_longs;
 
         bool m_allowShortLongs = true;
     };

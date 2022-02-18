@@ -68,6 +68,17 @@ namespace MArgP {
             StringType option;
         };
 
+        struct AmbiguousOption : public ParsingException {
+            AmbiguousOption(StringViewType option_, std::vector<StringType> possibilities_): 
+                ParsingException(format(Messages::ambiguousOptionError(), option_, 
+                                        join(possibilities_.begin(), possibilities_.end(), Messages::listJoiner()))),
+                option(option_),
+                possibilities(std::move(possibilities_)) {
+            }
+            StringType option;
+            std::vector<StringType> possibilities;
+        };
+
         struct MissingOptionArgument : public ParsingException {
             MissingOptionArgument(StringViewType option_): 
                 ParsingException(format(Messages::missingOptionArgumentError(), option_)),
@@ -332,13 +343,11 @@ namespace MArgP {
         }
 
         auto formatOptionNameForDescription(const Option & opt) const -> StringType {
-            constexpr auto space = CharConstants::space;
-            constexpr auto comma = CharConstants::comma;
-
+            
             StringType ret = opt.names.all().front();
             ret += this->formatOptionArgSyntax(opt);
             std::for_each(opt.names.all().begin() + 1, opt.names.all().end(), [&](const auto & name) {
-                ret.append({comma, space}).append(name).append(this->formatOptionArgSyntax(opt));
+                ret.append(Messages::listJoiner()).append(name).append(this->formatOptionArgSyntax(opt));
             });
 
             return ret;
@@ -391,7 +400,7 @@ namespace MArgP {
 
             auto parse(const CharType * const * argFirst, const CharType * const * argLast) {
             
-                m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](const auto & token) {
+                m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) {
 
                     using TokenType = std::decay_t<decltype(token)>;
 
@@ -410,8 +419,18 @@ namespace MArgP {
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
 
                         handleUnknownOption(token.name, token.containingArg, argLast);
-                    }
+
+                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::AmbiguousOptionToken>) {
+
+                        handleAmbiguousOption(token.name, std::move(token.possibilities));
+                    } 
+            #ifdef _MSC_VER
+                #pragma warning( push, disable : 4702 ) 
+            #endif
                     return ArgumentTokenizer::Continue;
+            #ifdef _MSC_VER
+                #pragma warning( pop ) 
+            #endif
                 });
                 completeOption();
 
@@ -536,6 +555,12 @@ namespace MArgP {
 
                     throw UnrecognizedOption(name);
                 }
+            }
+
+            auto handleAmbiguousOption(StringViewType name, std::vector<StringType> && possibilities) {
+
+                completeOption();
+                throw AmbiguousOption(name, std::move(possibilities));
             }
 
             auto calculateRemainingPositionals(const CharType * const * remainingArgFirst, const CharType * const * argLast)  {

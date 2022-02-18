@@ -15,6 +15,8 @@ using Positional = AdaptiveParser::Positional;
 using WPositional = WAdaptiveParser::Positional;
 using UnrecognizedOption = AdaptiveParser::UnrecognizedOption;
 using WUnrecognizedOption = WAdaptiveParser::UnrecognizedOption;
+using AmbiguousOption = AdaptiveParser::AmbiguousOption;
+using WAmbiguousOption = WAdaptiveParser::AmbiguousOption;
 using ExtraPositional = AdaptiveParser::ExtraPositional;
 using WExtraPositional = WAdaptiveParser::ExtraPositional;
 using MissingOptionArgument = AdaptiveParser::MissingOptionArgument;
@@ -44,6 +46,7 @@ namespace std {
 }
 
 #define UNRECOGNIZED_OPTION(x) catch(UnrecognizedOption & ex) { CHECK(ex.option == (x)); }
+#define AMBIGUOUS_OPTION(x, ...) catch(AmbiguousOption & ex) { CHECK(ex.option == (x)); CHECK(ex.possibilities == vector<string>{__VA_ARGS__}); }
 #define EXTRA_POSITIONAL(x) catch(ExtraPositional & ex) { CHECK(ex.value == (x)); }
 #define MISSING_OPTION_ARGUMENT(x) catch(MissingOptionArgument & ex) { CHECK(ex.option == (x)); }
 #define EXTRA_OPTION_ARGUMENT(x) catch(ExtraOptionArgument & ex) { CHECK(ex.option == (x)); }
@@ -144,21 +147,31 @@ TEST_CASE( "Option Single Dash Long" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("-f", "a"), RESULTS({"-foo", {"a"}}))
 }
 
-// TEST_CASE( "Option Single Dash Subset Ambiguous" , "[adaptive]") {
+TEST_CASE( "Option Single Dash Subset Ambiguous" , "[adaptive]") {
 
-//     map<string, vector<Value>> results;
+    map<string, vector<Value>> results;
 
-//     AdaptiveParser parser;
-//     parser.add(OPTION_REQ_ARG("-f"));
-//     parser.add(OPTION_REQ_ARG("-foobar"));
-//     parser.add(OPTION_REQ_ARG("-foorab"));
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("-f"));
+    parser.add(OPTION_REQ_ARG("-foobar"));
+    parser.add(OPTION_REQ_ARG("-foorab"));
 
-//     EXPECT_FAILURE(parser, ARGS("-f"), MISSING_OPTION_ARGUMENT("-f"))
-//     EXPECT_FAILURE(parser, ARGS("-fo"), MISSING_OPTION_ARGUMENT("-fo"))
-//     EXPECT_FAILURE(parser, ARGS("-foo"), MISSING_OPTION_ARGUMENT("-foo"))
-//     EXPECT_FAILURE(parser, ARGS("-foo", "b"), MISSING_OPTION_ARGUMENT("-foo"))
+    EXPECT_FAILURE(parser, ARGS("-f"), MISSING_OPTION_ARGUMENT("-f"))
+    EXPECT_FAILURE(parser, ARGS("-fo"), AMBIGUOUS_OPTION("-fo", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-foo"), AMBIGUOUS_OPTION("-foo", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-foo", "b"), AMBIGUOUS_OPTION("-foo", "-foobar", "-foorab"))
+    EXPECT_FAILURE(parser, ARGS("-foob"), MISSING_OPTION_ARGUMENT("-foob"))
+    EXPECT_FAILURE(parser, ARGS("-fooba"), MISSING_OPTION_ARGUMENT("-fooba"))
+    EXPECT_FAILURE(parser, ARGS("-foora"), MISSING_OPTION_ARGUMENT("-foora"))
 
-// }
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-f", "a"), RESULTS({"-f", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-fa"), RESULTS({"-f", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foa"), RESULTS({"-f", {"oa"}}))
+    EXPECT_SUCCESS(parser, ARGS("-fooa"), RESULTS({"-f", {"ooa"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foobar", "a"), RESULTS({"-foobar", {"a"}}))
+    EXPECT_SUCCESS(parser, ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
+}
 
 
 // TEST_CASE( "xxx" , "[sequential]") {

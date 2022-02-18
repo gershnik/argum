@@ -88,13 +88,13 @@ namespace MArgP {
     };
 
     template<class Key, class Value, class Arg>
-    auto findShortestMatchingPrefix(const FlatMap<Key, Value> & map, Arg arg) -> typename FlatMap<Key, Value>::const_iterator {
+    auto findMatchOrMatchingPrefixRange(const FlatMap<Key, Value> & map, Arg arg) -> 
+            std::pair<typename FlatMap<Key, Value>::const_iterator,
+                      typename FlatMap<Key, Value>::const_iterator> {
         
-        const auto last = map.end();
+        const auto end = map.end();
 
-        auto ret = last;
-        
-        auto it = map.lower_bound(arg);
+        auto first = map.lower_bound(arg);
 
         //at this point it points to element grater or equal than arg
         //so range [it, last) either:
@@ -103,32 +103,28 @@ namespace MArgP {
         // 3. is empty
 
         //discard the empty range
-        if (it == last)
-            return last;
+        if (first == end)
+            return {end, end};
 
         //if exact match, return it now
-        if (it->key() == arg)
-            return it;
+        if (first->key() == arg)
+            return {first, first + 1};
     
-        //figure out case 2 and the *shortest* match in it
+        //figure out case 2 and the end of the prefix run
+        auto last = first;
         do {
-            //we reached one with no prefix
-            auto compRes = it->key().compare(0, arg.size(), arg);
+            auto compRes = last->key().compare(0, arg.size(), arg);
             assert(compRes >= 0); //invariant of range [it, last)
             
             //break if we reached the end of prefix run
             if (compRes != 0)
                 break;
-
-            //pick the shortest
-            if (ret == last || ret->key().size() > it->key().size())
-                ret = it;
             
-            ++it;
+            ++last;
             
-        } while (it != last);
+        } while (last != end);
 
-        return ret;
+        return {first, last};
     }
 
 }

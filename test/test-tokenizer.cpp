@@ -18,11 +18,12 @@ using OptionToken = ArgumentTokenizer::OptionToken;
 using OptionStopToken = ArgumentTokenizer::OptionStopToken;
 using ArgumentToken = ArgumentTokenizer::ArgumentToken;
 using UnknownOptionToken = ArgumentTokenizer::UnknownOptionToken;
+using AmbiguousOptionToken = ArgumentTokenizer::AmbiguousOptionToken;
 
 
 
 namespace MArgP {
-    using Token = std::variant<OptionToken, OptionStopToken, ArgumentToken, UnknownOptionToken>;
+    using Token = std::variant<OptionToken, OptionStopToken, ArgumentToken, UnknownOptionToken, AmbiguousOptionToken>;
     
     static auto operator<<(std::ostream & str, const OptionToken & token) -> std::ostream & {
         str << "OptionToken: "  << token.idx << ", used as: " << token.usedName;
@@ -40,6 +41,14 @@ namespace MArgP {
         str << "UnknownOptionToken: " << token.name;
         if (token.argument)
             str << ", arg: " << *token.argument;
+        return str << ", from: " << *token.containingArg;
+    }
+    static auto operator<<(std::ostream & str, const AmbiguousOptionToken & token) -> std::ostream & {
+        str << "AmbiguousOptionToken: " << token.name;
+        if (token.argument)
+            str << ", arg: " << *token.argument;
+        str << " (" << token.possibilities[0];
+        std::for_each(token.possibilities.begin() + 1, token.possibilities.end(), [&](const auto & n) { str << ", " << n; });
         return str << ", from: " << *token.containingArg;
     }
     

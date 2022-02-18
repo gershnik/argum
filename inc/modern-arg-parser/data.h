@@ -40,6 +40,8 @@ namespace MArgP {
         std::vector<StringType> m_values;
     };
 
+    MARGP_DECLARE_FRIENDLY_NAMES(OptionNames)
+
     enum class OptionArgument  {
         None,
         Optional,
@@ -108,9 +110,23 @@ namespace MArgP {
         }
     };
     
-
-    MARGP_DECLARE_FRIENDLY_NAMES(OptionNames)
     MARGP_DECLARE_FRIENDLY_NAMES(ParsingException)
+
+    template<class It1, class It2, class Joiner>
+    auto join(It1 first, It2 last, Joiner joiner) -> decltype(*first + joiner) {
+        
+        decltype(*first + joiner) ret;
+
+        if (first == last)
+            return ret;
+        
+        ret += *first;
+        for(++first; first != last; ++first) {
+            ret += joiner;
+            ret += *first;
+        };
+        return ret;
+    }
 }
 
 

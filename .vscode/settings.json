@@ -91,7 +91,8 @@
         "charconv": "cpp",
         "compare": "cpp",
         "memory_resource": "cpp",
-        "version": "cpp"
+        "version": "cpp",
+        "__memory": "cpp"
     },
     "cmake.configureOnOpen": true
 }
