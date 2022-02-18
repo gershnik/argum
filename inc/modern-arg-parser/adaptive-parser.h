@@ -400,6 +400,10 @@ namespace MArgP {
 
             auto parse(const CharType * const * argFirst, const CharType * const * argLast) {
             
+#ifdef _MSC_VER
+    #pragma warning(push) 
+    #pragma warning(disable:4702) //bogus "unreachable code"
+#endif
                 m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) {
 
                     using TokenType = std::decay_t<decltype(token)>;
@@ -424,14 +428,11 @@ namespace MArgP {
 
                         handleAmbiguousOption(token.name, std::move(token.possibilities));
                     } 
-            #ifdef _MSC_VER
-                #pragma warning( push, disable : 4702 ) 
-            #endif
                     return ArgumentTokenizer::Continue;
-            #ifdef _MSC_VER
-                #pragma warning( pop ) 
-            #endif
                 });
+#ifdef _MSC_VER
+    #pragma warning(pop) 
+#endif
                 completeOption();
 
                 //We could use normal validators for this but it is faster to do it manually

@@ -271,14 +271,16 @@ namespace MArgP {
                                     const Func & handler) const -> std::optional<TokenResult> {
 
             StringViewType chars = option.substr(nameStart);
-            const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_multiShorts, chars);
-            if (last - first == 1) {
-                return handler(OptionToken{argCurrent, first->value(), StringType(option), std::nullopt});
-            } else if (last != first) {
-                StringType prefix(option.substr(0, nameStart));
-                std::vector<StringType> candidates(last - first);
-                std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
-                return handler(AmbiguousOptionToken{argCurrent, StringType(option), std::nullopt, candidates});
+            {
+                const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_multiShorts, chars);
+                if (last - first == 1) {
+                    return handler(OptionToken{argCurrent, first->value(), StringType(option), std::nullopt});
+                } else if (last != first) {
+                    StringType prefix(option.substr(0, nameStart));
+                    std::vector<StringType> candidates(last - first);
+                    std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
+                    return handler(AmbiguousOptionToken{argCurrent, StringType(option), std::nullopt, candidates});
+                }
             }
 
             if (this->m_allowShortLongs) {
