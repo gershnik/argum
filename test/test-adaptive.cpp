@@ -261,6 +261,51 @@ TEST_CASE( "Partial matching with a double-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(parser, ARGS("--badger"), RESULTS({"--badger", {"+"}}))
 }
 
+TEST_CASE( "One double-dash option string is a prefix of another" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_NO_ARG("--badger"));
+    parser.add(OPTION_REQ_ARG("--ba"));
+
+    EXPECT_FAILURE(parser, ARGS("--bar"), UNRECOGNIZED_OPTION("--bar"))
+    EXPECT_FAILURE(parser, ARGS("--b"), AMBIGUOUS_OPTION("--b", "--ba", "--badger"))
+    EXPECT_FAILURE(parser, ARGS("--ba"), MISSING_OPTION_ARGUMENT("--ba"))
+    EXPECT_FAILURE(parser, ARGS("--b=2"), AMBIGUOUS_OPTION("--b", "--ba", "--badger"))
+    EXPECT_FAILURE(parser, ARGS("--badge", "5"), EXTRA_POSITIONAL("5"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("--ba", "X"), RESULTS({"--ba", {"X"}}))
+    EXPECT_SUCCESS(parser, ARGS("--ba=X"), RESULTS({"--ba", {"X"}}))
+    EXPECT_SUCCESS(parser, ARGS("--bad"), RESULTS({"--badger", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--badg"), RESULTS({"--badger", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--badge"), RESULTS({"--badger", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--badger"), RESULTS({"--badger", {"+"}}))
+}
+
+TEST_CASE( "Mix of options with single- and double-dash option strings" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_NO_ARG("-f"));
+    parser.add(OPTION_REQ_ARG("--bar"));
+    parser.add(OPTION_NO_ARG("-baz"));
+
+    EXPECT_FAILURE(parser, ARGS("--bar"), MISSING_OPTION_ARGUMENT("--bar"))
+    EXPECT_FAILURE(parser, ARGS("-fbar"), EXTRA_OPTION_ARGUMENT("-f"))
+    EXPECT_FAILURE(parser, ARGS("-fbaz"), EXTRA_OPTION_ARGUMENT("-f"))
+    EXPECT_FAILURE(parser, ARGS("-bazf"), UNRECOGNIZED_OPTION("-bazf"))
+    EXPECT_FAILURE(parser, ARGS("-b", "B"), EXTRA_POSITIONAL("B"))
+    EXPECT_FAILURE(parser, ARGS("B"), EXTRA_POSITIONAL("B"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-f"), RESULTS({"-f", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--ba", "B"), RESULTS({"--bar", {"B"}}))
+    EXPECT_SUCCESS(parser, ARGS("-f", "--ba", "B"), RESULTS({"-f", {"+"}}, {"--bar", {"B"}}))
+    EXPECT_SUCCESS(parser, ARGS("-f", "-b"), RESULTS({"-f", {"+"}}, {"-baz", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("-ba", "-f"), RESULTS({"-f", {"+"}}, {"-baz", {"+"}}))
+}
+
 
 // TEST_CASE( "xxx" , "[sequential]") {
 
