@@ -76,6 +76,14 @@ namespace MArgP {
             Stop,
             Continue
         };
+
+        struct Settings {
+            Settings() = default;
+            
+            std::vector<StringType> shortPrefixes = { StringType(1, CharConstants::optionStart) };
+            std::vector<StringType> longPrefixes = { StringType(2, CharConstants::optionStart) };
+            std::vector<StringType> valueDelimiters = { StringType(1, CharConstants::argAssignment) };
+        };
         
     public:
         auto add(const OptionNames & names)  {
@@ -274,26 +282,14 @@ namespace MArgP {
                                     unsigned nameStart,
                                     const Func & handler) const -> std::optional<TokenResult> {
 
-            StringViewType chars = option.substr(nameStart);
-            {
-                const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_multiShorts, chars);
-                if (last - first == 1) {
-                    return handler(OptionToken{argIdx, first->value(), StringType(option), std::nullopt});
-                } else if (last != first) {
-                    StringType prefix(option.substr(0, nameStart));
-                    std::vector<StringType> candidates(last - first);
-                    std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
-                    return handler(AmbiguousOptionToken{argIdx, StringType(option), std::nullopt, candidates});
-                }
-            }
+            auto [name, arg] = this->splitLongOption(option, nameStart);
+            if (name.size() == 0)
+                return handler(ArgumentToken{argIdx, option});
 
-            if (this->m_allowShortLongs) {
+            const FlatMap<StringType, unsigned> * mapsToTest[] = {&this->m_multiShorts, (this->m_allowShortLongs ? &this->m_longs : nullptr), nullptr};
 
-                auto [name, arg] = this->splitLongOption(option, nameStart);
-                if (name.size() == 0)
-                    return handler(ArgumentToken{argIdx, option});
-                
-                const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_longs, name);
+            for(const FlatMap<StringType, unsigned> ** ppmap = mapsToTest; *ppmap; ++ppmap) {
+                const auto & [first, last] = findMatchOrMatchingPrefixRange(**ppmap, name);
                 if (last != first) {
                     StringType usedName(option.begin(), 
 #if defined(_MSC_VER) && _ITERATOR_DEBUG_LEVEL > 0
@@ -311,7 +307,7 @@ namespace MArgP {
                         return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
                     }
                 }
-            } 
+            }
 
             return std::nullopt;
         }

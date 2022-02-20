@@ -118,6 +118,7 @@ TEST_CASE( "Combined single-dash options" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS(), RESULTS())
     EXPECT_SUCCESS(ARGS("-x"), RESULTS({"-x", {"+"}}))
     EXPECT_SUCCESS(ARGS("-za"), RESULTS({"-z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-z=a"), RESULTS({"-z", {"=a"}}))
     EXPECT_SUCCESS(ARGS("-z", "a"), RESULTS({"-z", {"a"}}))
     EXPECT_SUCCESS(ARGS("-xza"), RESULTS({"-x", {"+"}}, {"-z", {"a"}}))
     EXPECT_SUCCESS(ARGS("-xz", "a"), RESULTS({"-x", {"+"}}, {"-z", {"a"}}))
@@ -145,9 +146,15 @@ TEST_CASE( "Option with a multi-character single-dash option string" , "[adaptiv
 
     EXPECT_SUCCESS(ARGS(), RESULTS())
     EXPECT_SUCCESS(ARGS("-foo", "a"), RESULTS({"-foo", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-foo=a"), RESULTS({"-foo", {"a"}}))
     EXPECT_SUCCESS(ARGS("-foo", "-1"), RESULTS({"-foo", {"-1"}}))
+    EXPECT_SUCCESS(ARGS("-foo=-1"), RESULTS({"-foo", {"-1"}}))
     EXPECT_SUCCESS(ARGS("-fo", "a"), RESULTS({"-foo", {"a"}}))
     EXPECT_SUCCESS(ARGS("-f", "a"), RESULTS({"-foo", {"a"}}))
+    //DIFFERENCE FROM ArgParse. These are failure there
+    EXPECT_SUCCESS(ARGS("-fo=a"), RESULTS({"-foo", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-f=a"), RESULTS({"-foo", {"a"}}))
+    //DIFFERENCE FROM ArgParse.
 }
 
 TEST_CASE( "Single dash options where option strings are subsets of each other" , "[adaptive]") {
