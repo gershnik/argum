@@ -8,12 +8,13 @@ using namespace std;
 using namespace std::literals;
 
 #ifndef ANDROID
-    filesystem::path myPath = __FILE__;
-    if (myPath.is_relative()) {
-        myPath = filesystem::current_path() / myPath;
-    }
-    myPath = filesystem::canonical(myPath);
-    auto myDir = myPath.parent_path();
+    auto myDir = []() {
+        filesystem::path myPath = __FILE__;
+        if (myPath.is_relative()) {
+            myPath = filesystem::current_path() / myPath;
+        }
+        return filesystem::canonical(myPath).parent_path();
+    }();
 #else
     auto myDir = filesystem::current_path() / "data";
 #endif
