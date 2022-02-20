@@ -21,7 +21,7 @@ TEST_CASE( "Narrow response file" , "[command-line]") {
 
     const char * argv[] = {"prog", "first", respArg.c_str(), "last"};
     const auto args = makeArgSpan(int(std::size(argv)), (char**)argv);
-    CHECK_THROWS_WITH(ResponseFileReader({"@"}).expand(args), "error reading response file \"response1.txt\": No such file or directory");
+    CHECK_THROWS_WITH(ResponseFileReader({"@"}).expand(args), "error reading response file \"response1.txt\": "s + std::make_error_code(errc::no_such_file_or_directory).message());
     
     auto expanded = ResponseFileReader('@').expand(args, [&](string && line, auto out) {
         trimInPlace(line);
@@ -50,7 +50,7 @@ TEST_CASE( "Wide response file" , "[command-line]") {
 
     const wchar_t * argv[] = {L"prog", L"first", respArg.c_str(), L"last"};
     const auto args = makeArgSpan(int(std::size(argv)), (wchar_t**)argv);
-    CHECK_THROWS_WITH(WResponseFileReader({L"@"}).expand(args), "error reading response file \"response1.txt\": No such file or directory");
+    CHECK_THROWS_WITH(WResponseFileReader({L"@"}).expand(args), "error reading response file \"response1.txt\": "s +  std::make_error_code(errc::no_such_file_or_directory).message());
     
     auto expanded = WResponseFileReader(L'@').expand(args, [&](wstring && line, auto out) {
         trimInPlace(line);

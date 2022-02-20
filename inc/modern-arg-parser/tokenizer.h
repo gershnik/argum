@@ -157,18 +157,25 @@ namespace MArgP {
             auto [name, arg] = this->splitLongOption(option, nameStart);
             if (name.size() == 0)
                 return handler(ArgumentToken{argIdx, option});
+            StringType usedName(option.begin(), 
+#if defined(_MSC_VER) && _ITERATOR_DEBUG_LEVEL > 0
+                option.begin() + nameStart + name.size()
+#else
+                name.end()
+#endif
+            );
 
             const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_longs, name);
             if (last - first == 1) {
-                return handler(OptionToken{argIdx, first->value(), StringType(option.begin(), name.end()), std::move(arg)});
+                return handler(OptionToken{argIdx, first->value(), std::move(usedName), std::move(arg)});
             } else if (last != first) {
                 StringType prefix(option.substr(0, nameStart));
                 std::vector<StringType> candidates(last - first);
                 std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
-                return handler(AmbiguousOptionToken{argIdx, StringType(option.begin(), name.end()), std::move(arg), candidates});
+                return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
             }
             
-            return handler(UnknownOptionToken{argIdx, StringType(option.begin(), name.end()), std::move(arg)});
+            return handler(UnknownOptionToken{argIdx, std::move(usedName), std::move(arg)});
         }
 
         template<class Func>
@@ -285,15 +292,24 @@ namespace MArgP {
                 auto [name, arg] = this->splitLongOption(option, nameStart);
                 if (name.size() == 0)
                     return handler(ArgumentToken{argIdx, option});
-
+                
                 const auto & [first, last] = findMatchOrMatchingPrefixRange(this->m_longs, name);
-                if (last - first == 1) {
-                    return handler(OptionToken{argIdx, first->value(), StringType(option.begin(), name.end()), std::move(arg)});
-                } else if (last != first) {
-                    StringType prefix(option.substr(0, nameStart));
-                    std::vector<StringType> candidates(last - first);
-                    std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
-                    return handler(AmbiguousOptionToken{argIdx, StringType(option.begin(), name.end()), std::move(arg), candidates});
+                if (last != first) {
+                    StringType usedName(option.begin(), 
+#if defined(_MSC_VER) && _ITERATOR_DEBUG_LEVEL > 0
+                        option.begin() + nameStart + name.size()
+#else
+                        name.end()
+#endif
+                    );
+                    if (last - first == 1) {
+                        return handler(OptionToken{argIdx, first->value(), std::move(usedName), std::move(arg)});
+                    } else {
+                        StringType prefix(option.substr(0, nameStart));
+                        std::vector<StringType> candidates(last - first);
+                        std::transform(first, last, candidates.begin(), [&](const auto & p) {return prefix + p.key(); });
+                        return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
+                    }
                 }
             } 
 

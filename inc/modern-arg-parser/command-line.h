@@ -149,7 +149,6 @@ namespace MArgP {
                     return true;
                 ++valueCurrent;
             }
-            return false;
         }
 
     private:
