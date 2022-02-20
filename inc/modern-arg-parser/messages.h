@@ -15,6 +15,7 @@ namespace MArgP {
         static constexpr auto extraOptionArgumentError()    { return pr ## "extraneous argument for option: {1}"; }\
         static constexpr auto extraPositionalError()        { return pr ## "unexpected argument: {1}"; }\
         static constexpr auto validationError()             { return pr ## "invalid arguments: {1}"; }\
+        static constexpr auto errorReadingResponseFile()    { return pr ## "error reading response file \"{1}\": {2}"; }\
         static constexpr auto negationDesc()                { return pr ## "NOT {1}"; }\
         static constexpr auto allMustBeTrue()               { return pr ## "all of the following must be true:"; }\
         static constexpr auto oneOrMoreMustBeTrue()         { return pr ## "one or more of the following must be true:"; }\

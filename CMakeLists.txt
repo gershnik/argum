@@ -24,6 +24,7 @@ target_sources(modern-arg-parser
         inc/modern-arg-parser/partitioner.h
         inc/modern-arg-parser/flat-map.h
         inc/modern-arg-parser/data.h
+        inc/modern-arg-parser/command-line.h
         inc/modern-arg-parser/tokenizer.h
         inc/modern-arg-parser/adaptive-parser.h
         inc/modern-arg-parser/validators.h
@@ -74,8 +75,12 @@ if (MODERN_ARG_PARSER_TEST)
             test/test-formatting.cpp
             test/test-validators.cpp
             test/test-partitioner.cpp
+            test/test-command-line.cpp
             test/test-tokenizer.cpp
             test/test-adaptive.cpp
+
+            test/response.txt
+            test/response1.txt
     )
 
     set(TEST_COMMAND "")

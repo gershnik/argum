@@ -1,4 +1,4 @@
-#include <modern-arg-parser/modern-arg-parser.h>
+#include <modern-arg-parser/adaptive-parser.h>
 
 #include "catch.hpp"
 

@@ -7,6 +7,7 @@
 #include "validators.h"
 #include "tokenizer.h"
 #include "partitioner.h"
+#include "command-line.h"
 
 #include <string>
 #include <string_view>
@@ -226,11 +227,18 @@ namespace MArgP {
             m_validators.emplace_back(std::move(v), std::move(desc));
         }
 
-        auto parse(CharType * const * argFirst, CharType * const * argLast) const {
-            return this->parse(const_cast<const CharType **>(argFirst), const_cast<const CharType **>(argLast));
+        auto parse(int argc, CharType ** argv) const {
+            this->parse(makeArgSpan<CharType>(argc, argv));
         }
 
-        auto parse(const CharType * const * argFirst, const CharType * const * argLast) const {
+        template<ArgRange<CharType> Args>
+        auto parse(const Args & args) const {
+            
+            this->parse(std::begin(args), std::end(args));
+        }
+
+        template<ArgIterator<CharType> It>
+        auto parse(It argFirst, It argLast) const {
             
             ParsingState parsingState(*this);
 
@@ -402,7 +410,8 @@ namespace MArgP {
                 m_updateCountAtLastRecalc(owner.m_updateCount - 1) {
             }
 
-            auto parse(const CharType * const * argFirst, const CharType * const * argLast) {
+            template<ArgIterator<CharType> It>
+            auto parse(It argFirst, It argLast) {
             
 #ifdef _MSC_VER
     #pragma warning(push) 
@@ -422,11 +431,11 @@ namespace MArgP {
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::ArgumentToken>) {
 
-                        handlePositional(token.value, token.containingArg, argLast);
+                        handlePositional(token.value, argFirst + token.argIdx, argLast);
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
 
-                        handleUnknownOption(token.name, token.containingArg, argLast);
+                        handleUnknownOption(token.name, argFirst + token.argIdx, argLast);
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::AmbiguousOptionToken>) {
 
@@ -518,7 +527,8 @@ namespace MArgP {
                 }
             }
 
-            auto handlePositional(StringViewType value, const CharType * const * remainingArgFirst, const CharType * const * argLast) {
+            template<ArgIterator<CharType> It>
+            auto handlePositional(StringViewType value, It remainingArgFirst, It argLast) {
                 if (completeOptionUsingArgument(value))
                     return;
 
@@ -550,7 +560,8 @@ namespace MArgP {
                 ++count;
             }
 
-            auto handleUnknownOption(StringViewType name, const CharType * const * remainingArgFirst, const CharType * const * argLast) {
+            template<ArgIterator<CharType> It>
+            auto handleUnknownOption(StringViewType name, It remainingArgFirst, It argLast) {
 
                 StringViewType fullText = *remainingArgFirst;
                 if (m_owner.m_shouldTreatUnknownOptionAsPositional(name, fullText)) {
@@ -568,7 +579,8 @@ namespace MArgP {
                 throw AmbiguousOption(name, std::move(possibilities));
             }
 
-            auto calculateRemainingPositionals(const CharType * const * remainingArgFirst, const CharType * const * argLast)  {
+            template<ArgIterator<CharType> It>
+            auto calculateRemainingPositionals(It remainingArgFirst, It argLast)  {
 
                 if (m_updateCountAtLastRecalc == m_owner.m_updateCount)
                     return;
@@ -606,7 +618,8 @@ namespace MArgP {
                 this->m_updateCountAtLastRecalc = m_owner.m_updateCount;
             }
             
-            auto countRemainingPositionals(const CharType * const * remainingArgFirst, const CharType * const * argLast) -> unsigned {
+            template<ArgIterator<CharType> It>
+            auto countRemainingPositionals(It remainingArgFirst, It argLast) -> unsigned {
                 
                 unsigned remainingPositionalCount = 0;
                 bool currentOptionExpectsArgument = false;

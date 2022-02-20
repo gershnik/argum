@@ -29,19 +29,19 @@ namespace MArgP {
         str << "OptionToken: "  << token.idx << ", used as: " << token.usedName;
         if (token.argument)
             str << ", arg: " << *token.argument;
-        return str << ", from: " << *token.containingArg;
+        return str << ", from arg: " << token.argIdx;
     }
     static auto operator<<(std::ostream & str, const ArgumentToken & token) -> std::ostream & {
-        return str << "ArgumentToken: " << token.value  << ", from: " << *token.containingArg;
+        return str << "ArgumentToken: " << token.value  << ", from: " << token.argIdx;
     }
     static auto operator<<(std::ostream & str, const OptionStopToken & token) -> std::ostream & {
-        return str << "OptionStopToken, from: " << *token.containingArg;
+        return str << "OptionStopToken, from arg: " << token.argIdx;
     }
     static auto operator<<(std::ostream & str, const UnknownOptionToken & token) -> std::ostream & {
         str << "UnknownOptionToken: " << token.name;
         if (token.argument)
             str << ", arg: " << *token.argument;
-        return str << ", from: " << *token.containingArg;
+        return str << ", from arg: " << token.argIdx;
     }
     static auto operator<<(std::ostream & str, const AmbiguousOptionToken & token) -> std::ostream & {
         str << "AmbiguousOptionToken: " << token.name;
@@ -49,7 +49,7 @@ namespace MArgP {
             str << ", arg: " << *token.argument;
         str << " (" << token.possibilities[0];
         std::for_each(token.possibilities.begin() + 1, token.possibilities.end(), [&](const auto & n) { str << ", " << n; });
-        return str << ", from: " << *token.containingArg;
+        return str << ", from arg: " << token.argIdx;
     }
     
     static auto operator<<(std::ostream & str, const Token & token) -> std::ostream & {
@@ -98,19 +98,19 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
     TEST_TOKENIZER(t, ARGS(), TOKENS(
     ));
     TEST_TOKENIZER(t, ARGS( "-c" ), TOKENS(
-        UnknownOptionToken{ &argv[0], "-c", std::nullopt }
+        UnknownOptionToken{ 0, "-c", std::nullopt }
     ));
     TEST_TOKENIZER(t, ARGS( "a", "xyz", "123"), TOKENS(
-        ArgumentToken{ &argv[0], "a" },
-        ArgumentToken{ &argv[1], "xyz" },
-        ArgumentToken{ &argv[2], "123" }
+        ArgumentToken{ 0, "a" },
+        ArgumentToken{ 1, "xyz" },
+        ArgumentToken{ 2, "123" }
     ));
     TEST_TOKENIZER(t, ARGS("-a", "xyz", "-b", "--", "c"), TOKENS(
-        UnknownOptionToken{  &argv[0], "-a", std::nullopt},
-        ArgumentToken{       &argv[1], "xyz" },
-        UnknownOptionToken{  &argv[2], "-b", std::nullopt},
-        OptionStopToken{     &argv[3] },
-        ArgumentToken{       &argv[4], "c" }
+        UnknownOptionToken{  0, "-a", std::nullopt},
+        ArgumentToken{       1, "xyz" },
+        UnknownOptionToken{  2, "-b", std::nullopt},
+        OptionStopToken{     3 },
+        ArgumentToken{       4, "c" }
     ));
     
 }
@@ -122,24 +122,24 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     t.add(OptionNames("-c"));
 
     TEST_TOKENIZER(t, ARGS("-c"), TOKENS(
-        OptionToken{ &argv[0], 0, "-c", std::nullopt}
+        OptionToken{ 0, 0, "-c", std::nullopt}
     ));
     TEST_TOKENIZER(t, ARGS("-c", "-c"), TOKENS(
-        OptionToken{ &argv[0], 0, "-c", std::nullopt},
-        OptionToken{ &argv[1], 0, "-c", std::nullopt}
+        OptionToken{ 0, 0, "-c", std::nullopt},
+        OptionToken{ 1, 0, "-c", std::nullopt}
     ));
     TEST_TOKENIZER(t, ARGS( "-cc" ), TOKENS(
-        OptionToken{ &argv[0], 0, "-c", std::nullopt},
-        OptionToken{ &argv[0], 0, "-c", std::nullopt}
+        OptionToken{ 0, 0, "-c", std::nullopt},
+        OptionToken{ 0, 0, "-c", std::nullopt}
     ));
     TEST_TOKENIZER(t, ARGS("-c", "c", "-c"), TOKENS(
-        OptionToken{   &argv[0], 0, "-c", std::nullopt},
-        ArgumentToken{ &argv[1], "c" },
-        OptionToken{   &argv[2], 0, "-c", std::nullopt}
+        OptionToken{   0, 0, "-c", std::nullopt},
+        ArgumentToken{ 1, "c" },
+        OptionToken{   2, 0, "-c", std::nullopt}
     ));
     TEST_TOKENIZER(t, ARGS("-c", "--", "-c"), TOKENS(
-        OptionToken{     &argv[0], 0, "-c", std::nullopt},
-        OptionStopToken{ &argv[1] },
-        ArgumentToken{   &argv[2], "-c"}
+        OptionToken{     0, 0, "-c", std::nullopt},
+        OptionStopToken{ 1 },
+        ArgumentToken{   2, "-c"}
     ));
 }

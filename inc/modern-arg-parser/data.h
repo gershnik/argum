@@ -127,6 +127,19 @@ namespace MArgP {
         };
         return ret;
     }
+    
+    template<class Char>
+    auto trimInPlace(std::basic_string<Char> & str) -> std::basic_string<Char> & {
+        auto firstNotSpace = std::find_if(str.begin(), str.end(), [](const auto c) {
+            return !CharConstants<Char>::isSpace(c);
+        });
+        str.erase(str.begin(), firstNotSpace);
+        auto lastNotSpace = std::find_if(str.begin(), str.end(), [](const auto c) {
+            return CharConstants<Char>::isSpace(c);
+        });
+        str.erase(lastNotSpace, str.end());
+        return str;
+    }
 }
 
 

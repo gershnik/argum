@@ -53,6 +53,28 @@ namespace MArgP {
 
     template<class X, class Char>
     concept StringLikeOf = Character<Char> && std::is_convertible_v<X, std::basic_string_view<Char>>;
+
+
+    template<class T, class Char>
+    concept ArgIterator  = requires(T & t) {
+        t + 0u;
+        t - 0u;
+        t++;
+        t--;
+        std::is_convertible_v<decltype(*t), std::basic_string_view<Char>>;
+        std::is_same_v<decltype(t != t), bool>;
+        std::is_same_v<decltype(t == t), bool>;
+        std::is_convertible_v<decltype(t[0]), std::basic_string_view<Char>>;
+    };
+
+    template<class T, class Char>
+    concept ArgRange = requires(T & t) {
+        std::begin(t);
+        ArgIterator<decltype(std::begin(t)), Char>;
+        std::end(t);
+        std::is_same_v<decltype(std::begin(t) != std::end(t)), bool>;
+        std::is_convertible_v<decltype(t[0]), std::basic_string_view<Char>>;
+    };
     
 }
 
