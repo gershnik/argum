@@ -7,14 +7,18 @@ using namespace std;
 
 using namespace std::literals;
 
-TEST_CASE( "Narrow response file" , "[command-line]") {
-
+#ifndef ANDROID
     filesystem::path myPath = __FILE__;
     if (myPath.is_relative()) {
         myPath = filesystem::current_path() / myPath;
     }
     myPath = filesystem::canonical(myPath);
     auto myDir = myPath.parent_path();
+#else
+    auto myDir = filesystem::current_path() / "data";
+#endif
+
+TEST_CASE( "Narrow response file" , "[command-line]") {
 
     auto respFile = myDir / "response.txt";
     auto respArg = "@" + respFile.string();
@@ -38,12 +42,7 @@ TEST_CASE( "Narrow response file" , "[command-line]") {
 
 TEST_CASE( "Wide response file" , "[command-line]") {
 
-    filesystem::path myPath = __FILE__;
-    if (myPath.is_relative()) {
-        myPath = filesystem::current_path() / myPath;
-    }
-    myPath = filesystem::canonical(myPath);
-    auto myDir = myPath.parent_path();
+
 
     auto respFile = myDir / "response.txt";
     auto respArg = L"@" + respFile.wstring();
