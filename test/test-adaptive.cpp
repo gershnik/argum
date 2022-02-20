@@ -23,6 +23,8 @@ using MissingOptionArgument = AdaptiveParser::MissingOptionArgument;
 using WMissingOptionArgument = WAdaptiveParser::MissingOptionArgument;
 using ExtraOptionArgument = AdaptiveParser::ExtraOptionArgument;
 using WExtraOptionArgument = WAdaptiveParser::ExtraOptionArgument;
+using ValidationError = AdaptiveParser::ValidationError;
+using WValidationError = WAdaptiveParser::ValidationError;
 
 template<class Char>
 static auto parse(const BasicAdaptiveParser<Char> & parser, initializer_list<const Char *> args) {
@@ -50,6 +52,7 @@ namespace std {
 #define EXTRA_POSITIONAL(x) catch(ExtraPositional & ex) { CHECK(ex.value == (x)); }
 #define MISSING_OPTION_ARGUMENT(x) catch(MissingOptionArgument & ex) { CHECK(ex.option == (x)); }
 #define EXTRA_OPTION_ARGUMENT(x) catch(ExtraOptionArgument & ex) { CHECK(ex.option == (x)); }
+#define VALIDATION_ERROR(x) catch(ValidationError & ex) { CHECK(ex.message() == (x)); }
 
 #define EXPECT_FAILURE(parser, args, failure) REQUIRE_NOTHROW([&](){ try { parse(parser, args); CHECK(false); } failure }());
 #define EXPECT_SUCCESS(parser, args, expected) { \
@@ -306,6 +309,56 @@ TEST_CASE( "Mix of options with single- and double-dash option strings" , "[adap
     EXPECT_SUCCESS(parser, ARGS("-ba", "-f"), RESULTS({"-f", {"+"}}, {"-baz", {"+"}}))
 }
 
+TEST_CASE( "Combination of single- and double-dash option strings for an option" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_NO_ARG("-v", "--verbose", "-n", "--noisy"));
+
+    EXPECT_FAILURE(parser, ARGS("--x", "--verbose"), UNRECOGNIZED_OPTION("--x"))
+    EXPECT_FAILURE(parser, ARGS("-N"), UNRECOGNIZED_OPTION("-N"))
+    EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(parser, ARGS("-v", "x"), EXTRA_POSITIONAL("x"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-v"), RESULTS({"-v", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--verbose"), RESULTS({"-v", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("-n"), RESULTS({"-v", {"+"}}))
+    EXPECT_SUCCESS(parser, ARGS("--noisy"), RESULTS({"-v", {"+"}}))
+}
+
+TEST_CASE( "Optional arg for an option" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_OPT_ARG("-w", "--work"));
+
+    EXPECT_FAILURE(parser, ARGS("2"), EXTRA_POSITIONAL("2"))
+
+    EXPECT_SUCCESS(parser, ARGS(), RESULTS())
+    EXPECT_SUCCESS(parser, ARGS("-w"), RESULTS({"-w", {nullopt}}))
+    EXPECT_SUCCESS(parser, ARGS("-w", "2"), RESULTS({"-w", {"2"}}))
+    EXPECT_SUCCESS(parser, ARGS("--work"), RESULTS({"-w", {nullopt}}))
+    EXPECT_SUCCESS(parser, ARGS("--work", "2"), RESULTS({"-w", {"2"}}))
+    EXPECT_SUCCESS(parser, ARGS("--work=2"), RESULTS({"-w", {"2"}}))
+}
+
+TEST_CASE( "Required option" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_OPT_ARG("-w", "--work").setRepeated(Repeated::once));
+
+    EXPECT_FAILURE(parser, ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(parser, ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
+
+    EXPECT_SUCCESS(parser, ARGS("-w"), RESULTS({"-w", {nullopt}}))
+    EXPECT_SUCCESS(parser, ARGS("-w", "42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(parser, ARGS("-w42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(parser, ARGS("--work"), RESULTS({"-w", {nullopt}}))
+    EXPECT_SUCCESS(parser, ARGS("--work", "42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(parser, ARGS("--work=42"), RESULTS({"-w", {"42"}}))
+}
 
 // TEST_CASE( "xxx" , "[sequential]") {
 
