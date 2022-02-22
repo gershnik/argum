@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <algorithm>
+#include <iterator>
 
 #include <math.h>
 #include <assert.h>
@@ -342,23 +343,22 @@ namespace MArgP {
             StringViewType chars = option.substr(nameStart);
             assert(!chars.empty());
 
-            bool singleLetterFound = false;
-            unsigned singleLetterNameIdx;
+            std::optional<unsigned> singleLetterNameIdx;
             
             auto mapIt = this->m_singleShorts.find(prefixId);
             if (mapIt != this->m_singleShorts.end()) {
                 auto it = mapIt->value().find(chars[0]);
-                singleLetterFound = (it != mapIt->value().end());
-                singleLetterNameIdx = it->value();
+                if (it != mapIt->value().end())
+                    singleLetterNameIdx = it->value();
             }
 
-            if (chars.size() > 1 || !singleLetterFound) {
+            if (chars.size() > 1 || !singleLetterNameIdx) {
 
-                if (auto res = this->handleMultiShortOption(argIdx, option, prefixId, nameStart, singleLetterFound, handler))
+                if (auto res = this->handleMultiShortOption(argIdx, option, prefixId, nameStart, singleLetterNameIdx.has_value(), handler))
                     return *res;
             }
 
-            if (!singleLetterFound)
+            if (!singleLetterNameIdx)
                 return std::nullopt;
             
             auto & shortsMap = mapIt->value();
@@ -366,7 +366,7 @@ namespace MArgP {
             auto actualPrefix = StringType(option.substr(0, nameStart));
             do {
                 
-                auto currentIdx = singleLetterNameIdx;
+                auto currentIdx = *singleLetterNameIdx;
                 auto usedName = actualPrefix + chars[0];
                 std::optional<StringViewType> arg;
 
@@ -438,7 +438,7 @@ namespace MArgP {
                     StringType actualPrefix(option.substr(0, nameStart));
                     std::vector<StringType> candidates;
                     if (mustMatchExact) {
-                        candidates.reserve(1 + last - first);
+                        candidates.reserve(1 + (last - first));
                         candidates.push_back(StringType(option.substr(0, nameStart + 1)));
                     } else {
                         candidates.reserve(last - first);

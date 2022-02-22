@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <vector>
+#include <algorithm>
 
 namespace MArgP {
 
