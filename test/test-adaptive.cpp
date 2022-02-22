@@ -334,6 +334,74 @@ TEST_CASE( "Combination of single- and double-dash option strings for an option"
     EXPECT_SUCCESS(ARGS("--noisy"), RESULTS({"-v", {"+"}}))
 }
 
+TEST_CASE( "Custom prefixes" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser(AdaptiveParser::Settings()
+        .addLongPrefix("::")
+        .addShortPrefix('+')
+        .addShortPrefix('/')
+        .addValueDelimiter('|')
+        .addOptionStopSequence("^^")
+    );
+    parser.add(OPTION_NO_ARG("+f"));
+    parser.add(OPTION_REQ_ARG("::bar"));
+    parser.add(OPTION_NO_ARG("/baz"));
+
+    EXPECT_FAILURE(ARGS("--bar"), EXTRA_POSITIONAL("--bar"))
+    EXPECT_FAILURE(ARGS("-fbar"), EXTRA_POSITIONAL("-fbar"))
+    EXPECT_FAILURE(ARGS("-b", "B"), EXTRA_POSITIONAL("-b"))
+    EXPECT_FAILURE(ARGS("B"), EXTRA_POSITIONAL("B"))
+    EXPECT_FAILURE(ARGS("-f"), EXTRA_POSITIONAL("-f"))
+    EXPECT_FAILURE(ARGS("--bar", "B"), EXTRA_POSITIONAL("--bar"))
+    EXPECT_FAILURE(ARGS("-baz"), EXTRA_POSITIONAL("-baz"))
+    EXPECT_FAILURE(ARGS("::ba", "^^", "B"),MISSING_OPTION_ARGUMENT("::ba"))
+    
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("+f"), RESULTS({"+f", {"+"}}))
+    EXPECT_SUCCESS(ARGS("::ba", "B"), RESULTS({"::bar", {"B"}}))
+    EXPECT_SUCCESS(ARGS("::ba|B"), RESULTS({"::bar", {"B"}}))
+    EXPECT_SUCCESS(ARGS("+f", "::bar", "B"), RESULTS({"+f", {"+"}}, {"::bar", {"B"}}))
+    EXPECT_SUCCESS(ARGS("+f", "/b"), RESULTS({"+f", {"+"}}, {"/baz", {"+"}}))
+    EXPECT_SUCCESS(ARGS("/ba", "+f"), RESULTS({"+f", {"+"}}, {"/baz", {"+"}}))
+}
+
+TEST_CASE( "Equivalent custom prefixes" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser::Settings settings;
+    settings.addLongPrefix("::", ":")
+        .addShortPrefix('+', '_')
+        .addShortPrefix('/', '&')
+        .addValueDelimiter('|')
+        .addValueDelimiter('*')
+        .addOptionStopSequence("^^", "%%");
+    AdaptiveParser parser(std::move(settings));
+    parser.add(OPTION_NO_ARG("+f"));
+    parser.add(OPTION_REQ_ARG("::bar"));
+    parser.add(OPTION_NO_ARG("/baz"));
+
+    EXPECT_FAILURE(ARGS("--bar"), EXTRA_POSITIONAL("--bar"))
+    EXPECT_FAILURE(ARGS("-fbar"), EXTRA_POSITIONAL("-fbar"))
+    EXPECT_FAILURE(ARGS("-b", "B"), EXTRA_POSITIONAL("-b"))
+    EXPECT_FAILURE(ARGS("B"), EXTRA_POSITIONAL("B"))
+    EXPECT_FAILURE(ARGS("-f"), EXTRA_POSITIONAL("-f"))
+    EXPECT_FAILURE(ARGS("--bar", "B"), EXTRA_POSITIONAL("--bar"))
+    EXPECT_FAILURE(ARGS("-baz"), EXTRA_POSITIONAL("-baz"))
+    EXPECT_FAILURE(ARGS("::ba", "^^", "B"),MISSING_OPTION_ARGUMENT("::ba"))
+    EXPECT_FAILURE(ARGS("::ba", "%%", "B"),MISSING_OPTION_ARGUMENT("::ba"))
+    
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("_f"), RESULTS({"+f", {"+"}}))
+    EXPECT_SUCCESS(ARGS(":ba", "B"), RESULTS({"::bar", {"B"}}))
+    EXPECT_SUCCESS(ARGS("::ba*A|B"), RESULTS({"::bar", {"A|B"}}))
+    EXPECT_SUCCESS(ARGS("::ba|A*B"), RESULTS({"::bar", {"A*B"}}))
+    EXPECT_SUCCESS(ARGS("_f", ":bar", "B"), RESULTS({"+f", {"+"}}, {"::bar", {"B"}}))
+    EXPECT_SUCCESS(ARGS("_f", "&b"), RESULTS({"+f", {"+"}}, {"/baz", {"+"}}))
+    EXPECT_SUCCESS(ARGS("&ba", "_f"), RESULTS({"+f", {"+"}}, {"/baz", {"+"}}))
+}
+
+
 TEST_CASE( "Optional arg for an option" , "[adaptive]") {
     map<string, vector<Value>> results;
 

@@ -60,6 +60,8 @@ namespace MArgP {
         template<OptionArgument Argument> using OptionHandler = typename OptionHandlerDeducer<CharType, Argument>::Type;
 
         using PositionalHandler = std::function<void (unsigned, StringViewType)>;
+
+        using Settings = typename ArgumentTokenizer::Settings;
         
         struct UnrecognizedOption : public ParsingException {
             UnrecognizedOption(StringViewType option_): 
@@ -198,8 +200,9 @@ namespace MArgP {
         };
 
     public:
-        auto allowShortLongs(bool value) {
-             this->m_tokenizer.allowShortLongs(value);
+        BasicAdaptiveParser() = default;
+
+        BasicAdaptiveParser(Settings settings): m_tokenizer(settings) {
         }
 
         auto add(Option option) -> void {

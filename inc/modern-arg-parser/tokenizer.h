@@ -105,7 +105,7 @@ namespace MArgP {
             friend BasicArgumentTokenizer;
         public:
             template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
-            auto addLongPrefix(First && first, Rest && ...rest) -> Settings & {
+            auto addLongPrefix(First && first, Rest && ...rest) & -> Settings & {
                 std::initializer_list<StringType> values = {makeString(std::forward<First>(first)), makeString(std::forward<Rest>(rest))...};
                 for(auto & value: values) {
                     auto [it, inserted] = m_prefixes.add(std::move(value), m_lastPrefixId);
@@ -121,7 +121,12 @@ namespace MArgP {
             }
 
             template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
-            auto addShortPrefix(First && first, Rest && ...rest) -> Settings & {
+            auto addLongPrefix(First && first, Rest && ...rest) && -> Settings && {
+                return std::move(static_cast<Settings *>(this)->addLongPrefix(std::forward<First>(first), std::forward<Rest>(rest)...));
+            }
+
+            template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
+            auto addShortPrefix(First && first, Rest && ...rest) & -> Settings & {
                 std::initializer_list<StringType> values = {makeString(std::forward<First>(first)), makeString(std::forward<Rest>(rest))...};
                 for(auto & value: values) {
                     auto [it, inserted] = m_prefixes.add(std::move(value), m_lastPrefixId);
@@ -137,7 +142,12 @@ namespace MArgP {
             }
 
             template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
-            auto addOptionStopSequence(First && first, Rest && ...rest) -> Settings & {
+            auto addShortPrefix(First && first, Rest && ...rest) && -> Settings && {
+                return std::move(static_cast<Settings *>(this)->addShortPrefix(std::forward<First>(first), std::forward<Rest>(rest)...));
+            }
+
+            template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
+            auto addOptionStopSequence(First && first, Rest && ...rest) & -> Settings & {
                 std::initializer_list<StringType> values = {makeString(std::forward<First>(first)), makeString(std::forward<Rest>(rest))...};
                 for(auto & value: values) {
                     auto [it, inserted] = m_prefixes.add(std::move(value), m_lastPrefixId);
@@ -148,11 +158,20 @@ namespace MArgP {
                 return *this;
             }
 
-            auto addValueDelimiter(CharType c) -> Settings & {
+            template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
+            auto addOptionStopSequence(First && first, Rest && ...rest) && -> Settings && {
+                return std::move(static_cast<Settings *>(this)->addOptionStopSequence(std::forward<First>(first), std::forward<Rest>(rest)...));
+            }
+
+            auto addValueDelimiter(CharType c) & -> Settings & {
                 
                 auto [it, inserted] = m_valueDelimiters.insert(c);
                 MARGP_ALWAYS_ASSERT(inserted); //duplicate delimiter  
                 return *this;
+            }
+
+            auto addValueDelimiter(CharType c) && -> Settings && {
+                return std::move(static_cast<Settings *>(this)->addValueDelimiter(c));
             }
 
             static auto commonUnix() -> Settings {
