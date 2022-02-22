@@ -96,7 +96,7 @@ namespace MArgP {
         auto handleArg(StringViewType arg, std::vector<StringType> & dest, std::stack<StackEntry> & stack, Splitter && splitter) {
 
             auto foundIt = std::find_if(this->m_prefixes.begin(), this->m_prefixes.end(), [arg](const StringViewType & prefix) {
-                return BasicResponseFileReader::matchPrefix(arg, prefix);
+                return matchStrictPrefix(arg, prefix);
             });
 
             if (foundIt != this->m_prefixes.end()) {
@@ -133,24 +133,6 @@ namespace MArgP {
                     splitter(std::move(line), std::back_inserter(dest));
             } while(str);
         }
-
-        static auto matchPrefix(StringViewType value, StringViewType prefix) -> bool {
-
-            if (value.size() <= prefix.size())
-                return false;
-
-            auto prefixCurrent = prefix.begin();
-            auto prefixLast = prefix.end();
-            auto valueCurrent = value.begin();
-            for ( ; ; ) {
-                if (*prefixCurrent != *valueCurrent)
-                    return false;
-                if (++prefixCurrent == prefixLast)
-                    return true;
-                ++valueCurrent;
-            }
-        }
-
     private:
         std::vector<StringType> m_prefixes;
     };

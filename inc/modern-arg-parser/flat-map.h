@@ -7,6 +7,70 @@
 
 namespace MArgP {
 
+    template<class T>
+    class FlatSet {
+    public:
+        using value_type = T;
+        using iterator = typename std::vector<value_type>::iterator;
+        using const_iterator = typename std::vector<value_type>::const_iterator;
+
+    private:
+        struct Comparator {
+            auto operator()(const value_type & lhs, const auto & rhs) {
+                return lhs < rhs;
+            }
+            auto operator()(const auto & lhs, const value_type & rhs) {
+                return lhs < rhs;
+            }
+            auto operator()(const value_type & lhs, const value_type & rhs) {
+                return lhs < rhs;
+            }
+        };
+
+    public:
+        FlatSet() = default;
+        
+        FlatSet(const value_type & value): m_data(1, value) {
+        }
+        FlatSet(value_type && value) {
+            this->m_data.emplace_back(std::move(value));
+        }
+        FlatSet(std::initializer_list<value_type> values) : m_data(values) {
+            std::sort(this->m_data.begin(), this->m_data.end(), Comparator());
+        }
+
+        auto insert(T val) -> std::pair<iterator, bool> {
+            auto it = std::lower_bound(this->m_data.begin(), this->m_data.end(), val, Comparator());
+            if (it != this->m_data.end() && *it == val)
+                return {std::move(it), false};
+            it = this->m_data.emplace(it, std::move(val));
+            return {std::move(it), true};
+        }
+
+        template<class Arg>
+        auto find(const Arg & key) const -> const_iterator {
+            auto it = std::lower_bound(this->m_data.begin(), this->m_data.end(), key, Comparator());
+            if (it == this->m_data.end() || *it != key)
+                return this->m_data.end();
+            return it;
+        }
+
+        iterator begin() noexcept { return this->m_data.begin(); }
+        const_iterator begin() const noexcept { return this->m_data.begin(); }
+        const_iterator cbegin() const noexcept { return this->m_data.begin(); }
+        iterator end() noexcept { return this->m_data.end(); }
+        const_iterator end() const noexcept { return this->m_data.end(); }
+        const_iterator cend() const noexcept { return this->m_data.end(); }
+
+        size_t size() const { return m_data.size(); }
+        size_t empty() const { return m_data.empty(); }
+
+        void clear() { m_data.clear(); }
+
+    private:
+        std::vector<value_type> m_data;
+    };
+
     template<class Key, class Value>
     class FlatMap {
     public:
@@ -56,6 +120,10 @@ namespace MArgP {
             if (it == this->m_data.end() || it->key() != key)
                 it = this->m_data.emplace(it, std::move(key), Value());
             return it->value();
+        }
+
+        auto valueByIndex(size_t idx) const -> Value & {
+            return this->m_data[idx].value();
         }
 
         template<class KeyArg>

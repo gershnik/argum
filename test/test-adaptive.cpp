@@ -167,12 +167,12 @@ TEST_CASE( "Single dash options where option strings are subsets of each other" 
     parser.add(OPTION_REQ_ARG("-foorab"));
 
     EXPECT_FAILURE(ARGS("-f"), MISSING_OPTION_ARGUMENT("-f"))
-    EXPECT_FAILURE(ARGS("-fo"), AMBIGUOUS_OPTION("-fo", "-foobar", "-foorab"))
-    EXPECT_FAILURE(ARGS("-foo"), AMBIGUOUS_OPTION("-foo", "-foobar", "-foorab"))
-    EXPECT_FAILURE(ARGS("-foo", "b"), AMBIGUOUS_OPTION("-foo", "-foobar", "-foorab"))
-    EXPECT_FAILURE(ARGS("-foob"), MISSING_OPTION_ARGUMENT("-foob"))
-    EXPECT_FAILURE(ARGS("-fooba"), MISSING_OPTION_ARGUMENT("-fooba"))
-    EXPECT_FAILURE(ARGS("-foora"), MISSING_OPTION_ARGUMENT("-foora"))
+    EXPECT_FAILURE(ARGS("-fo"), AMBIGUOUS_OPTION("-fo", "-f", "-foobar", "-foorab"))
+    EXPECT_FAILURE(ARGS("-foo"), AMBIGUOUS_OPTION("-foo", "-f", "-foobar", "-foorab"))
+    EXPECT_FAILURE(ARGS("-foo", "b"), AMBIGUOUS_OPTION("-foo", "-f", "-foobar", "-foorab"))
+    EXPECT_FAILURE(ARGS("-foob"), AMBIGUOUS_OPTION("-foob", "-f", "-foobar"))
+    EXPECT_FAILURE(ARGS("-fooba"), AMBIGUOUS_OPTION("-fooba", "-f", "-foobar"))
+    EXPECT_FAILURE(ARGS("-foora"), AMBIGUOUS_OPTION("-foora", "-f", "-foorab"))
 
     EXPECT_SUCCESS(ARGS(), RESULTS())
     EXPECT_SUCCESS(ARGS("-f", "a"), RESULTS({"-f", {"a"}}))

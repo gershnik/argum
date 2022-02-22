@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <string_view>
+#include <string>
 #include <concepts>
 
 #include <assert.h>
@@ -75,6 +76,89 @@ namespace MArgP {
         std::is_same_v<decltype(std::begin(t) != std::end(t)), bool>;
         std::is_convertible_v<decltype(t[0]), std::basic_string_view<Char>>;
     };
+
+
+    template<Character Char>
+    auto makeString(Char c) -> std::basic_string<Char> {
+        return std::basic_string<Char>(1, c);
+    }
+
+    template<Character Char>
+    auto makeString(std::basic_string_view<Char> view) -> std::basic_string<Char> {
+        return std::basic_string<Char>(view);
+    }
+
+    template<Character Char>
+    auto makeString(const Char * str) -> std::basic_string<Char> {
+        return std::basic_string<Char>(str);
+    }
+
+    template<Character Char>
+    auto makeString(std::basic_string<Char> && str) -> std::basic_string<Char> {
+        return std::basic_string<Char>(std::move(str));
+    }
+
+    template<Character Char>
+    auto makeString(const std::basic_string<Char> & str) -> std::basic_string<Char> {
+        return std::basic_string<Char>(str);
+    }
+
+    template<class T, class Char>
+    concept StringConvertibleOf = Character<Char> && requires(T && t) {
+        {makeString(t)} -> std::same_as<std::basic_string<Char>>;
+    };
+
+    template<class It1, class It2, class Joiner>
+    auto join(It1 first, It2 last, Joiner joiner) -> decltype(*first + joiner) {
+        
+        decltype(*first + joiner) ret;
+
+        if (first == last)
+            return ret;
+        
+        ret += *first;
+        for(++first; first != last; ++first) {
+            ret += joiner;
+            ret += *first;
+        };
+        return ret;
+    }
+
+    template<class Char>
+    auto matchPrefix(std::basic_string_view<Char> value, std::basic_string_view<Char> prefix) -> bool {
+
+        if (value.size() < prefix.size())
+            return false;
+
+        auto prefixCurrent = prefix.begin();
+        auto prefixLast = prefix.end();
+        auto valueCurrent = value.begin();
+        for ( ; ; ) {
+            if (*prefixCurrent != *valueCurrent)
+                return false;
+            if (++prefixCurrent == prefixLast)
+                return true;
+            ++valueCurrent;
+        }
+    }
+
+    template<class Char>
+    auto matchStrictPrefix(std::basic_string_view<Char> value, std::basic_string_view<Char> prefix) -> bool {
+
+        if (value.size() <= prefix.size())
+            return false;
+
+        auto prefixCurrent = prefix.begin();
+        auto prefixLast = prefix.end();
+        auto valueCurrent = value.begin();
+        for ( ; ; ) {
+            if (*prefixCurrent != *valueCurrent)
+                return false;
+            if (++prefixCurrent == prefixLast)
+                return true;
+            ++valueCurrent;
+        }
+    }
     
 }
 

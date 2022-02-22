@@ -161,18 +161,18 @@ namespace MArgP {
 
         while(current != last) {
 
-            if (*current == CharConstants::formatStart) {
+            if (*current == CharConstants::braceOpen) {
                     ++current; 
                     if (current == last) 
                         break;
-                    if (*current == CharConstants::formatStart) {
+                    if (*current == CharConstants::braceOpen) {
                         flush(current);
                         ++current;
                         outStart = current;
                         continue;
                     }
 
-                    auto placeholderEnd = std::find(current, last, CharConstants::formatEnd);
+                    auto placeholderEnd = std::find(current, last, CharConstants::braceClose);
                     if (placeholderEnd == last) 
                         continue;
                     auto maybeArgIdx = parseFormatPlaceholder(current, placeholderEnd);
