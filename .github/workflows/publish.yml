@@ -16,7 +16,7 @@ jobs:
 
       - name: Amalgamate
         shell: bash
-        run: python3 $GITHUB_WORKSPACE/tools/amalgamate.py -d $GITHUB_WORKSPACE/inc/argum $GITHUB_WORKSPACE/tools/template.txt $GITHUB_WORKSPACE/out/argum_all.h"
+        run: python3 $GITHUB_WORKSPACE/tools/amalgamate.py -d $GITHUB_WORKSPACE/inc/argum $GITHUB_WORKSPACE/tools/template.txt $GITHUB_WORKSPACE/out/argum_all.h
 
       - name: Release
         uses: actions/create-release@v1
