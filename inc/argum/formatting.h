@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_FORMATTING_H_INCLUDED
-#define HEADER_MARGP_FORMATTING_H_INCLUDED
+#ifndef HEADER_ARGUM_FORMATTING_H_INCLUDED
+#define HEADER_ARGUM_FORMATTING_H_INCLUDED
 
 #include "char-constants.h"
 
@@ -8,14 +8,14 @@
 #include <charconv>
 #include <concepts>
 #include <optional>
-#if MARGP_UTF_CHAR_SUPPORTED
+#if ARGUM_UTF_CHAR_SUPPORTED
     #include <cuchar>
 #endif
 
 #include <limits.h>
 #include <assert.h>
 
-namespace MArgP {
+namespace Argum {
 
     template<class T>
     auto append(std::string & dest, T val) -> std::string &

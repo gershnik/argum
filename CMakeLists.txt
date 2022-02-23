@@ -31,7 +31,7 @@ target_sources(argum
 
 )
 
-if (MODERN_ARG_PARSER_TEST)
+if (ARGUM_TEST)
 
     add_executable(test)
 

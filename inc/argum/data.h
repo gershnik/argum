@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_DATA_H_INCLUDED
-#define HEADER_MARGP_DATA_H_INCLUDED
+#ifndef HEADER_ARGUM_DATA_H_INCLUDED
+#define HEADER_ARGUM_DATA_H_INCLUDED
 
 #include "char-constants.h"
 #include "formatting.h"
@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <limits>
 
-namespace MArgP {
+namespace Argum {
 
     template<class Char>
     class BasicOptionNames final {
@@ -19,7 +19,7 @@ namespace MArgP {
         using CharType = Char;
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
-        using CharConstants = MArgP::CharConstants<Char>;
+        using CharConstants = Argum::CharConstants<Char>;
     public:
         template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
         BasicOptionNames(First && first, Rest && ...rest):
@@ -39,7 +39,7 @@ namespace MArgP {
         std::vector<StringType> m_values;
     };
 
-    MARGP_DECLARE_FRIENDLY_NAMES(OptionNames)
+    ARGUM_DECLARE_FRIENDLY_NAMES(OptionNames)
 
     enum class OptionArgument  {
         None,
@@ -54,7 +54,7 @@ namespace MArgP {
         constexpr explicit Repeated(unsigned val): m_min(val), m_max(val) {
         }
         constexpr Repeated(unsigned min, unsigned max): m_min(min), m_max(max) {
-            MARGP_ALWAYS_ASSERT(min <= max);
+            ARGUM_ALWAYS_ASSERT(min <= max);
         }
 
         static const Repeated zeroOrOnce;
@@ -109,7 +109,7 @@ namespace MArgP {
         }
     };
     
-    MARGP_DECLARE_FRIENDLY_NAMES(ParsingException)
+    ARGUM_DECLARE_FRIENDLY_NAMES(ParsingException)
 
 
 }

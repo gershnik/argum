@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_PARTITIONER_H_INCLUDED
-#define HEADER_MARGP_PARTITIONER_H_INCLUDED
+#ifndef HEADER_ARGUM_PARTITIONER_H_INCLUDED
+#define HEADER_ARGUM_PARTITIONER_H_INCLUDED
 
 #include "common.h"
 
@@ -9,7 +9,7 @@
 #include <optional>
 
 
-namespace MArgP {
+namespace Argum {
 
     // Given:
     //   1. A length of a sequence N and

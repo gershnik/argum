@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_COMMAND_LINE_H_INCLUDED
-#define HEADER_MARGP_COMMAND_LINE_H_INCLUDED
+#ifndef HEADER_ARGUM_COMMAND_LINE_H_INCLUDED
+#define HEADER_ARGUM_COMMAND_LINE_H_INCLUDED
 
 #include "data.h"
 #include "messages.h"
@@ -14,7 +14,7 @@
 #include <fstream>
 #include <system_error>
 
-namespace MArgP {
+namespace Argum {
 
     template<class Char>
     auto makeArgSpan(int argc, Char ** argv) -> std::span<const Char *> {
@@ -137,7 +137,7 @@ namespace MArgP {
         std::vector<StringType> m_prefixes;
     };
 
-    MARGP_DECLARE_FRIENDLY_NAMES(ResponseFileReader)
+    ARGUM_DECLARE_FRIENDLY_NAMES(ResponseFileReader)
 
 }
 

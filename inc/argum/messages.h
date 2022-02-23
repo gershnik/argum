@@ -1,14 +1,14 @@
-#ifndef HEADER_MARGP_MESSAGES_H_INCLUDED
-#define HEADER_MARGP_MESSAGES_H_INCLUDED
+#ifndef HEADER_ARGUM_MESSAGES_H_INCLUDED
+#define HEADER_ARGUM_MESSAGES_H_INCLUDED
 
 #include "common.h"
 
 
-namespace MArgP {
+namespace Argum {
 
     template<Character Char> struct Messages;
 
-    #define MARGP_DEFINE_MESSAGES(type, pr) template<> struct Messages<type> { \
+    #define ARGUM_DEFINE_MESSAGES(type, pr) template<> struct Messages<type> { \
         static constexpr auto unrecognizedOptionError()     { return pr ## "unrecognized option: {1}"; }\
         static constexpr auto ambiguousOptionError()        { return pr ## "ambigous option: {1}, candidates: {2}"; }\
         static constexpr auto missingOptionArgumentError()  { return pr ## "argument required for option: {1}"; }\
@@ -39,15 +39,15 @@ namespace MArgP {
         static constexpr auto listJoiner()                  { return pr ## ", "; }\
     };
 
-    MARGP_DEFINE_MESSAGES(char, )
-    MARGP_DEFINE_MESSAGES(wchar_t, L)
-#if MARGP_UTF_CHAR_SUPPORTED
-    MARGP_DEFINE_MESSAGES(char8_t, u8)
-    MARGP_DEFINE_MESSAGES(char16_t, u)
-    MARGP_DEFINE_MESSAGES(char32_t, U)
+    ARGUM_DEFINE_MESSAGES(char, )
+    ARGUM_DEFINE_MESSAGES(wchar_t, L)
+#if ARGUM_UTF_CHAR_SUPPORTED
+    ARGUM_DEFINE_MESSAGES(char8_t, u8)
+    ARGUM_DEFINE_MESSAGES(char16_t, u)
+    ARGUM_DEFINE_MESSAGES(char32_t, U)
 #endif
 
-    #undef MARGP_DEFINE_MESSAGES
+    #undef ARGUM_DEFINE_MESSAGES
 
 }
 

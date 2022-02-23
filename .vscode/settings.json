@@ -1,5 +1,5 @@
 {
-    "cmake.configureArgs": ["-DMODERN_ARG_PARSER_TEST=1"],
+    "cmake.configureArgs": ["-DARGUM_TEST=1"],
     "cmake.buildDirectory": "${workspaceFolder}/out/vscode/${buildKit}",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.intelliSenseEngine": "Default",

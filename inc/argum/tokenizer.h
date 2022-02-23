@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_TOKENIZER_H_INCLUDED
-#define HEADER_MARGP_TOKENIZER_H_INCLUDED
+#ifndef HEADER_ARGUM_TOKENIZER_H_INCLUDED
+#define HEADER_ARGUM_TOKENIZER_H_INCLUDED
 
 #include "data.h"
 #include "flat-map.h"
@@ -14,13 +14,13 @@
 #include <math.h>
 #include <assert.h>
 
-namespace MArgP {
+namespace Argum {
 
     template<class Char>
     class BasicArgumentTokenizer final {
 
     private:
-        using CharConstants = MArgP::CharConstants<Char>;
+        using CharConstants = Argum::CharConstants<Char>;
 
         enum PrefixType {
             NotPrefix    = 0,
@@ -112,7 +112,7 @@ namespace MArgP {
                     auto & type = m_prefixTypes[it->value()];
                     if (!inserted) {
                         //the same prefix cannot be used for long and short
-                        MARGP_ALWAYS_ASSERT((type & ShortPrefix) != ShortPrefix); 
+                        ARGUM_ALWAYS_ASSERT((type & ShortPrefix) != ShortPrefix); 
                     }
                     type |= LongPrefix;
                 }
@@ -133,7 +133,7 @@ namespace MArgP {
                     auto & type = m_prefixTypes[it->value()];
                     if (!inserted) {
                         //the same prefix cannot be used for long and short
-                        MARGP_ALWAYS_ASSERT((type & LongPrefix) != LongPrefix); 
+                        ARGUM_ALWAYS_ASSERT((type & LongPrefix) != LongPrefix); 
                     }
                     type |= ShortPrefix;
                 }
@@ -166,7 +166,7 @@ namespace MArgP {
             auto addValueDelimiter(CharType c) & -> Settings & {
                 
                 auto [it, inserted] = m_valueDelimiters.insert(c);
-                MARGP_ALWAYS_ASSERT(inserted); //duplicate delimiter  
+                ARGUM_ALWAYS_ASSERT(inserted); //duplicate delimiter  
                 return *this;
             }
 
@@ -230,8 +230,8 @@ namespace MArgP {
             auto currentIndex = unsigned(this->m_names.size());
             for(auto & opt: names.all()) {
                 auto findResult = findLongestPrefix(opt);
-                MARGP_ALWAYS_ASSERT(findResult);                    //option must start with a valid prefix
-                MARGP_ALWAYS_ASSERT(findResult->size < opt.size()); //option must have more than a prefix
+                ARGUM_ALWAYS_ASSERT(findResult);                    //option must start with a valid prefix
+                ARGUM_ALWAYS_ASSERT(findResult->size < opt.size()); //option must have more than a prefix
 
                 if ((findResult->type & LongPrefix) == LongPrefix) {
                     this->add(this->m_longs[findResult->index], opt.substr(findResult->size), currentIndex);
@@ -241,7 +241,7 @@ namespace MArgP {
                     else
                         this->add(this->m_multiShorts[findResult->index], opt.substr(findResult->size), currentIndex);
                 } else {
-                    MARGP_ALWAYS_ASSERT(false); //option is neither short nor long with currently defined prefixes
+                    ARGUM_ALWAYS_ASSERT(false); //option is neither short nor long with currently defined prefixes
                 }
             }
             this->m_names.emplace_back(names.main());
@@ -511,7 +511,7 @@ namespace MArgP {
         static auto add(FlatMap<Value, unsigned> & map, Arg arg, unsigned idx) -> void {
 
             auto [it, inserted] = map.add(arg, idx);
-            MARGP_ALWAYS_ASSERT(inserted); //duplicate option if this fails
+            ARGUM_ALWAYS_ASSERT(inserted); //duplicate option if this fails
         }
 
         struct PrefixFindResult {
@@ -552,7 +552,7 @@ namespace MArgP {
         
     };
 
-    MARGP_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer)
+    ARGUM_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer)
 }
 
 #endif

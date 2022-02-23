@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_CHAR_CONSTANTS_H_INCLUDED
-#define HEADER_MARGP_CHAR_CONSTANTS_H_INCLUDED
+#ifndef HEADER_ARGUM_CHAR_CONSTANTS_H_INCLUDED
+#define HEADER_ARGUM_CHAR_CONSTANTS_H_INCLUDED
 
 #include "common.h"
 
@@ -8,11 +8,11 @@
 #include <ctype.h>
 #include <wctype.h>
 
-namespace MArgP {
+namespace Argum {
 
     template<Character Char> struct CharConstants;
 
-    #define MARGP_DEFINE_CHAR_CONSTANTS(type, prefix) template<> struct CharConstants<type> { \
+    #define ARGUM_DEFINE_CHAR_CONSTANTS(type, prefix) template<> struct CharConstants<type> { \
         static constexpr auto dash                          = prefix ## '-'; \
         static constexpr auto doubleDash                    = prefix ## "--"; \
         static constexpr auto assignment                    = prefix ## '='; \
@@ -31,15 +31,15 @@ namespace MArgP {
         static auto toLongDouble(const type * str, type ** str_end) -> long double; \
     };
 
-    MARGP_DEFINE_CHAR_CONSTANTS(char, )
-    MARGP_DEFINE_CHAR_CONSTANTS(wchar_t, L)
-#if MARGP_UTF_CHAR_SUPPORTED
-    MARGP_DEFINE_CHAR_CONSTANTS(char8_t, u8)
-    MARGP_DEFINE_CHAR_CONSTANTS(char16_t, u)
-    MARGP_DEFINE_CHAR_CONSTANTS(char32_t, U)
+    ARGUM_DEFINE_CHAR_CONSTANTS(char, )
+    ARGUM_DEFINE_CHAR_CONSTANTS(wchar_t, L)
+#if ARGUM_UTF_CHAR_SUPPORTED
+    ARGUM_DEFINE_CHAR_CONSTANTS(char8_t, u8)
+    ARGUM_DEFINE_CHAR_CONSTANTS(char16_t, u)
+    ARGUM_DEFINE_CHAR_CONSTANTS(char32_t, U)
 #endif
 
-    #undef MARGP_DEFINE_CHAR_CONSTANTS
+    #undef ARGUM_DEFINE_CHAR_CONSTANTS
     
     inline auto CharConstants<char>::isSpace(char c) -> bool { return isspace(c); }
     inline auto CharConstants<wchar_t>::isSpace(wchar_t c) -> bool { return iswspace(c); }

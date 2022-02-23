@@ -3,7 +3,7 @@
 #include "catch.hpp"
 
 
-using namespace MArgP;
+using namespace Argum;
 using namespace std;
 
 using namespace std::literals;

@@ -1,12 +1,12 @@
-#ifndef HEADER_MARGP_FLAT_MAP_H_INCLUDED
-#define HEADER_MARGP_FLAT_MAP_H_INCLUDED
+#ifndef HEADER_ARGUM_FLAT_MAP_H_INCLUDED
+#define HEADER_ARGUM_FLAT_MAP_H_INCLUDED
 
 #include "common.h"
 
 #include <vector>
 #include <algorithm>
 
-namespace MArgP {
+namespace Argum {
 
     template<class T>
     class FlatSet {

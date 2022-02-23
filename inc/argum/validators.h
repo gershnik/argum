@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_VALIDATORS_H_INCLUDED
-#define HEADER_MARGP_VALIDATORS_H_INCLUDED
+#ifndef HEADER_ARGUM_VALIDATORS_H_INCLUDED
+#define HEADER_ARGUM_VALIDATORS_H_INCLUDED
 
 #include "messages.h"
 #include "formatting.h"
@@ -10,7 +10,7 @@
 #include <map>
 #include <limits>
 
-namespace MArgP {
+namespace Argum {
 
     template<class Char>
     class ParsingValidationData {

@@ -1,5 +1,5 @@
-#ifndef HEADER_MARGP_ADAPTIVE_PARSER_H_INCLUDED
-#define HEADER_MARGP_ADAPTIVE_PARSER_H_INCLUDED
+#ifndef HEADER_ARGUM_ADAPTIVE_PARSER_H_INCLUDED
+#define HEADER_ARGUM_ADAPTIVE_PARSER_H_INCLUDED
 
 #include "char-constants.h"
 #include "messages.h"
@@ -19,7 +19,7 @@
 #include <concepts>
 
 
-namespace MArgP {
+namespace Argum {
 
     template<class Char>
     class BasicAdaptiveParser {
@@ -32,8 +32,8 @@ namespace MArgP {
         using ParsingException = BasicParsingException<Char>;
 
     private:
-        using CharConstants = MArgP::CharConstants<CharType>;
-        using Messages = MArgP::Messages<CharType>;
+        using CharConstants = Argum::CharConstants<CharType>;
+        using Messages = Argum::Messages<CharType>;
 
         using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
 
@@ -612,7 +612,7 @@ namespace MArgP {
                 //3. Partition the range
                 unsigned maxRemainingPositionalCount = std::max(remainingPositionalCount, partitioner.minimumSequenceSize());
                 auto res = partitioner.partition(maxRemainingPositionalCount);
-                MARGP_ALWAYS_ASSERT(res); //this be true by construction
+                ARGUM_ALWAYS_ASSERT(res); //this be true by construction
 
                 //4. Fill in expected sizes based on regex matches
                 m_positionalSizes.resize(m_owner.m_positionals.size());
@@ -693,7 +693,7 @@ namespace MArgP {
             [](StringViewType, StringViewType) { return false; };
     };
 
-    MARGP_DECLARE_FRIENDLY_NAMES(AdaptiveParser)
+    ARGUM_DECLARE_FRIENDLY_NAMES(AdaptiveParser)
 
 }
 

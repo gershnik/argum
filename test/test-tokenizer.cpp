@@ -9,7 +9,7 @@
 #pragma warning(disable:4505)
 #endif
 
-using namespace MArgP;
+using namespace Argum;
 using namespace std;
 
 using namespace std::literals;
@@ -22,7 +22,7 @@ using AmbiguousOptionToken = ArgumentTokenizer::AmbiguousOptionToken;
 
 
 
-namespace MArgP {
+namespace Argum {
     using Token = std::variant<OptionToken, OptionStopToken, ArgumentToken, UnknownOptionToken, AmbiguousOptionToken>;
     
     static auto operator<<(std::ostream & str, const OptionToken & token) -> std::ostream & {
