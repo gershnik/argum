@@ -1,4 +1,4 @@
-#include <modern-arg-parser/modern-arg-parser.h>
+#include <argum/argum.h>
 
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"

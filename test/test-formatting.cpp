@@ -1,4 +1,4 @@
-#include <modern-arg-parser/formatting.h>
+#include <argum/formatting.h>
 
 #include "catch.hpp"
 

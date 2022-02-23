@@ -1,33 +1,33 @@
 cmake_minimum_required(VERSION "3.20")
 
-project(modern-arg-parser)
+project(argum)
 
-add_library(modern-arg-parser INTERFACE)
+add_library(argum INTERFACE)
 
-target_include_directories(modern-arg-parser 
+target_include_directories(argum 
     INTERFACE
         inc
 )
 
-target_compile_definitions(modern-arg-parser
+target_compile_definitions(argum
     INTERFACE
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 )
 
-target_sources(modern-arg-parser
+target_sources(argum
     PRIVATE
-        inc/modern-arg-parser/modern-arg-parser.h
-        inc/modern-arg-parser/common.h
-        inc/modern-arg-parser/char-constants.h
-        inc/modern-arg-parser/messages.h
-        inc/modern-arg-parser/formatting.h
-        inc/modern-arg-parser/partitioner.h
-        inc/modern-arg-parser/flat-map.h
-        inc/modern-arg-parser/data.h
-        inc/modern-arg-parser/command-line.h
-        inc/modern-arg-parser/tokenizer.h
-        inc/modern-arg-parser/adaptive-parser.h
-        inc/modern-arg-parser/validators.h
+        inc/argum/argum.h
+        inc/argum/common.h
+        inc/argum/char-constants.h
+        inc/argum/messages.h
+        inc/argum/formatting.h
+        inc/argum/partitioner.h
+        inc/argum/flat-map.h
+        inc/argum/data.h
+        inc/argum/command-line.h
+        inc/argum/tokenizer.h
+        inc/argum/adaptive-parser.h
+        inc/argum/validators.h
 
 )
 
@@ -44,7 +44,7 @@ if (MODERN_ARG_PARSER_TEST)
 
     target_link_libraries(test
         PRIVATE
-            modern-arg-parser
+            argum
 
             $<$<PLATFORM_ID:Android>:log>
     )

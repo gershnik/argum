@@ -1,4 +1,4 @@
-#include <modern-arg-parser/partitioner.h>
+#include <argum/partitioner.h>
 
 #include "catch.hpp"
 
