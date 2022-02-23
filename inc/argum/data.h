@@ -15,6 +15,7 @@
 #include <string_view>
 #include <vector>
 #include <stdexcept>
+#include <limits>
 
 namespace Argum {
 
