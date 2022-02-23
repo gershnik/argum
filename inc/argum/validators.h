@@ -56,20 +56,13 @@ namespace Argum {
     template<class T>
     concept AnyParserValidator =
         ParserValidator<T, char> ||
-        ParserValidator<T, wchar_t> ||
-        ParserValidator<T, char8_t> ||
-        ParserValidator<T, char16_t> ||
-        ParserValidator<T, char32_t>;
+        ParserValidator<T, wchar_t>;
    
     
     template<class First, class... Rest>
     constexpr bool AnyCompatibleParserValidators =
         CompatibleParserValidators<char, First, Rest...> ||
-        CompatibleParserValidators<char, First, Rest...> ||
-        CompatibleParserValidators<wchar_t, First, Rest...> ||
-        CompatibleParserValidators<char8_t, First, Rest...> ||
-        CompatibleParserValidators<char16_t, First, Rest...> ||
-        CompatibleParserValidators<char32_t, First, Rest...>;
+        CompatibleParserValidators<wchar_t, First, Rest...>;
 
     //MARK: - NotValidator
 

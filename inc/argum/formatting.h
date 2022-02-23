@@ -8,9 +8,6 @@
 #include <charconv>
 #include <concepts>
 #include <optional>
-#if ARGUM_UTF_CHAR_SUPPORTED
-    #include <cuchar>
-#endif
 
 #include <limits.h>
 #include <assert.h>

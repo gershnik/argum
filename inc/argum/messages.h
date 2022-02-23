@@ -41,11 +41,6 @@ namespace Argum {
 
     ARGUM_DEFINE_MESSAGES(char, )
     ARGUM_DEFINE_MESSAGES(wchar_t, L)
-#if ARGUM_UTF_CHAR_SUPPORTED
-    ARGUM_DEFINE_MESSAGES(char8_t, u8)
-    ARGUM_DEFINE_MESSAGES(char16_t, u)
-    ARGUM_DEFINE_MESSAGES(char32_t, U)
-#endif
 
     #undef ARGUM_DEFINE_MESSAGES
 

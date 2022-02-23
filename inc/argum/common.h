@@ -8,22 +8,11 @@
 
 #include <assert.h>
 
-#define ARGUM_UTF_CHAR_SUPPORTED 0 //no compiler/library implements all the necessary machinery yet
-
 #define ARGUM_DECLARE_FRIENDLY_NAME(stem, type, prefix) using prefix ## stem = Basic##stem<type>;
     
-#if ARGUM_UTF_CHAR_SUPPORTED
-    #define ARGUM_DECLARE_FRIENDLY_NAMES(stem) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, char, ) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, wchar_t, L) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, char8_t, U8) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, char16_t, U16) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, char32_t, U32)
-#else
-    #define ARGUM_DECLARE_FRIENDLY_NAMES(stem) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, char, ) \
-        ARGUM_DECLARE_FRIENDLY_NAME(stem, wchar_t, W)
-#endif
+#define ARGUM_DECLARE_FRIENDLY_NAMES(stem) \
+    ARGUM_DECLARE_FRIENDLY_NAME(stem, char, ) \
+    ARGUM_DECLARE_FRIENDLY_NAME(stem, wchar_t, W)
 
 #ifndef NDEBUG
     #define ARGUM_ALWAYS_ASSERT(x) assert(x)
@@ -35,14 +24,7 @@ namespace Argum {
 
     template<class Char>
     concept Character = std::is_same_v<Char, char> || 
-                        std::is_same_v<Char, wchar_t>
-#if ARGUM_UTF_CHAR_SUPPORTED
-                        ||
-                        (std::is_same_v<Char, char8_t> ||
-                        std::is_same_v<Char, char16_t> ||
-                        std::is_same_v<Char, char32_t>
-#endif
-    ;
+                        std::is_same_v<Char, wchar_t>;
 
     template<class X>
     concept StringLike = requires(X name) {
