@@ -23,7 +23,7 @@ namespace Argum {
         #ifndef _MSC_VER
             m_fp = fopen(path.string().c_str(), mode);
         #else
-            m_fp = _wfopen(path.native().c_str(), toString<wchar_t>(mode));
+            m_fp = _wfopen(path.native().c_str(), toString<wchar_t>(mode).c_str());
         #endif
             if (!m_fp) {
                 int err = errno;
