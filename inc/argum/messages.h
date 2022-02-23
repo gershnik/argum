@@ -15,6 +15,8 @@ namespace Argum {
 
     template<Character Char> struct Messages;
 
+    #if !ARGUM_OVERRIDE_MESSAGES
+
     #define ARGUM_DEFINE_MESSAGES(type, pr) template<> struct Messages<type> { \
         static constexpr auto unrecognizedOptionError()     { return pr ## "unrecognized option: {1}"; }\
         static constexpr auto ambiguousOptionError()        { return pr ## "ambigous option: {1}, candidates: {2}"; }\
@@ -50,6 +52,8 @@ namespace Argum {
     ARGUM_DEFINE_MESSAGES(wchar_t, L)
 
     #undef ARGUM_DEFINE_MESSAGES
+
+    #endif
 
 }
 
