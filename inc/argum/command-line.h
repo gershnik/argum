@@ -10,6 +10,7 @@
 
 #include "data.h"
 #include "messages.h"
+#include "simple-file.h"
 
 #include <string>
 #include <string_view>
@@ -17,9 +18,6 @@
 #include <vector>
 #include <stack>
 #include <span>
-#include <filesystem>
-#include <fstream>
-#include <system_error>
 
 namespace Argum {
 
@@ -122,23 +120,19 @@ namespace Argum {
         static auto readResponseFile(StringViewType filename, std::vector<StringType> & dest, Splitter && splitter) {
 
             std::filesystem::path path(filename);
-            std::basic_ifstream<CharType> str(path);
-            if (!str) {
-                int err = errno;
-                throw Exception(path, std::make_error_code(static_cast<std::errc>(err)));
-            }
+            std::error_code error;
+            SimpleFile file(path, "r", error);
+            if (!file)
+                throw Exception(path, error);
 
             do {
-                StringType line;
-                errno = 0;
-                std::getline(str, line);
-                int err = errno;
-                if (str.fail() && err != 0) {
-                    throw Exception(path, std::make_error_code(static_cast<std::errc>(err)));
-                }
+                StringType line = file.readLine<CharType>(error);
+                if (error)
+                    throw Exception(path, error);
+                
                 if (!line.empty())
                     splitter(std::move(line), std::back_inserter(dest));
-            } while(str);
+            } while(!file.eof());
         }
     private:
         std::vector<StringType> m_prefixes;

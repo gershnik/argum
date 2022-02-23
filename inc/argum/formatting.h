@@ -39,29 +39,46 @@ namespace Argum {
         return dest += std::forward<T>(val);
     }
 
-    inline auto append(std::string & dest, std::wstring_view view) -> std::string & {
+    inline auto append(std::string & dest, const wchar_t * wstr) -> std::string & {
         
-        std::mbstate_t state {};
-        char buf[MB_LEN_MAX];
-        for(wchar_t wc : view) {
-            std::size_t ret = std::wcrtomb(&buf[0], wc, &state);
-            dest.append(buf, ret);
-        }
+        mbstate_t state = mbstate_t();
+        size_t len = wcsrtombs(nullptr, &wstr, 0, &state);
+        if (len == size_t(-1))
+            return dest;
+        auto currentSize = dest.size();
+        dest.resize(currentSize + len + 1);
+        wcsrtombs(&dest[currentSize], &wstr, len + 1, &state);
+        dest.resize(currentSize + len);
         return dest;
     }
 
-    inline auto append(std::wstring & dest, std::string_view view) -> std::wstring & {
+    inline auto append(std::string & dest, const std::wstring & str) -> std::string & {
+        return append(dest, str.c_str());
+    }
+
+    inline auto append(std::string & dest, const std::wstring_view & str) -> std::string & {
+        return append(dest, std::wstring(str));
+    }
+
+    inline auto append(std::wstring & dest, const char * str) -> std::wstring & {
         
-        std::mbstate_t state = std::mbstate_t(); 
-        for(size_t i = 0; i < view.size(); ) {
-            wchar_t wc;
-            auto len = std::mbrtowc(&wc, &view[i], view.size() - i, &state);
-            if (std::make_signed_t<decltype(len)>(len) <= 0)
-                break;
-            dest += wc;
-            i += len;
-        }
+        mbstate_t state = mbstate_t();
+        size_t len = mbsrtowcs(nullptr, &str, 0, &state);
+        if (len == size_t(-1))
+            return dest;
+        auto currentSize = dest.size();
+        dest.resize(currentSize + len + 1);
+        mbsrtowcs(&dest[currentSize], &str, len + 1, &state);
+        dest.resize(currentSize + len);
         return dest;
+    }
+
+    inline auto append(std::wstring & dest, const std::string & str) -> std::wstring & {
+        return append(dest, str.c_str());
+    }
+
+    inline auto append(std::wstring & dest, const std::string_view & str) -> std::wstring & {
+        return append(dest, std::string(str));
     }
 
     template<class T, class Char>

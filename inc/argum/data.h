@@ -15,7 +15,6 @@
 #include <string_view>
 #include <vector>
 #include <stdexcept>
-#include <limits>
 
 namespace Argum {
 
@@ -95,9 +94,9 @@ namespace Argum {
         }
         
     protected:
-        BasicParsingException(std::basic_string_view<Char> message) : 
+        BasicParsingException(std::basic_string<Char> message) : 
             std::runtime_error(toString<char>(message)),
-            m_message(message) {
+            m_message(std::move(message)) {
         }
 
     private:
@@ -111,13 +110,12 @@ namespace Argum {
             return what();
         }
     protected:
-        BasicParsingException(std::string_view message) : 
-            std::runtime_error(std::string(message)) {
+        BasicParsingException(std::string message) : 
+            std::runtime_error(message) {
         }
     };
     
     ARGUM_DECLARE_FRIENDLY_NAMES(ParsingException)
-
 
 }
 
