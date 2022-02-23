@@ -56,6 +56,7 @@ def combineHeaders(dir: Path, template: Path, output: Path):
     text = text.replace("##SYS_INCLUDES##", sys_includes_text)
     text = text.replace("##NAME##", output.name.replace('.', '_').upper())
 
+    output.parent.mkdir(parents=True, exist_ok=True)
     with open(output, "w") as outfile:
         print(text, file=outfile)
 
