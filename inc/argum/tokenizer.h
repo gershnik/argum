@@ -104,8 +104,9 @@ namespace Argum {
 
 
         enum TokenResult {
-            Stop,
-            Continue
+            Continue   = 0,
+            StopAfter  = 0b10,
+            StopBefore = 0b11
         };
 
         class Settings {
@@ -259,10 +260,16 @@ namespace Argum {
 
             bool noMoreOptions = false;
             std::vector<StringType> rest;
+            StringViewType arg; //last argument being processed
+            unsigned consumed = 0; //how much of the arg was consumed before invoking a handler
+            unsigned unconsumedPrefixSize = 0; //size of the arg option prefix if it is an option
 
             for(unsigned argIdx = 0; argFirst != argLast; ++argFirst, ++argIdx) {
-                StringViewType arg = *argFirst;
+                arg = *argFirst;
+                consumed = 0;
+                unconsumedPrefixSize = 0;
 
+                TokenResult result;
                 if (!noMoreOptions) {
 
                     auto prefixFindResult = this->findLongestPrefix(arg);
@@ -270,32 +277,48 @@ namespace Argum {
 
                     if ((type & OptionStop) == OptionStop && prefixFindResult->size == arg.size()) {
                         noMoreOptions = true;
-                        if (handler(OptionStopToken{argIdx}) == TokenResult::Stop)
-                            break;
+                        result = handler(OptionStopToken{argIdx});
+                        if (result == TokenResult::StopAfter)
+                            consumed = unsigned(arg.size());
                     } else if ((type & LongPrefix) == LongPrefix) {
-                        if (this->handleLongPrefix(argIdx, arg, 
-                                                   prefixFindResult->index, prefixFindResult->size, 
-                                                   handler) == TokenResult::Stop) 
-                            break;
+                        result = this->handleLongPrefix(argIdx, arg, 
+                                                        prefixFindResult->index, prefixFindResult->size, 
+                                                        handler);
+                        if (result == TokenResult::StopAfter)
+                            consumed = unsigned(arg.size());            
                     } else if ((type & ShortPrefix) == ShortPrefix) {
-                        if (this->handleShortPrefix(argIdx, arg, 
-                                                    prefixFindResult->index, prefixFindResult->size, 
-                                                    handler, rest) == TokenResult::Stop)
-                            break;
+                        result = this->handleShortPrefix(argIdx, arg, 
+                                                         prefixFindResult->index, prefixFindResult->size, 
+                                                         consumed, handler);
+                        unconsumedPrefixSize = prefixFindResult->size;
                     } else {
-                        if (handler(ArgumentToken{argIdx, arg}) == TokenResult::Stop)
-                            break;
+                        result = handler(ArgumentToken{argIdx, arg});
+                        if (result == TokenResult::StopAfter)
+                            consumed = unsigned(arg.size());
                     }
 
                 } else {
-
-                    if (handler(ArgumentToken{argIdx, arg}) == TokenResult::Stop)
-                        break;
+                    result = handler(ArgumentToken{argIdx, arg});
+                    if (result == TokenResult::StopAfter)
+                        consumed = unsigned(arg.size());
                 }
-                
+
+                if (result != TokenResult::Continue)
+                    break;
             }
-            for ( ; argFirst != argLast; ++argFirst) {
-                rest.emplace_back(*argFirst);
+
+            if (argFirst != argLast) {
+                
+                if (consumed == arg.size()) {
+                    ++argFirst;
+                } else if (consumed != 0) {
+                    rest.emplace_back(StringType(arg.substr(0, unconsumedPrefixSize)) + StringType(arg.substr(consumed)));
+                    ++argFirst;
+                }
+
+                for ( ; argFirst != argLast; ++argFirst) {
+                    rest.emplace_back(*argFirst);
+                }
             }
             return rest;
         }
@@ -344,18 +367,23 @@ namespace Argum {
                                StringViewType option, 
                                PrefixId prefixId,
                                unsigned nameStart,
-                               const Func & handler, 
-                               std::vector<StringType> & rest) const -> TokenResult {
+                               unsigned & consumed,
+                               const Func & handler) const -> TokenResult {
 
-            if (auto maybeResult = this->handleShortOption(argIdx, option, prefixId, nameStart, handler, rest)) {
+            if (auto maybeResult = this->handleShortOption(argIdx, option, prefixId, nameStart, consumed, handler)) {
                 return *maybeResult;
             } 
 
+            TokenResult result;
             if (auto maybeToken = this->matchNumber(argIdx, option, nameStart)) {
-                return handler(*maybeToken);
+                result = handler(*maybeToken);
+            } else {
+                result = handler(UnknownOptionToken{argIdx, StringType(option), std::nullopt});
             }
 
-            return handler(UnknownOptionToken{argIdx, StringType(option), std::nullopt});
+            if (result == TokenResult::StopAfter)
+                consumed = unsigned(option.size());
+            return result;
         }
 
         template<class Func>
@@ -363,8 +391,8 @@ namespace Argum {
                                StringViewType option, 
                                PrefixId prefixId,
                                unsigned nameStart, 
-                               const Func & handler, 
-                               std::vector<StringType> & rest) const -> std::optional<TokenResult> {
+                               unsigned & consumed,
+                               const Func & handler) const -> std::optional<TokenResult> {
 
             StringViewType chars = option.substr(nameStart);
             assert(!chars.empty());
@@ -380,15 +408,18 @@ namespace Argum {
 
             if (chars.size() > 1 || !singleLetterNameIdx) {
 
-                if (auto res = this->handleMultiShortOption(argIdx, option, prefixId, nameStart, singleLetterNameIdx.has_value(), handler))
+                if (auto res = this->handleMultiShortOption(argIdx, option, prefixId, nameStart, singleLetterNameIdx.has_value(), handler)) {
+                    if (*res == TokenResult::StopAfter)
+                        consumed = unsigned(option.size());
                     return *res;
+                }
             }
 
             if (!singleLetterNameIdx)
                 return std::nullopt;
             
             auto & shortsMap = mapIt->value();
-
+            consumed = nameStart;
             auto actualPrefix = StringType(option.substr(0, nameStart));
             do {
                 
@@ -396,13 +427,13 @@ namespace Argum {
                 auto usedName = actualPrefix + chars[0];
                 std::optional<StringViewType> arg;
 
-                unsigned consumed = 1;
+                unsigned charsConsumed = 1;
                 if (chars.size() > 1) {
 
                     auto it = shortsMap.find(chars[1]);
                     if (it == shortsMap.end()) {
                         arg = chars.substr(1);
-                        consumed = unsigned(chars.size());
+                        charsConsumed = unsigned(chars.size());
                     }
                     else {
                         singleLetterNameIdx = it->value();
@@ -410,12 +441,14 @@ namespace Argum {
                 }
 
                 auto res = handler(OptionToken{argIdx, currentIdx, std::move(usedName), std::move(arg)});
-                if (res == TokenResult::Stop) {
-                    rest.push_back(actualPrefix + StringType(chars));
-                    return TokenResult::Stop;
+                if (res != TokenResult::Continue) {
+                    if (res == TokenResult::StopAfter)
+                        consumed += charsConsumed;
+                    return res;
                 }
 
-                chars.remove_prefix(consumed);
+                chars.remove_prefix(charsConsumed);
+                consumed += charsConsumed;
                 
             } while(!chars.empty());
 

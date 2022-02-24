@@ -143,3 +143,104 @@ TEST_CASE( "Short option" , "[tokenizer]") {
         ArgumentToken{   2, "-c"}
     ));
 }
+
+TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
+
+    ArgumentTokenizer t;
+
+    t.add(OptionNames("-c"));
+    t.add(OptionNames("-d"));
+    t.add(OptionNames("-e"));
+    SECTION("First single char in group"){
+        const char * argv[] = {"-cdefg"};
+        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-c")
+                    return ArgumentTokenizer::StopBefore;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-cdefg"});
+        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-c")
+                    return ArgumentTokenizer::StopAfter;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-defg"});
+    }
+    SECTION("Middle single char in group"){
+        const char * argv[] = {"-cdefg"};
+        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-d")
+                    return ArgumentTokenizer::StopBefore;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-defg"});
+        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-d")
+                    return ArgumentTokenizer::StopAfter;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-efg"});
+    }
+    SECTION("Last single char in group"){
+        const char * argv[] = {"-cdefg"};
+        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-e")
+                    return ArgumentTokenizer::StopBefore;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-efg"});
+        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-e")
+                    return ArgumentTokenizer::StopAfter;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{});
+    }
+    SECTION("Middle single char in group, other parameters"){
+        const char * argv[] = {"abc", "-cdefg", "qqq"};
+        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-d")
+                    return ArgumentTokenizer::StopBefore;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-defg", "qqq"});
+        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+
+            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+                if (token.usedName == "-d")
+                    return ArgumentTokenizer::StopAfter;
+            }
+
+            return ArgumentTokenizer::Continue;
+        });
+        CHECK(res == vector<string>{"-efg", "qqq"});
+    }
+}
