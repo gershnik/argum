@@ -252,7 +252,25 @@ namespace Argum {
             
             ParsingState parsingState(*this);
 
-            parsingState.parse(argFirst, argLast);
+            parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/false);
+        }
+
+        auto parseUntilUnknown(int argc, CharType ** argv) const -> std::vector<StringType> {
+            return this->parseUntilUnknown(makeArgSpan<CharType>(argc, argv));
+        }
+
+        template<ArgRange<CharType> Args>
+        auto parseUntilUnknown(const Args & args) const {
+            
+            return this->parseUntilUnknown(std::begin(args), std::end(args));
+        }
+
+        template<ArgIterator<CharType> It>
+        auto parseUntilUnknown(It argFirst, It argLast) const -> std::vector<StringType>{
+            
+            ParsingState parsingState(*this);
+
+            return parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/true);
         }
 
         auto formatUsage(StringViewType progName) const -> StringType {
@@ -421,41 +439,45 @@ namespace Argum {
             }
 
             template<ArgIterator<CharType> It>
-            auto parse(It argFirst, It argLast) {
+            auto parse(It argFirst, It argLast, bool stopOnUnknown) -> std::vector<StringType> {
             
-#ifdef _MSC_VER
-    #pragma warning(push) 
-    #pragma warning(disable:4702) //bogus "unreachable code"
-#endif
-                m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) {
+                auto ret = m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> typename ArgumentTokenizer::TokenResult {
 
                     using TokenType = std::decay_t<decltype(token)>;
 
                     if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
                         resetOption(token.idx, token.usedName, token.argument);
+                        return ArgumentTokenizer::Continue;
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
 
                         completeOption();
+                        return ArgumentTokenizer::Continue;
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::ArgumentToken>) {
 
-                        handlePositional(token.value, argFirst + token.argIdx, argLast);
+                        if (!handlePositional(token.value, argFirst + token.argIdx, argLast)) {
+                            if (stopOnUnknown)
+                                return ArgumentTokenizer::StopBefore;
+                            throw ExtraPositional(token.value);
+                        }
+                        return ArgumentTokenizer::Continue;
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
 
-                        handleUnknownOption(token.name, argFirst + token.argIdx, argLast);
+                        completeOption();
+                        if (stopOnUnknown)
+                            return ArgumentTokenizer::StopBefore;
+                        throw UnrecognizedOption(token.name);
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::AmbiguousOptionToken>) {
 
-                        handleAmbiguousOption(token.name, std::move(token.possibilities));
+                        completeOption();
+                        throw AmbiguousOption(token.name, std::move(token.possibilities));
                     } 
-                    return ArgumentTokenizer::Continue;
                 });
-#ifdef _MSC_VER
-    #pragma warning(pop) 
-#endif
+
                 completeOption();
 
                 //We could use normal validators for this but it is faster to do it manually
@@ -465,6 +487,7 @@ namespace Argum {
                     if (!validator(m_validationData))
                         throw ValidationError(desc);
                 }
+                return ret;
             }
 
         private:
@@ -538,16 +561,16 @@ namespace Argum {
             }
 
             template<ArgIterator<CharType> It>
-            auto handlePositional(StringViewType value, It remainingArgFirst, It argLast) {
+            auto handlePositional(StringViewType value, It remainingArgFirst, It argLast) -> bool {
                 if (completeOptionUsingArgument(value))
-                    return;
+                    return true;
 
                 calculateRemainingPositionals(remainingArgFirst, argLast);
                 
                 const Positional * positional = nullptr;
                 if (m_positionalIndex >= 0) {
                     if (unsigned(m_positionalIndex) >= m_positionalSizes.size())
-                        throw ExtraPositional(value);
+                        return false;
 
                     auto & current = m_owner.m_positionals[unsigned(m_positionalIndex)];
                     if (m_positionalSizes[unsigned(m_positionalIndex)] > m_validationData.positionalCount(current.name))
@@ -561,32 +584,14 @@ namespace Argum {
                     });
                     m_positionalIndex = int(next - m_positionalSizes.begin());
                     if (unsigned(m_positionalIndex) >= m_positionalSizes.size())
-                        throw ExtraPositional(value);
+                        return false;
                     positional = &m_owner.m_positionals[unsigned(m_positionalIndex)];
                 }
                 
                 auto & count = m_validationData.positionalCount(positional->name);
                 positional->handler(count, value);
                 ++count;
-            }
-
-            template<ArgIterator<CharType> It>
-            auto handleUnknownOption(StringViewType name, It remainingArgFirst, It argLast) {
-
-                StringViewType fullText = *remainingArgFirst;
-                if (m_owner.m_shouldTreatUnknownOptionAsPositional(name, fullText)) {
-                    handlePositional(fullText, remainingArgFirst, argLast);
-                } else {
-                    completeOption();
-
-                    throw UnrecognizedOption(name);
-                }
-            }
-
-            auto handleAmbiguousOption(StringViewType name, std::vector<StringType> && possibilities) {
-
-                completeOption();
-                throw AmbiguousOption(name, std::move(possibilities));
+                return true;
             }
 
             template<ArgIterator<CharType> It>
@@ -696,8 +701,6 @@ namespace Argum {
         ArgumentTokenizer m_tokenizer;
         std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
         size_t m_updateCount = 0;
-        std::function<bool (StringViewType /*name*/, StringViewType /*fullText*/)> m_shouldTreatUnknownOptionAsPositional = 
-            [](StringViewType, StringViewType) { return false; };
     };
 
     ARGUM_DECLARE_FRIENDLY_NAMES(AdaptiveParser)
