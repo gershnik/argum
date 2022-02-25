@@ -31,7 +31,10 @@ static auto parse(const BasicAdaptiveParser<Char> & parser, initializer_list<con
     parser.parse(args.begin(), args.end());
 }
 
-using Value = optional<string>;
+template<class Char>
+using BasicValue = optional<basic_string<Char>>;
+using Value = BasicValue<char>;
+using WValue = BasicValue<wchar_t>;
 
 namespace std {
 
@@ -45,14 +48,37 @@ namespace std {
         str << "}}";
         return str;
     }
+
+    static auto operator<<(ostream & str, const pair<const wstring, vector<WValue>> & val) -> ostream & {
+        str << '{' << toString<char>(val.first) << ", {";
+        for(size_t i = 0; i < val.second.size(); ++i) {
+            if (i > 0) 
+                str << ", ";
+            str << toString<char>(val.second[i].value_or(L"<nullopt>"));
+        }
+        str << "}}";
+        return str;
+    }
 }
 
 #define UNRECOGNIZED_OPTION(x) catch(UnrecognizedOption & ex) { CHECK(ex.option == (x)); }
-#define AMBIGUOUS_OPTION(x, ...) catch(AmbiguousOption & ex) { CHECK(ex.option == (x)); CHECK(ex.possibilities == vector<string>{__VA_ARGS__}); }
+#define WUNRECOGNIZED_OPTION(x) catch(WUnrecognizedOption & ex) { CHECK(ex.option == (x)); }
+#define AMBIGUOUS_OPTION(x, ...) catch(AmbiguousOption & ex) { \
+    CHECK(ex.option == (x)); \
+    CHECK(ex.possibilities == vector<string>{__VA_ARGS__}); \
+}
+#define WAMBIGUOUS_OPTION(x, ...) catch(WAmbiguousOption & ex) { \
+    CHECK(ex.option == (x)); \
+    CHECK(ex.possibilities == vector<wstring>{__VA_ARGS__}); \
+}
 #define EXTRA_POSITIONAL(x) catch(ExtraPositional & ex) { CHECK(ex.value == (x)); }
+#define WEXTRA_POSITIONAL(x) catch(WExtraPositional & ex) { CHECK(ex.value == (x)); }
 #define MISSING_OPTION_ARGUMENT(x) catch(MissingOptionArgument & ex) { CHECK(ex.option == (x)); }
+#define WMISSING_OPTION_ARGUMENT(x) catch(WMissingOptionArgument & ex) { CHECK(ex.option == (x)); }
 #define EXTRA_OPTION_ARGUMENT(x) catch(ExtraOptionArgument & ex) { CHECK(ex.option == (x)); }
+#define WEXTRA_OPTION_ARGUMENT(x) catch(WExtraOptionArgument & ex) { CHECK(ex.option == (x)); }
 #define VALIDATION_ERROR(x) catch(ValidationError & ex) { CHECK(ex.message() == (x)); }
+#define WVALIDATION_ERROR(x) catch(WValidationError & ex) { CHECK(ex.message() == (x)); }
 
 #define EXPECT_FAILURE(args, failure) \
     results.clear(); \
@@ -60,25 +86,40 @@ namespace std {
 #define EXPECT_SUCCESS(args, expected) { \
     results.clear(); \
     REQUIRE_NOTHROW(parse(parser, args)); \
-    CHECK(results == map<string, vector<Value>>(expected)); \
+    CHECK(results == decltype(results)(expected)); \
 }
 #define ARGS(...) (initializer_list<const char *>{__VA_ARGS__})
-//#define WARGS(...) (initializer_list<const wchar_t *>{__VA_ARGS__})
+#define WARGS(...) (initializer_list<const wchar_t *>{__VA_ARGS__})
 #define RESULTS(...) (initializer_list<pair<const string, vector<Value>>>{__VA_ARGS__})
+#define WRESULTS(...) (initializer_list<pair<const wstring, vector<WValue>>>{__VA_ARGS__})
 
 #define OPTION_NO_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](){ \
         results[n].push_back("+"); \
     })
+#define WOPTION_NO_ARG(n, ...) WOption(n __VA_OPT__(,) __VA_ARGS__).handler([&](){ \
+        results[n].push_back(L"+"); \
+    })
 #define OPTION_REQ_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](string_view arg){ \
         results[n].push_back(string(arg)); \
     })
+#define WOPTION_REQ_ARG(n, ...) WOption(n __VA_OPT__(,) __VA_ARGS__).handler([&](wstring_view arg){ \
+        results[n].push_back(wstring(arg)); \
+    })
 #define OPTION_OPT_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](optional<string_view> arg){ \
         arg ? results[n].push_back(string(*arg)) : results[n].push_back(nullopt); \
+    })
+#define WOPTION_OPT_ARG(n, ...) WOption(n __VA_OPT__(,) __VA_ARGS__).handler([&](optional<wstring_view> arg){ \
+        arg ? results[n].push_back(wstring(*arg)) : results[n].push_back(nullopt); \
     })
 #define POSITIONAL(n) Positional(n).handler([&](unsigned idx, string_view value){ \
         auto & list = results[n]; \
         CHECK(list.size() == idx); \
         list.push_back(string(value)); \
+    })
+#define WPOSITIONAL(n) WPositional(n).handler([&](unsigned idx, wstring_view value){ \
+        auto & list = results[n]; \
+        CHECK(list.size() == idx); \
+        list.push_back(wstring(value)); \
     })
 
 #pragma region Test Options
@@ -102,6 +143,26 @@ TEST_CASE( "Option with a single-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("-xa"), RESULTS({"-x", {"a"}}))
     EXPECT_SUCCESS(ARGS("-x", "-1"), RESULTS({"-x", {"-1"}}))
     EXPECT_SUCCESS(ARGS("-x-1"), RESULTS({"-x", {"-1"}}))
+}
+
+TEST_CASE( "Wide Option with a single-dash option string" , "[adaptive]") {
+
+    map<wstring, vector<WValue>> results;
+
+    WAdaptiveParser parser;
+    parser.add(WOPTION_REQ_ARG(L"-x"));
+
+    EXPECT_FAILURE(WARGS(L"-x"), WMISSING_OPTION_ARGUMENT(L"-x"))
+    EXPECT_FAILURE(WARGS(L"a"), WEXTRA_POSITIONAL(L"a"))
+    EXPECT_FAILURE(WARGS(L"--foo", L"ff"), WUNRECOGNIZED_OPTION(L"--foo"))
+    EXPECT_FAILURE(WARGS(L"-x", L"--foo"), WMISSING_OPTION_ARGUMENT(L"-x"))
+    EXPECT_FAILURE(WARGS(L"-x", L"-y"), WMISSING_OPTION_ARGUMENT(L"-x"))
+
+    EXPECT_SUCCESS(WARGS(), WRESULTS())
+    EXPECT_SUCCESS(WARGS(L"-x", L"a"), WRESULTS({L"-x", {L"a"}}))
+    EXPECT_SUCCESS(WARGS(L"-xa"), WRESULTS({L"-x", {L"a"}}))
+    EXPECT_SUCCESS(WARGS(L"-x", L"-1"), WRESULTS({L"-x", {L"-1"}}))
+    EXPECT_SUCCESS(WARGS(L"-x-1"), WRESULTS({L"-x", {L"-1"}}))
 }
 
 TEST_CASE( "Combined single-dash options" , "[adaptive]") {
@@ -279,6 +340,28 @@ TEST_CASE( "Partial matching with a double-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--badg"), RESULTS({"--badger", {"+"}}))
     EXPECT_SUCCESS(ARGS("--badge"), RESULTS({"--badger", {"+"}}))
     EXPECT_SUCCESS(ARGS("--badger"), RESULTS({"--badger", {"+"}}))
+}
+
+TEST_CASE( "Wide Partial matching with a double-dash option string" , "[adaptive]") {
+    map<wstring, vector<WValue>> results;
+
+    WAdaptiveParser parser;
+    parser.add(WOPTION_NO_ARG(L"--badger"));
+    parser.add(WOPTION_REQ_ARG(L"--bat"));
+
+    EXPECT_FAILURE(WARGS(L"--bar"), WUNRECOGNIZED_OPTION(L"--bar"))
+    EXPECT_FAILURE(WARGS(L"--b"), WAMBIGUOUS_OPTION(L"--b", L"--badger", L"--bat"))
+    EXPECT_FAILURE(WARGS(L"--ba"), WAMBIGUOUS_OPTION(L"--ba", L"--badger", L"--bat"))
+    EXPECT_FAILURE(WARGS(L"--b=2"), WAMBIGUOUS_OPTION(L"--b", L"--badger", L"--bat"))
+    EXPECT_FAILURE(WARGS(L"--ba=4"), WAMBIGUOUS_OPTION(L"--ba", L"--badger", L"--bat"))
+    EXPECT_FAILURE(WARGS(L"--badge", L"5"), WEXTRA_POSITIONAL(L"5"))
+
+    EXPECT_SUCCESS(WARGS(), WRESULTS())
+    EXPECT_SUCCESS(WARGS(L"--bat", L"X"), WRESULTS({L"--bat", {L"X"}}))
+    EXPECT_SUCCESS(WARGS(L"--bad"), WRESULTS({L"--badger", {L"+"}}))
+    EXPECT_SUCCESS(WARGS(L"--badg"), WRESULTS({L"--badger", {L"+"}}))
+    EXPECT_SUCCESS(WARGS(L"--badge"), WRESULTS({L"--badger", {L"+"}}))
+    EXPECT_SUCCESS(WARGS(L"--badger"), WRESULTS({L"--badger", {L"+"}}))
 }
 
 TEST_CASE( "One double-dash option string is a prefix of another" , "[adaptive]") {
