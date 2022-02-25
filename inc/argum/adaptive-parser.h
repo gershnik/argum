@@ -166,11 +166,11 @@ namespace Argum {
                 return std::move(static_cast<Option *>(this)->handler(std::forward<H>(h)));
             }
 
-            auto repeats(Repeated r) & -> Option & {
-                this->m_repeated = r;
+            auto repeats(Quantifier r) & -> Option & {
+                this->m_repeats = r;
                 return *this;
             }
-            auto repeats(Repeated r) && -> Option && {
+            auto repeats(Quantifier r) && -> Option && {
                 return std::move(static_cast<Option *>(this)->repeats(r));
             }
 
@@ -192,7 +192,7 @@ namespace Argum {
         private:
             OptionNames m_names;
             Handler m_handler = []() {};
-            Repeated m_repeated = Repeated::zeroOrMore;
+            Quantifier m_repeats = ZeroOrMoreTimes;
 
             StringType m_argName = Messages::defaultArgName();
             StringType m_description;
@@ -213,11 +213,11 @@ namespace Argum {
                 return std::move(static_cast<Positional *>(this)->handler(h));
             }
 
-            auto repeats(Repeated r) & -> Positional & {
-                this->m_repeated = r;
+            auto repeats(Quantifier r) & -> Positional & {
+                this->m_repeats = r;
                 return *this;
             }
-            auto repeats(Repeated r) && -> Positional && {
+            auto repeats(Quantifier r) && -> Positional && {
                 return std::move(static_cast<Positional *>(this)->repeats(r));
             }
 
@@ -231,7 +231,7 @@ namespace Argum {
         private:
             StringType m_name;
             PositionalHandler m_handler = [](unsigned, StringViewType) {};
-            Repeated m_repeated = Repeated::once;
+            Quantifier m_repeats = Once;
             StringType m_description;
         };
 
@@ -245,8 +245,8 @@ namespace Argum {
 
             auto & added = this->m_options.emplace_back(std::move(option));
             this->m_tokenizer.add(this->m_options.back().m_names);
-            if (added.m_repeated.min() > 0)
-                addValidator(OptionOccursAtLeast(added.m_names.main(), added.m_repeated.min()));
+            if (added.m_repeats.min() > 0)
+                addValidator(OptionOccursAtLeast(added.m_names.main(), added.m_repeats.min()));
             ++m_updateCount;
         }
         
@@ -354,10 +354,10 @@ namespace Argum {
 
             StringType ret;
 
-            if (opt.m_repeated.min() == 0)
+            if (opt.m_repeats.min() == 0)
                 ret += brop;
             ret.append(opt.m_names.main()).append(this->formatOptionArgSyntax(opt));
-            if (opt.m_repeated.min() == 0)
+            if (opt.m_repeats.min() == 0)
                 ret += brcl;
 
             return ret;
@@ -371,24 +371,24 @@ namespace Argum {
 
             StringType ret;
 
-            if (pos.m_repeated.min() == 0)
+            if (pos.m_repeats.min() == 0)
                 ret += brop;
             ret += pos.m_name;
             unsigned idx = 1;
-            for (; idx < pos.m_repeated.min(); ++idx) {
+            for (; idx < pos.m_repeats.min(); ++idx) {
                 ret.append({space}).append(pos.m_name);
             }
-            if (idx != pos.m_repeated.min()) {
+            if (idx != pos.m_repeats.min()) {
                 ret.append({space, brop}).append(pos.m_name);
-                if (pos.m_repeated.max() != Repeated::infinity) {
-                    for (++idx; idx < pos.m_repeated.max(); ++idx)
+                if (pos.m_repeats.max() != Quantifier::infinity) {
+                    for (++idx; idx < pos.m_repeats.max(); ++idx)
                         ret.append({space}).append(pos.m_name);
                 } else {
                     ret.append({space}).append(ellipsis);
                 }
                 ret += brcl;
             }
-            if (pos.m_repeated.min() == 0)
+            if (pos.m_repeats.min() == 0)
                 ret += brcl;
 
             return ret;
@@ -583,7 +583,7 @@ namespace Argum {
             auto validateOptionMax(const Option & option) {
                 auto & name = option.m_names.main();
                 ++m_validationData.optionCount(name);
-                auto validator = OptionOccursAtMost(name, option.m_repeated.max());
+                auto validator = OptionOccursAtMost(name, option.m_repeats.max());
                 if (!validator(m_validationData)) {
                     throw ValidationError(validator);
                 }
@@ -639,15 +639,15 @@ namespace Argum {
                 if (m_positionalIndex >= 0) {
                     auto & positional = m_owner.m_positionals[unsigned(m_positionalIndex)];
                     auto count = m_validationData.positionalCount(positional.m_name);
-                    if (positional.m_repeated.max() > count) {
+                    if (positional.m_repeats.max() > count) {
                         remainingPositionalCount += count; //account for already processed
-                        partitioner.addRange(positional.m_repeated.min(), positional.m_repeated.max());
+                        partitioner.addRange(positional.m_repeats.min(), positional.m_repeats.max());
                         --fillStartIndex;
                     }
                 }
                 std::for_each(m_owner.m_positionals.begin() + (m_positionalIndex + 1), m_owner.m_positionals.end(),
                                 [&] (const Positional & positional) {
-                    partitioner.addRange(positional.m_repeated.min(), positional.m_repeated.max());
+                    partitioner.addRange(positional.m_repeats.min(), positional.m_repeats.max());
                 });
 
                 //3. Partition the range
@@ -704,7 +704,7 @@ namespace Argum {
                     ++idx) {
                     
                     auto & positional = m_owner.m_positionals[unsigned(idx)];
-                    auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_repeated.min());
+                    auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_repeats.min());
                     if (!validator(this->m_validationData))
                         throw ValidationError(validator);
                 }

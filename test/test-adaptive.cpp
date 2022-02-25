@@ -469,7 +469,7 @@ TEST_CASE( "Required option" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Repeated::once));
+    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Once));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
@@ -486,7 +486,7 @@ TEST_CASE( "Repeat one-or-more option" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Repeated::oneOrMore));
+    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(OneOrMoreTimes));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
@@ -506,7 +506,7 @@ TEST_CASE( "Repeat 2-or-3 option" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Repeated(2,3)));
+    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Quantifier(2,3)));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must occur at least 2 times"))
@@ -540,7 +540,7 @@ TEST_CASE( "Positional with explicit repeat once" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").repeats(Repeated::once));
+    parser.add(POSITIONAL("foo").repeats(Once));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -553,7 +553,7 @@ TEST_CASE( "Positional with explicit repeat twice" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").repeats(Repeated(2)));
+    parser.add(POSITIONAL("foo").repeats(Quantifier(2)));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
     EXPECT_FAILURE(ARGS("a"), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
@@ -567,7 +567,7 @@ TEST_CASE( "Positional with unlimited repeat" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").repeats(Repeated::zeroOrMore));
+    parser.add(POSITIONAL("foo").repeats(ZeroOrMoreTimes));
 
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
     
@@ -581,7 +581,7 @@ TEST_CASE( "Positional with one or more repeat" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").repeats(Repeated::oneOrMore));
+    parser.add(POSITIONAL("foo").repeats(OneOrMoreTimes));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -595,7 +595,7 @@ TEST_CASE( "Positional with zero or once repeat" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").repeats(Repeated::zeroOrOnce));
+    parser.add(POSITIONAL("foo").repeats(ZeroOrOnce));
 
     EXPECT_FAILURE(ARGS("a", "b"), EXTRA_POSITIONAL("b"))
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -643,7 +643,7 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
 //         }));
 //     parser.add(
 //         Positional("bob")
-//         .repeats(Repeated(0, 25))
+//         .repeats(Quantifier(0, 25))
 //         .help("hohahaha")
 //         .handler([](unsigned idx, string_view) {
 //             CHECK(idx == 0);
@@ -651,7 +651,7 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
 //     );
 //     parser.add(
 //         Positional("fob")
-//         .repeats(Repeated(1,1))
+//         .repeats(Quantifier(1,1))
 //         .help("ghakl\njdks")
 //         .handler([](unsigned, string_view) {
         
@@ -676,7 +676,7 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
 //    WAdaptiveParser wparser;
 //     wparser.add(
 //         WPositional(L"fob")
-//         .repeats(Repeated(7,7))
+//         .repeats(Quantifier(7,7))
 //         .help(L"ghakl\njdks")
 //         .handler([](unsigned, wstring_view) {
 

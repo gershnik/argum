@@ -54,21 +54,16 @@ namespace Argum {
         Required
     };
 
-    class Repeated {
+    class Quantifier {
     public:
         static constexpr unsigned infinity = std::numeric_limits<unsigned>::max();
 
-        constexpr explicit Repeated(unsigned val): m_min(val), m_max(val) {
+        constexpr Quantifier(unsigned val): m_min(val), m_max(val) {
         }
-        constexpr Repeated(unsigned min, unsigned max): m_min(min), m_max(max) {
+        constexpr Quantifier(unsigned min, unsigned max): m_min(min), m_max(max) {
             ARGUM_ALWAYS_ASSERT(min <= max);
         }
-
-        static const Repeated zeroOrOnce;
-        static const Repeated once;
-        static const Repeated zeroOrMore;
-        static const Repeated oneOrMore;
-
+        
         constexpr auto min() const {
             return this->m_min;
         }
@@ -82,10 +77,10 @@ namespace Argum {
         unsigned m_max = 0;
     };
 
-    inline constexpr Repeated Repeated::zeroOrOnce = Repeated(0, 1);
-    inline constexpr Repeated Repeated::once       = Repeated(1, 1);
-    inline constexpr Repeated Repeated::zeroOrMore = Repeated(0, Repeated::infinity);
-    inline constexpr Repeated Repeated::oneOrMore  = Repeated(1, Repeated::infinity);
+    inline constexpr Quantifier ZeroOrOnce     (0, 1);
+    inline constexpr Quantifier Once           (1, 1);
+    inline constexpr Quantifier ZeroOrMoreTimes(0, Quantifier::infinity);
+    inline constexpr Quantifier OneOrMoreTimes (1, Quantifier::infinity);
 
     template<class Char>
     class BasicParsingException : public std::runtime_error {
