@@ -7,8 +7,9 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 - [Argum](#argum)
     - [Features and goals](#features-and-goals)
     - [On exceptions](#on-exceptions)
-    - [Why another library?](#why-another-library)
+    - [On ranges and coroutines](#on-ranges-and-coroutines)
     - [Examples](#examples)
+    - [Why another library?](#why-another-library)
 
 <!-- /TOC -->
 
@@ -38,6 +39,12 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 ## On exceptions
 
 This library currently uses exceptions to signal parsing errors. This is controversial in some circles and for some very good reasons. Unfortunately, there is currently no standard way of writing clear exception free code. Any attempt to do so today will require custom error handling machinery that will eventually become obsolete and maintenance burden once one or more of currently proposed <code>std::expected</code>, deterministic <code>try</code> or something else become part of the standard language. Rather than lock itself into proprietary machinery now, Argum uses exceptions. When the language direction for exception free code becomes clear it will be updated to allow operating in this mode.
+
+Note that exceptions are only used for _parsing_ errors. Logic errors such as passing incorrect parameters to configure parser will `assert` in debug and `std::terminate` in non-debug builds.
+
+## On ranges
+
+Despite targeting C++20 the library currently doesn't use/understand ranges. This is simply due to the fact that, currently, not all compilers have standard libraries that include them. Once ranges become widely available the plan is to switch to using them.
 
 ## Examples
 
