@@ -352,6 +352,25 @@ TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[adaptive]") 
     EXPECT_SUCCESS(ARGS("--foobl", "--foo", "g"), RESULTS({"--foo", {"g"}}, {"--fooble", {"+"}}))
 }
 
+TEST_CASE( "Disallow abbreviation settin" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser(AdaptiveParser::Settings::commonUnix().allowAbbreviation(false));
+    parser.add(OPTION_REQ_ARG("--foo", "-foo"));
+    parser.add(OPTION_NO_ARG("--foodle", "-foodle"));
+    parser.add(OPTION_REQ_ARG("--foonly", "-foonly"));
+
+
+    EXPECT_FAILURE(ARGS("-foon", "3"), UNRECOGNIZED_OPTION("-foon"))
+    EXPECT_FAILURE(ARGS("--foon", "3"), UNRECOGNIZED_OPTION("--foon"))
+    EXPECT_FAILURE(ARGS("--food"), UNRECOGNIZED_OPTION("--food"))
+    EXPECT_FAILURE(ARGS("--food", "--foo", "2"), UNRECOGNIZED_OPTION("--food"))
+    
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("--foo", "3"), RESULTS({"--foo", {"3"}}))
+    EXPECT_SUCCESS(ARGS("--foonly", "7", "--foodle", "--foo", "2"), RESULTS({"--foo", {"2"}}, {"--foodle", {"+"}}, {"--foonly", {"7"}}))
+}
+
 TEST_CASE( "Custom prefixes" , "[adaptive]") {
     map<string, vector<Value>> results;
 

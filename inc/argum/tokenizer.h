@@ -182,6 +182,15 @@ namespace Argum {
                 return std::move(static_cast<Settings *>(this)->addValueDelimiter(c));
             }
 
+            auto allowAbbreviation(bool value) & -> Settings & {
+                m_allowAbrreviation = value;
+                return *this;
+            }
+
+            auto allowAbbreviation(bool value) && -> Settings && {
+                return std::move(static_cast<Settings *>(this)->allowAbbreviation(value));
+            }
+
             static auto commonUnix() -> Settings {
                 Settings ret;
                 ret.addLongPrefix(CharConstants::doubleDash)
@@ -219,6 +228,7 @@ namespace Argum {
             FlatMap<PrefixId, PrefixType> m_prefixTypes;
             FlatSet<CharType> m_valueDelimiters;
             PrefixId m_lastPrefixId = 0;
+            bool m_allowAbrreviation = true;
         };
         
     public:
@@ -231,6 +241,7 @@ namespace Argum {
             this->m_prefixes = std::move(settings.m_prefixes);
             this->m_prefixTypes = std::move(settings.m_prefixTypes);
             this->m_valueDelimiters = std::move(settings.m_valueDelimiters);
+            this->m_allowAbrreviation = settings.m_allowAbrreviation;
         }
 
         auto add(const OptionNames & names)  {
@@ -331,7 +342,7 @@ namespace Argum {
                               unsigned nameStart,
                               const Func & handler) const -> TokenResult {
             
-            auto [name, arg] = this->splitLongOption(option, nameStart);
+            auto [name, arg] = this->splitDelimitedArgument(option, nameStart);
             if (name.size() == 0)
                 return handler(ArgumentToken{argIdx, option});
 
@@ -349,14 +360,20 @@ namespace Argum {
             }
             auto & longsMap = mapIt->value();
 
-            const auto & [first, last] = findMatchOrMatchingPrefixRange(longsMap, name);
-            if (last - first == 1) {
-                return handler(OptionToken{argIdx, first->value(), std::move(usedName), std::move(arg)});
-            } else if (last != first) {
-                StringType actualPrefix(option.substr(0, nameStart));
-                std::vector<StringType> candidates(last - first);
-                std::transform(first, last, candidates.begin(), [&](const auto & p) {return actualPrefix + p.key(); });
-                return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
+            if (this->m_allowAbrreviation) {
+                const auto & [first, last] = findMatchOrMatchingPrefixRange(longsMap, name);
+                if (last - first == 1) {
+                    return handler(OptionToken{argIdx, first->value(), std::move(usedName), std::move(arg)});
+                } else if (last != first) {
+                    StringType actualPrefix(option.substr(0, nameStart));
+                    std::vector<StringType> candidates(last - first);
+                    std::transform(first, last, candidates.begin(), [&](const auto & p) {return actualPrefix + p.key(); });
+                    return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
+                }
+            } else {
+                auto it = longsMap.find(name);
+                if (it != longsMap.end())
+                    return handler(OptionToken{argIdx, it->value(), std::move(usedName), std::move(arg)});
             }
             
             return handler(UnknownOptionToken{argIdx, std::move(usedName), std::move(arg)});
@@ -463,7 +480,7 @@ namespace Argum {
                                     bool mustMatchExact,
                                     const Func & handler) const -> std::optional<TokenResult> {
 
-            auto [name, arg] = this->splitLongOption(option, nameStart);
+            auto [name, arg] = this->splitDelimitedArgument(option, nameStart);
             if (name.size() == 0)
                 return handler(ArgumentToken{argIdx, option});
 
@@ -473,37 +490,38 @@ namespace Argum {
             }
             auto & multiShortsMap = mapIt->value();
 
-            
-            const auto & [first, last] = findMatchOrMatchingPrefixRange(multiShortsMap, name);
-            if (last != first) {
-                StringType usedName(option.begin(), 
-#if defined(_MSC_VER) && _ITERATOR_DEBUG_LEVEL > 0
-                    option.begin() + nameStart + name.size()
-#else
-                    name.end()
-#endif
-                );
-                if (last - first == 1) {
-                    if (!mustMatchExact || first->key() == name) {
-                        return handler(OptionToken{argIdx, first->value(), std::move(usedName), std::move(arg)});
-                    } else {
-                        std::vector<StringType> candidates = {
-                            StringType(option.substr(0, nameStart + 1)),
-                            StringType(option.substr(0, nameStart)) + first->key()
-                        };
+            if (this->m_allowAbrreviation) {
+                const auto & [first, last] = findMatchOrMatchingPrefixRange(multiShortsMap, name);
+                if (last != first) {
+                    StringType usedName(option.data(), name.data() + name.size());
+                    if (last - first == 1) {
+                        if (!mustMatchExact || first->key() == name) {
+                            return handler(OptionToken{argIdx, first->value(), std::move(usedName), std::move(arg)});
+                        } else {
+                            std::vector<StringType> candidates = {
+                                StringType(option.substr(0, nameStart + 1)),
+                                StringType(option.substr(0, nameStart)) + first->key()
+                            };
+                            return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
+                        }
+                    } else  {
+                        StringType actualPrefix(option.substr(0, nameStart));
+                        std::vector<StringType> candidates;
+                        if (mustMatchExact) {
+                            candidates.reserve(1 + (last - first));
+                            candidates.push_back(StringType(option.substr(0, nameStart + 1)));
+                        } else {
+                            candidates.reserve(last - first);
+                        }
+                        std::transform(first, last, std::back_inserter(candidates), [&](const auto & p) { return actualPrefix + p.key(); });
                         return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
                     }
-                } else  {
-                    StringType actualPrefix(option.substr(0, nameStart));
-                    std::vector<StringType> candidates;
-                    if (mustMatchExact) {
-                        candidates.reserve(1 + (last - first));
-                        candidates.push_back(StringType(option.substr(0, nameStart + 1)));
-                    } else {
-                        candidates.reserve(last - first);
-                    }
-                    std::transform(first, last, std::back_inserter(candidates), [&](const auto & p) { return actualPrefix + p.key(); });
-                    return handler(AmbiguousOptionToken{argIdx, std::move(usedName), std::move(arg), candidates});
+                }
+            } else {
+                auto it = multiShortsMap.find(name);
+                if (it != multiShortsMap.end()) {
+                    StringType usedName(option.data(), name.data() + name.size());
+                    return handler(OptionToken{argIdx, it->value(), std::move(usedName), std::move(arg)});
                 }
             }
         
@@ -511,7 +529,7 @@ namespace Argum {
             return std::nullopt;
         }
 
-        auto splitLongOption(StringViewType option, unsigned nameStart) const -> std::pair<StringViewType, std::optional<StringViewType>> {
+        auto splitDelimitedArgument(StringViewType option, unsigned nameStart) const -> std::pair<StringViewType, std::optional<StringViewType>> {
 
             StringViewType name = option.substr(nameStart);
             std::optional<StringViewType> arg;
@@ -589,7 +607,7 @@ namespace Argum {
         FlatMap<PrefixId, FlatMap<StringType, NameIndex>> m_multiShorts;
         FlatMap<PrefixId, FlatMap<StringType, NameIndex>> m_longs;
 
-        
+        bool m_allowAbrreviation = true;
     };
 
     ARGUM_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer)
