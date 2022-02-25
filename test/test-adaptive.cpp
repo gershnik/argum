@@ -73,6 +73,11 @@ namespace std {
 #define OPTION_OPT_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](optional<string_view> arg){ \
         arg ? results[n].push_back(string(*arg)) : results[n].push_back(nullopt); \
     })
+#define POSITIONAL(n) Positional(n).setHandler([&](unsigned idx, string_view value){ \
+        auto & list = results[n]; \
+        CHECK(list.size() == idx); \
+        list.push_back(string(value)); \
+    })
 
 TEST_CASE( "Option with a single-dash option string" , "[adaptive]") {
 
@@ -506,6 +511,19 @@ TEST_CASE( "Repeat 2-or-3 option" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("-ww", "42"), RESULTS({"-w", {nullopt, "42"}}))
     EXPECT_SUCCESS(ARGS("-www", "42"), RESULTS({"-w", {nullopt, nullopt, "42"}}))
     EXPECT_SUCCESS(ARGS("--work=42", "-w", "-w34"), RESULTS({"-w", {"42", nullopt, "34"}}))
+}
+
+TEST_CASE( "Simple positional" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo"));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
+    EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
+    EXPECT_FAILURE(ARGS("a", "b"), EXTRA_POSITIONAL("b"))
+
+    EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
 }
 
 // TEST_CASE( "xxx" , "[sequential]") {
