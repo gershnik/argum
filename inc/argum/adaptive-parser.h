@@ -119,7 +119,7 @@ namespace Argum {
             }
             template<DescribableParserValidator<CharType> Validator>
             ValidationError(Validator validator):
-                ParsingException(describe<CharType>(validator)) {
+                ParsingException(format(Messages::validationError(), describe<CharType>(validator))) {
             }
         };
 

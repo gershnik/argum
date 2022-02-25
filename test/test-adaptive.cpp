@@ -334,6 +334,24 @@ TEST_CASE( "Combination of single- and double-dash option strings for an option"
     EXPECT_SUCCESS(ARGS("--noisy"), RESULTS({"-v", {"+"}}))
 }
 
+TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("--foo"));
+    parser.add(OPTION_REQ_ARG("--foobaz"));
+    parser.add(OPTION_NO_ARG("--fooble"));
+
+
+    EXPECT_FAILURE(ARGS("--foob", "5"), AMBIGUOUS_OPTION("--foob", "--foobaz", "--fooble"))
+    EXPECT_FAILURE(ARGS("--foob"), AMBIGUOUS_OPTION("--foob", "--foobaz", "--fooble"))
+    
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("--foo", "7"), RESULTS({"--foo", {"7"}}))
+    EXPECT_SUCCESS(ARGS("--fooba", "a"), RESULTS({"--foobaz", {"a"}}))
+    EXPECT_SUCCESS(ARGS("--foobl", "--foo", "g"), RESULTS({"--foo", {"g"}}, {"--fooble", {"+"}}))
+}
+
 TEST_CASE( "Custom prefixes" , "[adaptive]") {
     map<string, vector<Value>> results;
 
@@ -433,6 +451,42 @@ TEST_CASE( "Required option" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--work"), RESULTS({"-w", {nullopt}}))
     EXPECT_SUCCESS(ARGS("--work", "42"), RESULTS({"-w", {"42"}}))
     EXPECT_SUCCESS(ARGS("--work=42"), RESULTS({"-w", {"42"}}))
+}
+
+TEST_CASE( "Repeat one-or-more option" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_OPT_ARG("-w", "--work").setRepeated(Repeated::oneOrMore));
+
+    EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
+
+    EXPECT_SUCCESS(ARGS("-w"), RESULTS({"-w", {nullopt}}))
+    EXPECT_SUCCESS(ARGS("-w", "42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(ARGS("-w42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(ARGS("--work"), RESULTS({"-w", {nullopt}}))
+    EXPECT_SUCCESS(ARGS("--work", "42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(ARGS("--work=42"), RESULTS({"-w", {"42"}}))
+    EXPECT_SUCCESS(ARGS("-ww", "42"), RESULTS({"-w", {nullopt, "42"}}))
+    EXPECT_SUCCESS(ARGS("-www", "42"), RESULTS({"-w", {nullopt, nullopt, "42"}}))
+    EXPECT_SUCCESS(ARGS("--work", "42", "-w"), RESULTS({"-w", {"42", nullopt}}))
+}
+
+TEST_CASE( "Repeat 2-or-3 option" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_OPT_ARG("-w", "--work").setRepeated(Repeated(2,3)));
+
+    EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must occur at least 2 times"))
+    EXPECT_FAILURE(ARGS("-w"), VALIDATION_ERROR("invalid arguments: option -w must occur at least 2 times"))
+    EXPECT_FAILURE(ARGS("-w", "-w", "--work", "--wo"), VALIDATION_ERROR("invalid arguments: option -w must occur at most 3 times"))
+
+    EXPECT_SUCCESS(ARGS("-ww", "42"), RESULTS({"-w", {nullopt, "42"}}))
+    EXPECT_SUCCESS(ARGS("-www", "42"), RESULTS({"-w", {nullopt, nullopt, "42"}}))
+    EXPECT_SUCCESS(ARGS("--work=42", "-w", "-w34"), RESULTS({"-w", {"42", nullopt, "34"}}))
 }
 
 // TEST_CASE( "xxx" , "[sequential]") {
