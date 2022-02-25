@@ -191,7 +191,7 @@ namespace Argum {
                 return *this;
             }
 
-            auto set(Repeated r) -> Positional &{
+            auto setRepeated(Repeated r) -> Positional &{
                 this->repeated = r;
                 return *this;
             }

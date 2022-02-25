@@ -70,7 +70,9 @@ if (ARGUM_TEST)
                 # -Wno-padded 
                 # -Wno-weak-vtables
             > 
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic
+                -Wno-unknown-pragmas  #the whole point of pragmas it to be potentially unknown!
+            >
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /Zc:preprocessor /W4 /WX>
     )
 
