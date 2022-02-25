@@ -7,7 +7,7 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 - [Argum](#argum)
     - [Features and goals](#features-and-goals)
     - [On exceptions](#on-exceptions)
-    - [On ranges and coroutines](#on-ranges-and-coroutines)
+    - [On ranges](#on-ranges)
     - [Examples](#examples)
     - [Why another library?](#why-another-library)
 
