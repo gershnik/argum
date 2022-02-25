@@ -66,16 +66,16 @@ namespace std {
 //#define WARGS(...) (initializer_list<const wchar_t *>{__VA_ARGS__})
 #define RESULTS(...) (initializer_list<pair<const string, vector<Value>>>{__VA_ARGS__})
 
-#define OPTION_NO_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](){ \
+#define OPTION_NO_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](){ \
         results[n].push_back("+"); \
     })
-#define OPTION_REQ_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](string_view arg){ \
+#define OPTION_REQ_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](string_view arg){ \
         results[n].push_back(string(arg)); \
     })
-#define OPTION_OPT_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).setHandler([&](optional<string_view> arg){ \
+#define OPTION_OPT_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](optional<string_view> arg){ \
         arg ? results[n].push_back(string(*arg)) : results[n].push_back(nullopt); \
     })
-#define POSITIONAL(n) Positional(n).setHandler([&](unsigned idx, string_view value){ \
+#define POSITIONAL(n) Positional(n).handler([&](unsigned idx, string_view value){ \
         auto & list = results[n]; \
         CHECK(list.size() == idx); \
         list.push_back(string(value)); \
@@ -469,7 +469,7 @@ TEST_CASE( "Required option" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").setRepeated(Repeated::once));
+    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Repeated::once));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
@@ -486,7 +486,7 @@ TEST_CASE( "Repeat one-or-more option" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").setRepeated(Repeated::oneOrMore));
+    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Repeated::oneOrMore));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
@@ -506,7 +506,7 @@ TEST_CASE( "Repeat 2-or-3 option" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").setRepeated(Repeated(2,3)));
+    parser.add(OPTION_OPT_ARG("-w", "--work").repeats(Repeated(2,3)));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must occur at least 2 times"))
@@ -540,7 +540,7 @@ TEST_CASE( "Positional with explicit repeat once" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").setRepeated(Repeated::once));
+    parser.add(POSITIONAL("foo").repeats(Repeated::once));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -553,7 +553,7 @@ TEST_CASE( "Positional with explicit repeat twice" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").setRepeated(Repeated(2)));
+    parser.add(POSITIONAL("foo").repeats(Repeated(2)));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
     EXPECT_FAILURE(ARGS("a"), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
@@ -567,7 +567,7 @@ TEST_CASE( "Positional with unlimited repeat" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").setRepeated(Repeated::zeroOrMore));
+    parser.add(POSITIONAL("foo").repeats(Repeated::zeroOrMore));
 
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
     
@@ -581,7 +581,7 @@ TEST_CASE( "Positional with one or more repeat" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").setRepeated(Repeated::oneOrMore));
+    parser.add(POSITIONAL("foo").repeats(Repeated::oneOrMore));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -595,7 +595,7 @@ TEST_CASE( "Positional with zero or once repeat" , "[adaptive]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("foo").setRepeated(Repeated::zeroOrOnce));
+    parser.add(POSITIONAL("foo").repeats(Repeated::zeroOrOnce));
 
     EXPECT_FAILURE(ARGS("a", "b"), EXTRA_POSITIONAL("b"))
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -631,29 +631,29 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
 
 //     parser.add(
 //         Option("-v")
-//         .setDescription("xcbfdjd")
-//         .setHandler([&]() {
+//         .help("xcbfdjd")
+//         .handler([&]() {
 //             ++verbosity;
 //         }));
 //     parser.add(
 //         Option("--name", "-n")
-//         .setDescription("dfsd\nhjjkll")
-//         .setHandler([&](string_view value) {
+//         .help("dfsd\nhjjkll")
+//         .handler([&](string_view value) {
 //             name = value;
 //         }));
 //     parser.add(
 //         Positional("bob")
-//         .set(Repeated(0, 25))
-//         .setDescription("hohahaha")
-//         .setHandler([](unsigned idx, string_view) {
+//         .repeats(Repeated(0, 25))
+//         .help("hohahaha")
+//         .handler([](unsigned idx, string_view) {
 //             CHECK(idx == 0);
 //         })
 //     );
 //     parser.add(
 //         Positional("fob")
-//         .set(Repeated(1,1))
-//         .setDescription("ghakl\njdks")
-//         .setHandler([](unsigned, string_view) {
+//         .repeats(Repeated(1,1))
+//         .help("ghakl\njdks")
+//         .handler([](unsigned, string_view) {
         
 //         })
 //     );
@@ -676,9 +676,9 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
 //    WAdaptiveParser wparser;
 //     wparser.add(
 //         WPositional(L"fob")
-//         .set(Repeated(7,7))
-//         .setDescription(L"ghakl\njdks")
-//         .setHandler([](unsigned, wstring_view) {
+//         .repeats(Repeated(7,7))
+//         .help(L"ghakl\njdks")
+//         .handler([](unsigned, wstring_view) {
 
 //             })
 //     );

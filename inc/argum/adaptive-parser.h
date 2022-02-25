@@ -133,77 +133,106 @@ namespace Argum {
             >;
             
             Option(OptionNames names_) :
-                names(std::move(names_)) {
+                m_names(std::move(names_)) {
             }
 
             template<class... Args>
             requires(std::is_constructible_v<OptionNames, Args &&...>)
             Option(Args && ...args) :
-                names(std::forward<Args>(args)...) {
+                m_names(std::forward<Args>(args)...) {
             }
 
             template<class H>
-            auto setHandler(H && handler_) -> Option &
-            requires(std::is_invocable_v<std::decay_t<decltype(handler_)>> ||
-                     std::is_invocable_v<std::decay_t<decltype(handler_)>, std::optional<StringViewType>> ||
-                     std::is_invocable_v<std::decay_t<decltype(handler_)>, StringViewType>) {
+            auto handler(H && h) & -> Option &
+            requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
+                     std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
+                     std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
 
-                if constexpr (std::is_invocable_v<std::decay_t<decltype(handler_)>>) {
-                    this->handler.template emplace<OptionHandler<OptionArgument::None>>(std::forward<H>(handler_));
-                } else if constexpr (std::is_invocable_v<std::decay_t<decltype(handler_)>, std::optional<StringViewType>>)
-                    this->handler.template emplace<OptionHandler<OptionArgument::Optional>>(std::forward<H>(handler_));
+                if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>>) {
+                    this->m_handler.template emplace<OptionHandler<OptionArgument::None>>(std::forward<H>(h));
+                } else if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>>)
+                    this->m_handler.template emplace<OptionHandler<OptionArgument::Optional>>(std::forward<H>(h));
                 else {
-                    this->handler.template emplace<OptionHandler<OptionArgument::Required>>(std::forward<H>(handler_));
+                    this->m_handler.template emplace<OptionHandler<OptionArgument::Required>>(std::forward<H>(h));
                 }
                 return *this;
             }
 
-            auto setRepeated(Repeated r) -> Option &{
-                this->repeated = r;
+            template<class H>
+            auto handler(H && h) && -> Option &&
+            requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
+                     std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
+                     std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
+                return std::move(static_cast<Option *>(this)->handler(std::forward<H>(h)));
+            }
+
+            auto repeats(Repeated r) & -> Option & {
+                this->m_repeated = r;
                 return *this;
             }
-            auto setArgName(StringViewType n) -> Option &{
-                this->argName = n;
+            auto repeats(Repeated r) && -> Option && {
+                return std::move(static_cast<Option *>(this)->repeats(r));
+            }
+
+            auto argName(StringViewType n) & -> Option & {
+                this->m_argName = n;
                 return *this;
             }
-            auto setDescription(StringViewType d)  -> Option &{
-                this->description = d;
+            auto argName(StringViewType n) && -> Option && {
+                return std::move(static_cast<Option *>(this)->argName(n));
+            }
+
+            auto help(StringViewType str) & -> Option & {
+                this->m_description = str;
                 return *this;
+            }
+            auto help(StringViewType str) && -> Option && {
+                return std::move(static_cast<Option *>(this)->help(str));
             }
         private:
-            OptionNames names;
-            Handler handler = []() {};
-            Repeated repeated = Repeated::zeroOrMore;
+            OptionNames m_names;
+            Handler m_handler = []() {};
+            Repeated m_repeated = Repeated::zeroOrMore;
 
-            StringType argName = Messages::defaultArgName();
-            StringType description;
+            StringType m_argName = Messages::defaultArgName();
+            StringType m_description;
         };
 
         class Positional {
             friend class BasicAdaptiveParser;
         public:
             Positional(StringViewType name_) :
-                name(std::move(name_)) {
+                m_name(std::move(name_)) {
             }
 
-            auto setHandler(PositionalHandler handler_) -> Positional & {
-                this->handler = std::move(handler_);
+            auto handler(PositionalHandler h) & -> Positional & {
+                this->m_handler = std::move(h);
                 return *this;
+            }
+            auto handler(PositionalHandler h) && -> Positional && {
+                return std::move(static_cast<Positional *>(this)->handler(h));
             }
 
-            auto setRepeated(Repeated r) -> Positional &{
-                this->repeated = r;
+            auto repeats(Repeated r) & -> Positional & {
+                this->m_repeated = r;
                 return *this;
             }
-            auto setDescription(StringViewType d)  -> Positional &{
-                this->description = d;
+            auto repeats(Repeated r) && -> Positional && {
+                return std::move(static_cast<Positional *>(this)->repeats(r));
+            }
+
+            auto help(StringViewType str) & -> Positional &{
+                this->m_description = str;
                 return *this;
+            }
+            auto help(StringViewType str) && -> Positional && {
+                return std::move(static_cast<Positional *>(this)->help(str));
             }
         private:
-            StringType name;
-            PositionalHandler handler = [](unsigned, StringViewType) {};
-            Repeated repeated = Repeated::once;
-            StringType description;
+            StringType m_name;
+            PositionalHandler m_handler = [](unsigned, StringViewType) {};
+            Repeated m_repeated = Repeated::once;
+            StringType m_description;
         };
 
     public:
@@ -215,9 +244,9 @@ namespace Argum {
         auto add(Option option) -> void {
 
             auto & added = this->m_options.emplace_back(std::move(option));
-            this->m_tokenizer.add(this->m_options.back().names);
-            if (added.repeated.min() > 0)
-                addValidator(OptionOccursAtLeast(added.names.main(), added.repeated.min()));
+            this->m_tokenizer.add(this->m_options.back().m_names);
+            if (added.m_repeated.min() > 0)
+                addValidator(OptionOccursAtLeast(added.m_names.main(), added.m_repeated.min()));
             ++m_updateCount;
         }
         
@@ -288,7 +317,7 @@ namespace Argum {
             if (!this->m_positionals.empty()) {
                 ret.append(Messages::positionalHeader());
                 for(auto & pos: this->m_positionals)
-                    ret.append({endl}).append(this->formatItemDescription(pos.name, pos.description, 2, maxNameLen));
+                    ret.append({endl}).append(this->formatItemDescription(pos.m_name, pos.m_description, 2, maxNameLen));
                 ret.append(2, endl);
             }
 
@@ -297,7 +326,7 @@ namespace Argum {
                 for(size_t idx = 0; idx < this->m_options.size(); ++idx) {
                     auto & opt = this->m_options[idx];
                     auto name = optionNames[idx];
-                    ret.append({endl}).append(this->formatItemDescription(name, opt.description, 2, maxNameLen));
+                    ret.append({endl}).append(this->formatItemDescription(name, opt.m_description, 2, maxNameLen));
                 }
                 ret.append(2, endl);
             }
@@ -320,15 +349,15 @@ namespace Argum {
         }
 
         auto formatOptionSyntax(const Option & opt) const -> StringType {
-            constexpr auto brop = CharConstants::optBracketOpen;
-            constexpr auto brcl = CharConstants::optBracketClose;
+            constexpr auto brop = CharConstants::squareBracketOpen;
+            constexpr auto brcl = CharConstants::squareBracketClose;
 
             StringType ret;
 
-            if (opt.repeated.min() == 0)
+            if (opt.m_repeated.min() == 0)
                 ret += brop;
-            ret.append(opt.names.main()).append(this->formatOptionArgSyntax(opt));
-            if (opt.repeated.min() == 0)
+            ret.append(opt.m_names.main()).append(this->formatOptionArgSyntax(opt));
+            if (opt.m_repeated.min() == 0)
                 ret += brcl;
 
             return ret;
@@ -336,30 +365,30 @@ namespace Argum {
 
         auto formatPositionalSyntax(const Positional & pos) const -> StringType {
             constexpr auto space = CharConstants::space;
-            constexpr auto brop = CharConstants::optBracketOpen;
-            constexpr auto brcl = CharConstants::optBracketClose;
+            constexpr auto brop = CharConstants::squareBracketOpen;
+            constexpr auto brcl = CharConstants::squareBracketClose;
             constexpr auto ellipsis = CharConstants::ellipsis;
 
             StringType ret;
 
-            if (pos.repeated.min() == 0)
+            if (pos.m_repeated.min() == 0)
                 ret += brop;
-            ret += pos.name;
+            ret += pos.m_name;
             unsigned idx = 1;
-            for (; idx < pos.repeated.min(); ++idx) {
-                ret.append({space}).append(pos.name);
+            for (; idx < pos.m_repeated.min(); ++idx) {
+                ret.append({space}).append(pos.m_name);
             }
-            if (idx != pos.repeated.min()) {
-                ret.append({space, brop}).append(pos.name);
-                if (pos.repeated.max() != pos.repeated.infinity) {
-                    for (++idx; idx < pos.repeated.max(); ++idx)
-                        ret.append({space}).append(pos.name);
+            if (idx != pos.m_repeated.min()) {
+                ret.append({space, brop}).append(pos.m_name);
+                if (pos.m_repeated.max() != Repeated::infinity) {
+                    for (++idx; idx < pos.m_repeated.max(); ++idx)
+                        ret.append({space}).append(pos.m_name);
                 } else {
                     ret.append({space}).append(ellipsis);
                 }
                 ret += brcl;
             }
-            if (pos.repeated.min() == 0)
+            if (pos.m_repeated.min() == 0)
                 ret += brcl;
 
             return ret;
@@ -370,8 +399,8 @@ namespace Argum {
             std::vector<StringType> optionNames;
 
             std::for_each(this->m_positionals.begin(), this->m_positionals.end(), [&](auto & pos){
-                if (pos.name.length() > maxNameLen)
-                    maxNameLen = pos.name.length();
+                if (pos.m_name.length() > maxNameLen)
+                    maxNameLen = pos.m_name.length();
             });
             std::for_each(this->m_options.begin(), this->m_options.end(), [&](auto & opt){
                 auto name = this->formatOptionNameForDescription(opt);
@@ -384,9 +413,9 @@ namespace Argum {
 
         auto formatOptionNameForDescription(const Option & opt) const -> StringType {
             
-            StringType ret = opt.names.all().front();
+            StringType ret = opt.m_names.all().front();
             ret += this->formatOptionArgSyntax(opt);
-            std::for_each(opt.names.all().begin() + 1, opt.names.all().end(), [&](const auto & name) {
+            std::for_each(opt.m_names.all().begin() + 1, opt.m_names.all().end(), [&](const auto & name) {
                 ret.append(Messages::listJoiner()).append(name).append(this->formatOptionArgSyntax(opt));
             });
 
@@ -415,18 +444,18 @@ namespace Argum {
 
         auto formatOptionArgSyntax(const Option & opt) const -> StringType {
             constexpr auto space = CharConstants::space;
-            constexpr auto brop = CharConstants::optBracketOpen;
-            constexpr auto brcl = CharConstants::optBracketClose;
+            constexpr auto brop = CharConstants::squareBracketOpen;
+            constexpr auto brcl = CharConstants::squareBracketClose;
 
             StringType ret;
             std::visit([&](const auto & handler) {
                 using HandlerType = std::decay_t<decltype(handler)>;
                 if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
-                    ret.append({space, brop}).append(opt.argName).append({brcl});
+                    ret.append({space, brop}).append(opt.m_argName).append({brcl});
                 } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Required>>)  {
-                    ret.append({space}).append(opt.argName);
+                    ret.append({space}).append(opt.m_argName);
                 }
-            }, opt.handler);
+            }, opt.m_handler);
             return ret;
         }
 
@@ -517,7 +546,7 @@ namespace Argum {
                             throw MissingOptionArgument(m_optionName);
                         handler(*m_optionArgument);
                     }
-                }, option.handler);
+                }, option.m_handler);
                 m_optionIndex = -1;
                 m_optionArgument.reset();
             }
@@ -545,16 +574,16 @@ namespace Argum {
                                 return true;
                             }
                         }
-                    }, option.handler);
+                    }, option.m_handler);
                 m_optionIndex = -1;
                 m_optionArgument.reset();
                 return ret;
             }
 
             auto validateOptionMax(const Option & option) {
-                auto & name = option.names.main();
+                auto & name = option.m_names.main();
                 ++m_validationData.optionCount(name);
-                auto validator = OptionOccursAtMost(name, option.repeated.max());
+                auto validator = OptionOccursAtMost(name, option.m_repeated.max());
                 if (!validator(m_validationData)) {
                     throw ValidationError(validator);
                 }
@@ -573,7 +602,7 @@ namespace Argum {
                         return false;
 
                     auto & current = m_owner.m_positionals[unsigned(m_positionalIndex)];
-                    if (m_positionalSizes[unsigned(m_positionalIndex)] > m_validationData.positionalCount(current.name))
+                    if (m_positionalSizes[unsigned(m_positionalIndex)] > m_validationData.positionalCount(current.m_name))
                         positional = &current;
 
                 }
@@ -588,8 +617,8 @@ namespace Argum {
                     positional = &m_owner.m_positionals[unsigned(m_positionalIndex)];
                 }
                 
-                auto & count = m_validationData.positionalCount(positional->name);
-                positional->handler(count, value);
+                auto & count = m_validationData.positionalCount(positional->m_name);
+                positional->m_handler(count, value);
                 ++count;
                 return true;
             }
@@ -609,16 +638,16 @@ namespace Argum {
                 auto fillStartIndex = m_positionalIndex + 1;
                 if (m_positionalIndex >= 0) {
                     auto & positional = m_owner.m_positionals[unsigned(m_positionalIndex)];
-                    auto count = m_validationData.positionalCount(positional.name);
-                    if (positional.repeated.max() > count) {
+                    auto count = m_validationData.positionalCount(positional.m_name);
+                    if (positional.m_repeated.max() > count) {
                         remainingPositionalCount += count; //account for already processed
-                        partitioner.addRange(positional.repeated.min(), positional.repeated.max());
+                        partitioner.addRange(positional.m_repeated.min(), positional.m_repeated.max());
                         --fillStartIndex;
                     }
                 }
                 std::for_each(m_owner.m_positionals.begin() + (m_positionalIndex + 1), m_owner.m_positionals.end(),
                                 [&] (const Positional & positional) {
-                    partitioner.addRange(positional.repeated.min(), positional.repeated.max());
+                    partitioner.addRange(positional.m_repeated.min(), positional.m_repeated.max());
                 });
 
                 //3. Partition the range
@@ -644,7 +673,7 @@ namespace Argum {
                     if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
 
                         auto & option = m_owner.m_options[token.idx];
-                        if (!std::holds_alternative<OptionHandler<OptionArgument::None>>(option.handler)) {
+                        if (!std::holds_alternative<OptionHandler<OptionArgument::None>>(option.m_handler)) {
                             currentOptionExpectsArgument = true;
                         }
 
@@ -675,7 +704,7 @@ namespace Argum {
                     ++idx) {
                     
                     auto & positional = m_owner.m_positionals[unsigned(idx)];
-                    auto validator = PositionalOccursAtLeast(positional.name, positional.repeated.min());
+                    auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_repeated.min());
                     if (!validator(this->m_validationData))
                         throw ValidationError(validator);
                 }
