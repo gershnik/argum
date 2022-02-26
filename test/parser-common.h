@@ -30,19 +30,30 @@ using WExtraOptionArgument = WAdaptiveParser::ExtraOptionArgument;
 using ValidationError = AdaptiveParser::ValidationError;
 using WValidationError = WAdaptiveParser::ValidationError;
 
+template<class Char>
+using BasicValue = optional<basic_string<Char>>;
+using Value = BasicValue<char>;
+using WValue = BasicValue<wchar_t>;
+
+
 inline void reportInvalidArgument(const char * message) {
     throw invalid_argument(message);
 }
 
 template<class Char>
-inline auto parse(const BasicAdaptiveParser<Char> & parser, initializer_list<const Char *> args) {
+inline auto parse(const BasicAdaptiveParser<Char> & parser, initializer_list<const Char *> args, 
+                  map<basic_string<Char>, vector<BasicValue<Char>>> & results) {
+    results.clear();
     parser.parse(args.begin(), args.end());
 }
 
 template<class Char>
-using BasicValue = optional<basic_string<Char>>;
-using Value = BasicValue<char>;
-using WValue = BasicValue<wchar_t>;
+inline auto parseUntilUnknown(const BasicAdaptiveParser<Char> & parser, initializer_list<const Char *> args,
+                              map<basic_string<Char>, vector<BasicValue<Char>>> & results) {
+    results.clear();
+    return parser.parseUntilUnknown(args.begin(), args.end());
+}
+
 
 namespace std {
 
@@ -89,17 +100,15 @@ namespace std {
 #define WVALIDATION_ERROR(x) catch(WValidationError & ex) { CHECK(ex.message() == (x)); }
 
 #define EXPECT_FAILURE(args, failure) \
-    results.clear(); \
-    REQUIRE_NOTHROW([&](){ try { parse(parser, args); CHECK(false); } failure }());
+    REQUIRE_NOTHROW([&](){ try { parse(parser, args, results); CHECK(false); } failure }());
 #define EXPECT_SUCCESS(args, expected) { \
-    results.clear(); \
-    REQUIRE_NOTHROW(parse(parser, args)); \
-    CHECK(results == decltype(results)(expected)); \
+    REQUIRE_NOTHROW(parse(parser, args, results)); \
+    CHECK(results == expected); \
 }
 #define ARGS(...) (initializer_list<const char *>{__VA_ARGS__})
 #define WARGS(...) (initializer_list<const wchar_t *>{__VA_ARGS__})
-#define RESULTS(...) (initializer_list<pair<const string, vector<Value>>>{__VA_ARGS__})
-#define WRESULTS(...) (initializer_list<pair<const wstring, vector<WValue>>>{__VA_ARGS__})
+#define RESULTS(...) decltype(results)(initializer_list<pair<const string, vector<Value>>>{__VA_ARGS__})
+#define WRESULTS(...) decltype(results)(initializer_list<pair<const wstring, vector<WValue>>>{__VA_ARGS__})
 
 #define OPTION_NO_ARG(n, ...) Option(n __VA_OPT__(,) __VA_ARGS__).handler([&](){ \
         results[n].push_back("+"); \
