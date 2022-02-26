@@ -107,3 +107,35 @@ TEST_CASE( "Stopping at unknown" , "[parser]") {
 
 }
 //DIFFERENCE FROM ArgParse
+
+TEST_CASE( "options that may or may not be arguments" , "[parser]") {
+    map<string, vector<Value>> results;
+    vector<string> remainder;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_REQ_ARG("-x"));
+    parser.add(OPTION_REQ_ARG("-3"));
+    parser.add(POSITIONAL("z").occurs(ZeroOrMoreTimes));
+
+    EXPECT_FAILURE(ARGS("-x"), MISSING_OPTION_ARGUMENT("-x"))
+    EXPECT_FAILURE(ARGS("-y2.5"), UNRECOGNIZED_OPTION("-y2.5"))
+    EXPECT_FAILURE(ARGS("-x", "-3"), MISSING_OPTION_ARGUMENT("-x"))
+    EXPECT_FAILURE(ARGS("-x", "-3.5"), MISSING_OPTION_ARGUMENT("-x"))
+    EXPECT_FAILURE(ARGS("-3", "-3.5"), MISSING_OPTION_ARGUMENT("-3"))
+
+    //DIFFERENCE FROM ArgParse. We do parse numbers properly
+    EXPECT_SUCCESS(ARGS("-x", "-2.5"), RESULTS({"-x", {"-2.5"}}))
+    EXPECT_SUCCESS(ARGS("-x", "-2.5", "a"), RESULTS({"-x", {"-2.5"}}, {"z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-3", "-.5"), RESULTS({"-3", {"-.5"}}))
+    EXPECT_SUCCESS(ARGS("a", "x", "-1"), RESULTS({"z", {"a", "x", "-1"}}))
+    EXPECT_SUCCESS(ARGS("-x", "-1", "a"), RESULTS({"-x", {"-1"}}, {"z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-3", "-1", "a"), RESULTS({"-3", {"-1"}}, {"z", {"a"}}))
+    //DIFFERENCE FROM ArgParse
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("-x", "2.5"), RESULTS({"-x", {"2.5"}}))
+    EXPECT_SUCCESS(ARGS("-3.5"), RESULTS({"-3", {".5"}}))
+    EXPECT_SUCCESS(ARGS("-3-.5"), RESULTS({"-3", {"-.5"}}))
+    EXPECT_SUCCESS(ARGS("a", "-3.5"), RESULTS({"-3", {".5"}}, {"z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("a"), RESULTS({"z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-3", "1", "a"), RESULTS({"-3", {"1"}}, {"z", {"a"}}))
+}
