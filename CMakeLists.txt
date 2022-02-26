@@ -95,7 +95,7 @@ if (ARGUM_TEST)
             test/test-command-line.cpp
             test/test-tokenizer.cpp
             test/parser-common.h
-            test/test-adaptive.cpp
+            test/test-parser-options.cpp
             test/test-parser-positionals.cpp
             test/test-parser-options-positionals.cpp
 
