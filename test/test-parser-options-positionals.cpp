@@ -1,7 +1,7 @@
 #include "parser-common.h"
 
 
-TEST_CASE( "Negative number args when numeric options are present" , "[adaptive]") {
+TEST_CASE( "Negative number args when numeric options are present" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -18,7 +18,7 @@ TEST_CASE( "Negative number args when numeric options are present" , "[adaptive]
     EXPECT_SUCCESS(ARGS("-4", "-2"), RESULTS({"-4", {"+"}}, {"x", {"-2"}}))
 }
 
-TEST_CASE( "Empty arguments" , "[adaptive]") {
+TEST_CASE( "Empty arguments" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -31,7 +31,7 @@ TEST_CASE( "Empty arguments" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("-y", ""), RESULTS({"-y", {""}}))
 }
 
-TEST_CASE( "Prefix character only arguments" , "[adaptive]") {
+TEST_CASE( "Prefix character only arguments" , "[parser]") {
     
     map<string, vector<Value>> results;
 

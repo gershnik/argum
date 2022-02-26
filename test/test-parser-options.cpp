@@ -3,7 +3,7 @@
 #pragma region Test Options
 //MARK: - Test Options
 
-TEST_CASE( "Option with a single-dash option string" , "[adaptive]") {
+TEST_CASE( "Option with a single-dash option string" , "[parser]") {
 
     map<string, vector<Value>> results;
 
@@ -23,7 +23,7 @@ TEST_CASE( "Option with a single-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("-x-1"), RESULTS({"-x", {"-1"}}))
 }
 
-TEST_CASE( "Wide Option with a single-dash option string" , "[adaptive]") {
+TEST_CASE( "Wide Option with a single-dash option string" , "[parser]") {
 
     map<wstring, vector<WValue>> results;
 
@@ -43,7 +43,7 @@ TEST_CASE( "Wide Option with a single-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(WARGS(L"-x-1"), WRESULTS({L"-x", {L"-1"}}))
 }
 
-TEST_CASE( "Combined single-dash options" , "[adaptive]") {
+TEST_CASE( "Combined single-dash options" , "[parser]") {
 
     map<string, vector<Value>> results;
 
@@ -79,7 +79,7 @@ TEST_CASE( "Combined single-dash options" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("-x", "-yyy", "-z", "a"), RESULTS({"-x", {"+"}}, {"-yyy", {"+"}}, {"-z", {"a"}}))
 }
 
-TEST_CASE( "Option with a multi-character single-dash option string" , "[adaptive]") {
+TEST_CASE( "Option with a multi-character single-dash option string" , "[parser]") {
 
     map<string, vector<Value>> results;
 
@@ -106,7 +106,7 @@ TEST_CASE( "Option with a multi-character single-dash option string" , "[adaptiv
     //DIFFERENCE FROM ArgParse.
 }
 
-TEST_CASE( "Single dash options where option strings are subsets of each other" , "[adaptive]") {
+TEST_CASE( "Single dash options where option strings are subsets of each other" , "[parser]") {
 
     map<string, vector<Value>> results;
 
@@ -132,7 +132,7 @@ TEST_CASE( "Single dash options where option strings are subsets of each other" 
     EXPECT_SUCCESS(ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
-TEST_CASE( "Single dash options that partially match but are not subsets" , "[adaptive]") {
+TEST_CASE( "Single dash options that partially match but are not subsets" , "[parser]") {
 
     map<string, vector<Value>> results;
 
@@ -157,7 +157,7 @@ TEST_CASE( "Single dash options that partially match but are not subsets" , "[ad
     EXPECT_SUCCESS(ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
-TEST_CASE( "Short option with a numeric option string" , "[adaptive]") {
+TEST_CASE( "Short option with a numeric option string" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -178,7 +178,7 @@ TEST_CASE( "Short option with a numeric option string" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("-1-2"), RESULTS({"-1", {"-2"}}))
 }
 
-TEST_CASE( "Option with a double-dash option string" , "[adaptive]") {
+TEST_CASE( "Option with a double-dash option string" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -198,7 +198,7 @@ TEST_CASE( "Option with a double-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--foo=-2.5"), RESULTS({"--foo", {"-2.5"}}))
 }
 
-TEST_CASE( "Partial matching with a double-dash option string" , "[adaptive]") {
+TEST_CASE( "Partial matching with a double-dash option string" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -220,7 +220,7 @@ TEST_CASE( "Partial matching with a double-dash option string" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--badger"), RESULTS({"--badger", {"+"}}))
 }
 
-TEST_CASE( "Wide Partial matching with a double-dash option string" , "[adaptive]") {
+TEST_CASE( "Wide Partial matching with a double-dash option string" , "[parser]") {
     map<wstring, vector<WValue>> results;
 
     WAdaptiveParser parser;
@@ -242,7 +242,7 @@ TEST_CASE( "Wide Partial matching with a double-dash option string" , "[adaptive
     EXPECT_SUCCESS(WARGS(L"--badger"), WRESULTS({L"--badger", {L"+"}}))
 }
 
-TEST_CASE( "One double-dash option string is a prefix of another" , "[adaptive]") {
+TEST_CASE( "One double-dash option string is a prefix of another" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -264,7 +264,7 @@ TEST_CASE( "One double-dash option string is a prefix of another" , "[adaptive]"
     EXPECT_SUCCESS(ARGS("--badger"), RESULTS({"--badger", {"+"}}))
 }
 
-TEST_CASE( "Mix of options with single- and double-dash option strings" , "[adaptive]") {
+TEST_CASE( "Mix of options with single- and double-dash option strings" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -287,7 +287,7 @@ TEST_CASE( "Mix of options with single- and double-dash option strings" , "[adap
     EXPECT_SUCCESS(ARGS("-ba", "-f"), RESULTS({"-f", {"+"}}, {"-baz", {"+"}}))
 }
 
-TEST_CASE( "Combination of single- and double-dash option strings for an option" , "[adaptive]") {
+TEST_CASE( "Combination of single- and double-dash option strings for an option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -305,7 +305,7 @@ TEST_CASE( "Combination of single- and double-dash option strings for an option"
     EXPECT_SUCCESS(ARGS("--noisy"), RESULTS({"-v", {"+"}}))
 }
 
-TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[adaptive]") {
+TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -323,7 +323,7 @@ TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[adaptive]") 
     EXPECT_SUCCESS(ARGS("--foobl", "--foo", "g"), RESULTS({"--foo", {"g"}}, {"--fooble", {"+"}}))
 }
 
-TEST_CASE( "Disallow abbreviation settin" , "[adaptive]") {
+TEST_CASE( "Disallow abbreviation settin" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser(AdaptiveParser::Settings::commonUnix().allowAbbreviation(false));
@@ -342,7 +342,7 @@ TEST_CASE( "Disallow abbreviation settin" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--foonly", "7", "--foodle", "--foo", "2"), RESULTS({"--foo", {"2"}}, {"--foodle", {"+"}}, {"--foonly", {"7"}}))
 }
 
-TEST_CASE( "Custom prefixes" , "[adaptive]") {
+TEST_CASE( "Custom prefixes" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser(AdaptiveParser::Settings()
@@ -374,7 +374,7 @@ TEST_CASE( "Custom prefixes" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("/ba", "+f"), RESULTS({"+f", {"+"}}, {"/baz", {"+"}}))
 }
 
-TEST_CASE( "Equivalent custom prefixes" , "[adaptive]") {
+TEST_CASE( "Equivalent custom prefixes" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser::Settings settings;
@@ -410,7 +410,7 @@ TEST_CASE( "Equivalent custom prefixes" , "[adaptive]") {
 }
 
 
-TEST_CASE( "Optional arg for an option" , "[adaptive]") {
+TEST_CASE( "Optional arg for an option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -426,7 +426,7 @@ TEST_CASE( "Optional arg for an option" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--work=2"), RESULTS({"-w", {"2"}}))
 }
 
-TEST_CASE( "Required option" , "[adaptive]") {
+TEST_CASE( "Required option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -443,7 +443,7 @@ TEST_CASE( "Required option" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--work=42"), RESULTS({"-w", {"42"}}))
 }
 
-TEST_CASE( "Repeat one-or-more option" , "[adaptive]") {
+TEST_CASE( "Repeat one-or-more option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -463,7 +463,7 @@ TEST_CASE( "Repeat one-or-more option" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("--work", "42", "-w"), RESULTS({"-w", {"42", nullopt}}))
 }
 
-TEST_CASE( "Repeat 2-or-3 option" , "[adaptive]") {
+TEST_CASE( "Repeat 2-or-3 option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;

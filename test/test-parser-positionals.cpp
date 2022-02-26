@@ -1,7 +1,7 @@
 #include "parser-common.h"
 
 
-TEST_CASE( "Simple positional" , "[adaptive]") {
+TEST_CASE( "Simple positional" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -14,7 +14,7 @@ TEST_CASE( "Simple positional" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
 }
 
-TEST_CASE( "Positional with explicit repeat once" , "[adaptive]") {
+TEST_CASE( "Positional with explicit repeat once" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -27,7 +27,7 @@ TEST_CASE( "Positional with explicit repeat once" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
 }
 
-TEST_CASE( "Positional with explicit repeat twice" , "[adaptive]") {
+TEST_CASE( "Positional with explicit repeat twice" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -41,7 +41,7 @@ TEST_CASE( "Positional with explicit repeat twice" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a", "b"}}))
 }
 
-TEST_CASE( "Positional with unlimited repeat" , "[adaptive]") {
+TEST_CASE( "Positional with unlimited repeat" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -55,7 +55,7 @@ TEST_CASE( "Positional with unlimited repeat" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b", "c"}}))
 }
 
-TEST_CASE( "Positional with one or more repeat" , "[adaptive]") {
+TEST_CASE( "Positional with one or more repeat" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -69,7 +69,7 @@ TEST_CASE( "Positional with one or more repeat" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b", "c"}}))
 }
 
-TEST_CASE( "Positional with zero or once repeat" , "[adaptive]") {
+TEST_CASE( "Positional with zero or once repeat" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -82,7 +82,7 @@ TEST_CASE( "Positional with zero or once repeat" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
 }
 
-TEST_CASE( "Two positionals" , "[adaptive]") {
+TEST_CASE( "Two positionals" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -97,7 +97,7 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[adaptive]") {
+TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -112,7 +112,7 @@ TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[adapti
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -128,7 +128,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
 
-TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -143,7 +143,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[adaptiv
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -158,7 +158,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[adapt
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -173,7 +173,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[adapt
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[adaptive]") {
+TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -188,7 +188,7 @@ TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[adaptiv
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
 
-TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[adaptive]") {
+TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -202,7 +202,7 @@ TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[adapt
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
-TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[adaptive]") {
+TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -217,7 +217,7 @@ TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[adapt
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[parser]") {
     map<wstring, vector<WValue>> results;
 
     WAdaptiveParser parser;
@@ -232,7 +232,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[adaptiv
     EXPECT_SUCCESS(WARGS(L"a", L"b", L"c"), WRESULTS({L"foo", {L"a", L"b"}}, {L"bar", {L"c"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[parser]") {
     map<wstring, vector<WValue>> results;
 
     WAdaptiveParser parser;
@@ -248,7 +248,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[adapt
     EXPECT_SUCCESS(WARGS(L"a", L"b", L"c", L"d"), WRESULTS({L"foo", {L"a", L"b"}}, {L"bar", {L"c", L"d"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[adaptive]") {
+TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -264,7 +264,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[adaptive
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
 
-TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[adaptive]") {
+TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -281,7 +281,7 @@ TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c", "d"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}, {"baz", {"d"}}))
 }
 
-TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[adaptive]") {
+TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -298,7 +298,7 @@ TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c", "d"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}, {"baz", {"d"}}))
 }
 
-TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[adaptive]") {
+TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -315,7 +315,7 @@ TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}, {"baz", {"c"}}))
 }
 
-TEST_CASE( "Two positionals with repeats: ?, ?" , "[adaptive]") {
+TEST_CASE( "Two positionals with repeats: ?, ?" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -330,7 +330,7 @@ TEST_CASE( "Two positionals with repeats: ?, ?" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Two positionals with repeats: ?, *" , "[adaptive]") {
+TEST_CASE( "Two positionals with repeats: ?, *" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
@@ -345,7 +345,7 @@ TEST_CASE( "Two positionals with repeats: ?, *" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-TEST_CASE( "Two positionals with repeats: ?, +" , "[adaptive]") {
+TEST_CASE( "Two positionals with repeats: ?, +" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
