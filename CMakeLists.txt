@@ -29,6 +29,7 @@ target_sources(argum
         inc/argum/formatting.h
         inc/argum/partitioner.h
         inc/argum/flat-map.h
+        inc/argum/simple-file.h
         inc/argum/data.h
         inc/argum/command-line.h
         inc/argum/tokenizer.h
@@ -93,7 +94,10 @@ if (ARGUM_TEST)
             test/test-partitioner.cpp
             test/test-command-line.cpp
             test/test-tokenizer.cpp
+            test/parser-common.h
             test/test-adaptive.cpp
+            test/test-parser-positionals.cpp
+            test/test-parser-options-positionals.cpp
 
             test/response.txt
             test/response1.txt
