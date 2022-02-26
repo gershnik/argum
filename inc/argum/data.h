@@ -61,7 +61,8 @@ namespace Argum {
         constexpr Quantifier(unsigned val): m_min(val), m_max(val) {
         }
         constexpr Quantifier(unsigned min, unsigned max): m_min(min), m_max(max) {
-            ARGUM_ALWAYS_ASSERT(min <= max);
+            if (min > max)
+                ARGUM_INVALID_ARGUMENT("min must be less or equal to max");
         }
         
         constexpr auto min() const {
@@ -77,10 +78,13 @@ namespace Argum {
         unsigned m_max = 0;
     };
 
-    inline constexpr Quantifier ZeroOrOnce     (0, 1);
-    inline constexpr Quantifier Once           (1, 1);
+    inline constexpr Quantifier ZeroOrOneTime  (0, 1);
+    inline constexpr Quantifier NeverOrOnce    = ZeroOrOneTime;
+    inline constexpr Quantifier OneTime        (1, 1);
+    inline constexpr Quantifier Once           = OneTime;
     inline constexpr Quantifier ZeroOrMoreTimes(0, Quantifier::infinity);
     inline constexpr Quantifier OneOrMoreTimes (1, Quantifier::infinity);
+    inline constexpr Quantifier OnceOrMore     = OneOrMoreTimes;
 
     template<class Char>
     class BasicParsingException : public std::runtime_error {

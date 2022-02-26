@@ -166,12 +166,12 @@ namespace Argum {
                 return std::move(static_cast<Option *>(this)->handler(std::forward<H>(h)));
             }
 
-            auto repeats(Quantifier r) & -> Option & {
-                this->m_repeats = r;
+            auto occurs(Quantifier r) & -> Option & {
+                this->m_occurs = r;
                 return *this;
             }
-            auto repeats(Quantifier r) && -> Option && {
-                return std::move(static_cast<Option *>(this)->repeats(r));
+            auto occurs(Quantifier r) && -> Option && {
+                return std::move(static_cast<Option *>(this)->occurs(r));
             }
 
             auto argName(StringViewType n) & -> Option & {
@@ -192,7 +192,7 @@ namespace Argum {
         private:
             OptionNames m_names;
             Handler m_handler = []() {};
-            Quantifier m_repeats = ZeroOrMoreTimes;
+            Quantifier m_occurs = ZeroOrMoreTimes;
 
             StringType m_argName = Messages::defaultArgName();
             StringType m_description;
@@ -213,12 +213,12 @@ namespace Argum {
                 return std::move(static_cast<Positional *>(this)->handler(h));
             }
 
-            auto repeats(Quantifier r) & -> Positional & {
-                this->m_repeats = r;
+            auto occurs(Quantifier r) & -> Positional & {
+                this->m_occurs = r;
                 return *this;
             }
-            auto repeats(Quantifier r) && -> Positional && {
-                return std::move(static_cast<Positional *>(this)->repeats(r));
+            auto occurs(Quantifier r) && -> Positional && {
+                return std::move(static_cast<Positional *>(this)->occurs(r));
             }
 
             auto help(StringViewType str) & -> Positional &{
@@ -231,7 +231,7 @@ namespace Argum {
         private:
             StringType m_name;
             PositionalHandler m_handler = [](unsigned, StringViewType) {};
-            Quantifier m_repeats = Once;
+            Quantifier m_occurs = Once;
             StringType m_description;
         };
 
@@ -245,8 +245,8 @@ namespace Argum {
 
             auto & added = this->m_options.emplace_back(std::move(option));
             this->m_tokenizer.add(this->m_options.back().m_names);
-            if (added.m_repeats.min() > 0)
-                addValidator(OptionOccursAtLeast(added.m_names.main(), added.m_repeats.min()));
+            if (added.m_occurs.min() > 0)
+                addValidator(OptionOccursAtLeast(added.m_names.main(), added.m_occurs.min()));
             ++m_updateCount;
         }
         
@@ -354,10 +354,10 @@ namespace Argum {
 
             StringType ret;
 
-            if (opt.m_repeats.min() == 0)
+            if (opt.m_occurs.min() == 0)
                 ret += brop;
             ret.append(opt.m_names.main()).append(this->formatOptionArgSyntax(opt));
-            if (opt.m_repeats.min() == 0)
+            if (opt.m_occurs.min() == 0)
                 ret += brcl;
 
             return ret;
@@ -371,24 +371,24 @@ namespace Argum {
 
             StringType ret;
 
-            if (pos.m_repeats.min() == 0)
+            if (pos.m_occurs.min() == 0)
                 ret += brop;
             ret += pos.m_name;
             unsigned idx = 1;
-            for (; idx < pos.m_repeats.min(); ++idx) {
+            for (; idx < pos.m_occurs.min(); ++idx) {
                 ret.append({space}).append(pos.m_name);
             }
-            if (idx != pos.m_repeats.min()) {
+            if (idx != pos.m_occurs.min()) {
                 ret.append({space, brop}).append(pos.m_name);
-                if (pos.m_repeats.max() != Quantifier::infinity) {
-                    for (++idx; idx < pos.m_repeats.max(); ++idx)
+                if (pos.m_occurs.max() != Quantifier::infinity) {
+                    for (++idx; idx < pos.m_occurs.max(); ++idx)
                         ret.append({space}).append(pos.m_name);
                 } else {
                     ret.append({space}).append(ellipsis);
                 }
                 ret += brcl;
             }
-            if (pos.m_repeats.min() == 0)
+            if (pos.m_occurs.min() == 0)
                 ret += brcl;
 
             return ret;
@@ -583,7 +583,7 @@ namespace Argum {
             auto validateOptionMax(const Option & option) {
                 auto & name = option.m_names.main();
                 ++m_validationData.optionCount(name);
-                auto validator = OptionOccursAtMost(name, option.m_repeats.max());
+                auto validator = OptionOccursAtMost(name, option.m_occurs.max());
                 if (!validator(m_validationData)) {
                     throw ValidationError(validator);
                 }
@@ -639,21 +639,21 @@ namespace Argum {
                 if (m_positionalIndex >= 0) {
                     auto & positional = m_owner.m_positionals[unsigned(m_positionalIndex)];
                     auto count = m_validationData.positionalCount(positional.m_name);
-                    if (positional.m_repeats.max() > count) {
+                    if (positional.m_occurs.max() > count) {
                         remainingPositionalCount += count; //account for already processed
-                        partitioner.addRange(positional.m_repeats.min(), positional.m_repeats.max());
+                        partitioner.addRange(positional.m_occurs.min(), positional.m_occurs.max());
                         --fillStartIndex;
                     }
                 }
                 std::for_each(m_owner.m_positionals.begin() + (m_positionalIndex + 1), m_owner.m_positionals.end(),
                                 [&] (const Positional & positional) {
-                    partitioner.addRange(positional.m_repeats.min(), positional.m_repeats.max());
+                    partitioner.addRange(positional.m_occurs.min(), positional.m_occurs.max());
                 });
 
                 //3. Partition the range
                 unsigned maxRemainingPositionalCount = std::max(remainingPositionalCount, partitioner.minimumSequenceSize());
                 auto res = partitioner.partition(maxRemainingPositionalCount);
-                ARGUM_ALWAYS_ASSERT(res); //this be true by construction
+                ARGUM_ALWAYS_ASSERT(res); //this must be true by construction
 
                 //4. Fill in expected sizes based on regex matches
                 m_positionalSizes.resize(m_owner.m_positionals.size());
@@ -704,7 +704,7 @@ namespace Argum {
                     ++idx) {
                     
                     auto & positional = m_owner.m_positionals[unsigned(idx)];
-                    auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_repeats.min());
+                    auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_occurs.min());
                     if (!validator(this->m_validationData))
                         throw ValidationError(validator);
                 }

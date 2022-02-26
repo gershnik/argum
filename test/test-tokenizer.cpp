@@ -1,3 +1,7 @@
+//for testing let it throw exception rather than crash
+[[noreturn]] void reportInvalidArgument(const char * message);
+#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
+
 #include <argum/tokenizer.h>
 
 #include "catch.hpp"

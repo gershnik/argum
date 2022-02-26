@@ -27,6 +27,10 @@
     #define ARGUM_ALWAYS_ASSERT(x)  ((void) ((x) ? ((void)0) : std::terminate()))
 #endif
 
+#ifndef ARGUM_INVALID_ARGUMENT
+    #define ARGUM_INVALID_ARGUMENT(message) ARGUM_ALWAYS_ASSERT(!message)
+#endif
+
 namespace Argum {
 
     template<class Char>

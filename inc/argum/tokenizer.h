@@ -119,8 +119,8 @@ namespace Argum {
                     auto [it, inserted] = m_prefixes.add(std::move(value), m_lastPrefixId);
                     auto & type = m_prefixTypes[it->value()];
                     if (!inserted) {
-                        //the same prefix cannot be used for long and short
-                        ARGUM_ALWAYS_ASSERT((type & ShortPrefix) != ShortPrefix); 
+                        if ((type & ShortPrefix) == ShortPrefix)
+                            ARGUM_INVALID_ARGUMENT("the same prefix cannot be used for long and short options");
                     }
                     type |= LongPrefix;
                 }
@@ -141,7 +141,8 @@ namespace Argum {
                     auto & type = m_prefixTypes[it->value()];
                     if (!inserted) {
                         //the same prefix cannot be used for long and short
-                        ARGUM_ALWAYS_ASSERT((type & LongPrefix) != LongPrefix); 
+                        if ((type & LongPrefix) == LongPrefix) 
+                            ARGUM_INVALID_ARGUMENT("the same prefix cannot be used for long and short options");
                     }
                     type |= ShortPrefix;
                 }
@@ -174,7 +175,8 @@ namespace Argum {
             auto addValueDelimiter(CharType c) & -> Settings & {
                 
                 auto [it, inserted] = m_valueDelimiters.insert(c);
-                ARGUM_ALWAYS_ASSERT(inserted); //duplicate delimiter  
+                if (!inserted)
+                    ARGUM_INVALID_ARGUMENT("duplicate delimiter");
                 return *this;
             }
 
@@ -249,8 +251,10 @@ namespace Argum {
             auto currentIndex = unsigned(this->m_names.size());
             for(auto & opt: names.all()) {
                 auto findResult = findLongestPrefix(opt);
-                ARGUM_ALWAYS_ASSERT(findResult);                    //option must start with a valid prefix
-                ARGUM_ALWAYS_ASSERT(findResult->size < opt.size()); //option must have more than a prefix
+                if (!findResult)
+                    ARGUM_INVALID_ARGUMENT("option must start with a valid prefix");
+                if (findResult->size == opt.size())
+                    ARGUM_INVALID_ARGUMENT("option must have more than a prefix");
 
                 if ((findResult->type & LongPrefix) == LongPrefix) {
                     this->add(this->m_longs[findResult->index], opt.substr(findResult->size), currentIndex);
@@ -260,7 +264,7 @@ namespace Argum {
                     else
                         this->add(this->m_multiShorts[findResult->index], opt.substr(findResult->size), currentIndex);
                 } else {
-                    ARGUM_ALWAYS_ASSERT(false); //option is neither short nor long with currently defined prefixes
+                    ARGUM_INVALID_ARGUMENT("option is neither short nor long with currently defined prefixes");
                 }
             }
             this->m_names.emplace_back(names.main());
@@ -281,34 +285,43 @@ namespace Argum {
                 unconsumedPrefixSize = 0;
 
                 TokenResult result;
+                bool handled = false;
                 if (!noMoreOptions) {
 
-                    auto prefixFindResult = this->findLongestPrefix(arg);
-                    auto type = prefixFindResult ? prefixFindResult->type : NotPrefix;
-
-                    if ((type & OptionStop) == OptionStop && prefixFindResult->size == arg.size()) {
-                        noMoreOptions = true;
-                        result = handler(OptionStopToken{argIdx});
-                        if (result == TokenResult::StopAfter)
-                            consumed = unsigned(arg.size());
-                    } else if ((type & LongPrefix) == LongPrefix) {
-                        result = this->handleLongPrefix(argIdx, arg, 
-                                                        prefixFindResult->index, prefixFindResult->size, 
-                                                        handler);
-                        if (result == TokenResult::StopAfter)
-                            consumed = unsigned(arg.size());            
-                    } else if ((type & ShortPrefix) == ShortPrefix) {
-                        result = this->handleShortPrefix(argIdx, arg, 
-                                                         prefixFindResult->index, prefixFindResult->size, 
-                                                         consumed, handler);
-                        unconsumedPrefixSize = prefixFindResult->size;
-                    } else {
-                        result = handler(ArgumentToken{argIdx, arg});
-                        if (result == TokenResult::StopAfter)
-                            consumed = unsigned(arg.size());
+                    if (auto prefixFindResult = this->findLongestPrefix(arg)) {
+                    
+                        auto type = prefixFindResult->type;
+                    
+                        if (prefixFindResult->size == arg.size()) {
+                            
+                            if ((type & OptionStop) == OptionStop) {
+                                noMoreOptions = true;
+                                result = handler(OptionStopToken{argIdx});
+                                if (result == TokenResult::StopAfter)
+                                    consumed = unsigned(arg.size());
+                                handled = true;
+                            }
+                            
+                        } else {
+                            if ((type & LongPrefix) == LongPrefix) {
+                                result = this->handleLongPrefix(argIdx, arg,
+                                                                prefixFindResult->index, prefixFindResult->size,
+                                                                handler);
+                                if (result == TokenResult::StopAfter)
+                                    consumed = unsigned(arg.size());
+                                handled = true;
+                            } else if ((type & ShortPrefix) == ShortPrefix) {
+                                result = this->handleShortPrefix(argIdx, arg,
+                                                                 prefixFindResult->index, prefixFindResult->size,
+                                                                 consumed, handler);
+                                unconsumedPrefixSize = prefixFindResult->size;
+                                handled = true;
+                            }
+                        }
                     }
-
-                } else {
+                }
+                
+                if (!handled) {
                     result = handler(ArgumentToken{argIdx, arg});
                     if (result == TokenResult::StopAfter)
                         consumed = unsigned(arg.size());
@@ -569,7 +582,8 @@ namespace Argum {
         static auto add(FlatMap<Value, unsigned> & map, Arg arg, unsigned idx) -> void {
 
             auto [it, inserted] = map.add(arg, idx);
-            ARGUM_ALWAYS_ASSERT(inserted); //duplicate option if this fails
+            if (!inserted)
+                ARGUM_INVALID_ARGUMENT("duplicate option");
         }
 
         struct PrefixFindResult {
