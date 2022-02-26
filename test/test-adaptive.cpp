@@ -702,6 +702,141 @@ TEST_CASE( "Two positionals" , "[adaptive]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
+TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo"));
+    parser.add(POSITIONAL("bar").repeats(Once));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
+    EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
+    EXPECT_FAILURE(ARGS("a"), VALIDATION_ERROR("invalid arguments: positional argument bar must be present"))
+    EXPECT_FAILURE(ARGS("a", "b", "c"), EXTRA_POSITIONAL("c"))
+    
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+}
+
+TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo").repeats(2));
+    parser.add(POSITIONAL("bar"));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    EXPECT_FAILURE(ARGS("a"), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
+    EXPECT_FAILURE(ARGS("a", "b"), VALIDATION_ERROR("invalid arguments: positional argument bar must be present"))
+    EXPECT_FAILURE(ARGS("a", "b", "c", "d"), EXTRA_POSITIONAL("d"))
+    
+    EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
+}
+
+TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo"));
+    parser.add(POSITIONAL("bar").repeats(ZeroOrMoreTimes));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    
+    EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
+}
+
+TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo"));
+    parser.add(POSITIONAL("bar").repeats(OneOrMoreTimes));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    EXPECT_FAILURE(ARGS("a"), VALIDATION_ERROR("invalid arguments: positional argument bar must be present"))
+    
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
+}
+
+TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo"));
+    parser.add(POSITIONAL("bar").repeats(ZeroOrOnce));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    EXPECT_FAILURE(ARGS("a", "b", "c"), EXTRA_POSITIONAL("c"))
+    
+    EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+}
+
+TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo").repeats(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("bar"));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument bar must be present"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    
+    EXPECT_SUCCESS(ARGS("a"), RESULTS({"bar", {"a"}}))
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
+}
+
+TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo").repeats(OneOrMoreTimes));
+    parser.add(POSITIONAL("bar"));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    EXPECT_FAILURE(ARGS("a"), VALIDATION_ERROR("invalid arguments: positional argument bar must be present"))
+    
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
+}
+TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[adaptive]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(POSITIONAL("foo").repeats(ZeroOrOnce));
+    parser.add(POSITIONAL("bar"));
+
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument bar must be present"))
+    EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo"))
+    EXPECT_FAILURE(ARGS("a", "b", "c"), EXTRA_POSITIONAL("c"))
+    
+    EXPECT_SUCCESS(ARGS("a"), RESULTS({"bar", {"a"}}))
+    EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
+}
+
+TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[adaptive]") {
+    map<wstring, vector<WValue>> results;
+
+    WAdaptiveParser parser;
+    parser.add(WPOSITIONAL(L"foo").repeats(2));
+    parser.add(WPOSITIONAL(L"bar").repeats(ZeroOrMoreTimes));
+
+    EXPECT_FAILURE(WARGS(), WVALIDATION_ERROR(L"invalid arguments: positional argument foo must occur at least 2 times"))
+    EXPECT_FAILURE(WARGS(L"--foo"), WUNRECOGNIZED_OPTION(L"--foo"))
+    EXPECT_FAILURE(WARGS(L"a"), WVALIDATION_ERROR(L"invalid arguments: positional argument foo must occur at least 2 times"))
+    
+    EXPECT_SUCCESS(WARGS(L"a", L"b"), WRESULTS({L"foo", {L"a", L"b"}}))
+    EXPECT_SUCCESS(WARGS(L"a", L"b", L"c"), WRESULTS({L"foo", {L"a", L"b"}}, {L"bar", {L"c"}}))
+}
+
 #pragma endregion
 
 // TEST_CASE( "xxx" , "[sequential]") {

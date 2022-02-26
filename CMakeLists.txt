@@ -70,10 +70,18 @@ if (ARGUM_TEST)
                 # -Wno-padded 
                 # -Wno-weak-vtables
             > 
+            
+            $<$<CXX_COMPILER_ID:AppleClang>:-fprofile-instr-generate -fcoverage-mapping>
+
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic
                 -Wno-unknown-pragmas  #the whole point of pragmas it to be potentially unknown!
             >
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /Zc:preprocessor /W4 /WX>
+    )
+
+    target_link_options(test
+        PRIVATE
+            $<$<CXX_COMPILER_ID:AppleClang>:-fprofile-instr-generate -fcoverage-mapping>
     )
 
     target_sources(test 
@@ -110,6 +118,16 @@ if (ARGUM_TEST)
         list(APPEND TEST_COMMAND COMMAND ${ADB} push ${CMAKE_CURRENT_LIST_DIR}/test/response.txt ${ANDROID_TEST_DIR}/data)
         list(APPEND TEST_COMMAND COMMAND ${ADB} push ${CMAKE_CURRENT_LIST_DIR}/test/response1.txt ${ANDROID_TEST_DIR}/data)
         list(APPEND TEST_COMMAND COMMAND ${ADB} shell \"cd ${ANDROID_TEST_DIR} && LD_LIBRARY_PATH=${ANDROID_LD_LIBRARY_PATH} ./test\")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        list(APPEND TEST_COMMAND COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=$<TARGET_FILE_DIR:test>/test.profraw $<TARGET_FILE:test>)
+        list(APPEND TEST_COMMAND COMMAND xcrun llvm-profdata merge -sparse $<TARGET_FILE_DIR:test>/test.profraw -o $<TARGET_FILE_DIR:test>/test.profdata)
+        list(APPEND TEST_COMMAND COMMAND xcrun llvm-cov show -format=html 
+                   -Xdemangler=c++filt -Xdemangler -n
+                   -show-regions=1
+                   -show-instantiations=0
+                   -output-dir=${CMAKE_CURRENT_BINARY_DIR}/coverage 
+                   -instr-profile=$<TARGET_FILE_DIR:test>/test.profdata 
+                   $<TARGET_FILE:test>)
     else()
         list(APPEND TEST_COMMAND COMMAND test)
     endif()
