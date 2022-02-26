@@ -284,8 +284,7 @@ namespace Argum {
                 consumed = 0;
                 unconsumedPrefixSize = 0;
 
-                TokenResult result;
-                bool handled = false;
+                std::optional<TokenResult> result;
                 if (!noMoreOptions) {
 
                     if (auto prefixFindResult = this->findLongestPrefix(arg)) {
@@ -299,7 +298,6 @@ namespace Argum {
                                 result = handler(OptionStopToken{argIdx});
                                 if (result == TokenResult::StopAfter)
                                     consumed = unsigned(arg.size());
-                                handled = true;
                             }
                             
                         } else {
@@ -309,25 +307,23 @@ namespace Argum {
                                                                 handler);
                                 if (result == TokenResult::StopAfter)
                                     consumed = unsigned(arg.size());
-                                handled = true;
                             } else if ((type & ShortPrefix) == ShortPrefix) {
                                 result = this->handleShortPrefix(argIdx, arg,
                                                                  prefixFindResult->index, prefixFindResult->size,
                                                                  consumed, handler);
                                 unconsumedPrefixSize = prefixFindResult->size;
-                                handled = true;
                             }
                         }
                     }
                 }
                 
-                if (!handled) {
+                if (!result) {
                     result = handler(ArgumentToken{argIdx, arg});
                     if (result == TokenResult::StopAfter)
                         consumed = unsigned(arg.size());
                 }
 
-                if (result != TokenResult::Continue)
+                if (*result != TokenResult::Continue)
                     break;
             }
 
