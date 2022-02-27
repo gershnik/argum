@@ -25,28 +25,33 @@ namespace Argum {
     //   a. N1 + N2 + N3 + ... + Nm + Nm+1 == N
     //   b. Ai <= Ni <= Bi for i <= m
     // The last partion: Nm+1 is the "remainder", if any.
-    template<class SizeType>
-    requires(std::is_integral_v<SizeType>)
+    // The partitioning is "greedy" - each range consumes as much as it can from left to right
+    template<class S>
+    requires(std::is_integral_v<S>)
     class Partitioner {
-    private:
+    public:
+        using SizeType = S;
+        
         static constexpr auto infinity = std::numeric_limits<SizeType>::max();
+    
     public:
         auto addRange(SizeType a, SizeType b) -> void {
             if constexpr (std::is_signed_v<SizeType>)
                 assert(a >= 0);
             assert(a <= b);
 
-            this->m_minima.push_back(a);
+            SizeType length;
             if (b != infinity)
-                this->m_lengthes.push_back(b - a);
+                length = b - a;
             else
-                this->m_lengthes.push_back(infinity);
+                length = infinity;
+            this->m_ranges.push_back({a, length});
             this->m_minimumExpected += a;
         }
 
         //returns M + 1: e.g. the number of added ranges + 1
         auto paritionsCount() -> size_t {
-            return this->m_minima.size() + 1;
+            return this->m_ranges.size() + 1;
         }
 
         //The minimum size of sequence that can be partitioned
@@ -58,67 +63,23 @@ namespace Argum {
         auto partition(SizeType n) -> std::optional<std::vector<SizeType>> {
             if (n < this->m_minimumExpected)
                 return std::nullopt;
+            //this "rebases" the sequence so now all we need is to match ranges of {0, length1}, {0, length2},...
             n -= this->m_minimumExpected;
-
+            
+            //because all ranges have minimum 0 and matching is greedy we can just assign
+            //smaller of length and remaining n to each adding its minimum
             std::vector<SizeType> results(this->paritionsCount());
-            
-            struct State {
-                SizeType n;
-                SizeType length;
-                bool lengthLoopStarted = false;
-            };
-
-            std::vector<State> stack;
-            stack.reserve(results.size());
-            stack.push_back(State{n, 0, false});
-            bool lastResult = false;
-            
-            for( ; ; ) {
-                if (stack.empty())
-                    return results;
-
-                size_t idx = stack.size() - 1;
-                auto & state = stack[idx];
-
-                if (lastResult) {
-                    results[idx] = state.length + this->m_minima[idx];
-                    stack.pop_back();
-                    continue;
-                } 
-
-                if (!state.lengthLoopStarted) {
-                    
-                    if (idx == results.size() - 1) {
-                        results[idx] = state.n;
-                        lastResult = true;
-                        stack.pop_back();
-                        continue;
-                    }
-
-                    state.length = std::min(this->m_lengthes[idx], state.n);
-                    state.lengthLoopStarted = true;
-                    lastResult = false;
-                    stack.push_back(State{SizeType(state.n - state.length), 0, false});
-                    continue;
-                }
-                
-
-                if (state.length == 0) {
-                    assert(!stack.empty());
-                    lastResult = false;
-                    stack.pop_back();
-                    continue;
-                }
-
-                --state.length;
-                lastResult = false;
-                stack.push_back(State{SizeType(state.n - state.length), 0, false});
-            }
+            std::transform(this->m_ranges.begin(), this->m_ranges.end(), results.begin(), [&n](const auto range) {
+                auto length = std::min(n, range.second);
+                n -= length;
+                return range.first + length;
+            });
+            results.back() = n;
+            return results;
         }
 
     private:
-        std::vector<SizeType> m_minima;
-        std::vector<SizeType> m_lengthes;
+        std::vector<std::pair<SizeType, SizeType>> m_ranges;
         SizeType m_minimumExpected = 0;
     };
 }

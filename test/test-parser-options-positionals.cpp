@@ -22,6 +22,30 @@ TEST_CASE( "Mix of options and positionals" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "-o", "--", "-n", "c"), RESULTS({"-o", {nullopt}}, {"p", {"a", "-n"}}, {"f", {"c"}}))
 }
 
+TEST_CASE( "More complicated partitioning" , "[parser]") {
+    map<string, vector<Value>> results;
+
+    AdaptiveParser parser;
+    parser.add(OPTION_NO_ARG("-n", "--no-arg"));
+    parser.add(OPTION_OPT_ARG("-o", "--opt-arg"));
+    parser.add(OPTION_REQ_ARG("-r", "--req-arg"));
+    parser.add(POSITIONAL("p1").occurs(Quantifier(2, 3)));
+    parser.add(POSITIONAL("p2").occurs(Quantifier(1, 2)));
+    parser.add(POSITIONAL("p3").occurs(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("p4").occurs(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("f"));
+
+    EXPECT_FAILURE(ARGS("a", "-o", "-q", "c"), UNRECOGNIZED_OPTION("-q"))
+    EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument p1 must occur at least 2 times"))
+    EXPECT_FAILURE(ARGS("a", "-r", "x", "-r", "x", "b", "-r", "x", "c"), VALIDATION_ERROR("invalid arguments: positional argument f must be present"))
+
+
+    EXPECT_SUCCESS(ARGS("a", "b", "c", "d"), RESULTS({"p1", {"a", "b"}}, {"p2", {"c"}}, {"f", {"d"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c", "d", "e"), RESULTS({"p1", {"a", "b", "c"}}, {"p2", {"d"}}, {"f", {"e"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c", "d", "e", "f"), RESULTS({"p1", {"a", "b", "c"}}, {"p2", {"d", "e"}}, {"f", {"f"}}))
+    EXPECT_SUCCESS(ARGS("a", "b", "c", "d", "e", "f", "g"), RESULTS({"p1", {"a", "b", "c"}}, {"p2", {"d", "e"}}, {"p3", {"f"}}, {"f", {"g"}}))
+}
+
 TEST_CASE( "Negative number args when numeric options are present" , "[parser]") {
     map<string, vector<Value>> results;
 
