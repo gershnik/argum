@@ -1,5 +1,24 @@
 #include "parser-common.h"
 
+TEST_CASE( "Positional boundary Cases" , "[parser]") {
+
+    map<string, vector<Value>> results;
+
+    {
+        AdaptiveParser parser;
+        parser.add(Positional("p")); //positional with no handler
+        
+        EXPECT_SUCCESS(ARGS("x"), RESULTS())
+    }
+
+    {
+        AdaptiveParser parser;
+        parser.add(POSITIONAL("p")); 
+        parser.add(POSITIONAL("p"));  //duplicate names are fine though stupid
+        CHECK_THROWS_AS(parser.add(POSITIONAL("p").occurs(Quantifier(6,0))), invalid_argument);
+    }
+
+}
 
 TEST_CASE( "Simple positional" , "[parser]") {
     map<string, vector<Value>> results;
@@ -12,6 +31,8 @@ TEST_CASE( "Simple positional" , "[parser]") {
     EXPECT_FAILURE(ARGS("a", "b"), EXTRA_POSITIONAL("b"))
 
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
+    EXPECT_SUCCESS(ARGS("--=foo"), RESULTS({"foo", {"--=foo"}}))
+    EXPECT_SUCCESS(ARGS("-=foo"), RESULTS({"foo", {"-=foo"}}))
 }
 
 TEST_CASE( "Positional with explicit repeat once" , "[parser]") {

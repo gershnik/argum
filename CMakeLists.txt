@@ -129,8 +129,9 @@ if (ARGUM_TEST)
                    -Xdemangler=c++filt -Xdemangler -n
                    -show-regions=1
                    -show-instantiations=0
+                   #-show-branches=count
                    #-show-instantiation-summary=1
-                   -ignore-filename-regex=test/.\\*\\.cpp
+                   -ignore-filename-regex=test/.\\*
                    -output-dir=${CMAKE_CURRENT_BINARY_DIR}/coverage 
                    -instr-profile=$<TARGET_FILE_DIR:test>/test.profdata 
                    $<TARGET_FILE:test>)

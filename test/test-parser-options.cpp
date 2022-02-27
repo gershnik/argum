@@ -1,7 +1,39 @@
 #include "parser-common.h"
 
-#pragma region Test Options
-//MARK: - Test Options
+TEST_CASE( "Options boundary Cases" , "[parser]") {
+
+    map<string, vector<Value>> results;
+    {
+        AdaptiveParser parser;
+        parser.add(Option("-c")); //option with no handler
+        
+        EXPECT_SUCCESS(ARGS(), RESULTS())
+        EXPECT_SUCCESS(ARGS("-c"), RESULTS())
+    }
+
+    {
+        AdaptiveParser parser;
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("a")), invalid_argument);
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("+a")), invalid_argument);
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("--")), invalid_argument);
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("-c").occurs(Quantifier(3,2))), invalid_argument);
+    }
+
+    {
+        AdaptiveParser parser(AdaptiveParser::Settings::commonUnix().addShortPrefix("+"));
+        //DIFFERENCE FROM ArgParse. These are legal there
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("-")), invalid_argument);
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("+")), invalid_argument);
+        //DIFFERENCE FROM ArgParse
+    }
+
+    {
+        AdaptiveParser parser;
+        parser.add(OPTION_NO_ARG("-a"));
+        CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("-a")), invalid_argument);
+    }
+
+}
 
 TEST_CASE( "Option with a single-dash option string" , "[parser]") {
 
@@ -55,12 +87,15 @@ TEST_CASE( "Combined single-dash options" , "[parser]") {
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a")) 
     EXPECT_FAILURE(ARGS("--foo"), UNRECOGNIZED_OPTION("--foo")) 
     EXPECT_FAILURE(ARGS("-xa"), EXTRA_OPTION_ARGUMENT("-x")) 
+    EXPECT_FAILURE(ARGS("-xa", "a"), EXTRA_OPTION_ARGUMENT("-x"))
     EXPECT_FAILURE(ARGS("-x", "--foo"), UNRECOGNIZED_OPTION("--foo"))
     EXPECT_FAILURE(ARGS("-x", "-z"), MISSING_OPTION_ARGUMENT("-z"))
     EXPECT_FAILURE(ARGS("-z", "-x"), MISSING_OPTION_ARGUMENT("-z"))
     EXPECT_FAILURE(ARGS("-yx"), UNRECOGNIZED_OPTION("-yx"))
     EXPECT_FAILURE(ARGS("-yz", "a"), UNRECOGNIZED_OPTION("-yz"))
     EXPECT_FAILURE(ARGS("-yyyx"), UNRECOGNIZED_OPTION( "-yyyx"))
+    EXPECT_FAILURE(ARGS("-yyy=x"), EXTRA_OPTION_ARGUMENT( "-yyy"))
+    EXPECT_FAILURE(ARGS("-yyy=x", "a"), EXTRA_OPTION_ARGUMENT( "-yyy"))
     EXPECT_FAILURE(ARGS("-yyyza"), UNRECOGNIZED_OPTION( "-yyyza"))
     EXPECT_FAILURE(ARGS("-xyza"), EXTRA_OPTION_ARGUMENT("-x"))
 
@@ -323,7 +358,7 @@ TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--foobl", "--foo", "g"), RESULTS({"--foo", {"g"}}, {"--fooble", {"+"}}))
 }
 
-TEST_CASE( "Disallow abbreviation settin" , "[parser]") {
+TEST_CASE( "Disallow abbreviation setting" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser(AdaptiveParser::Settings::commonUnix().allowAbbreviation(false));
@@ -339,7 +374,9 @@ TEST_CASE( "Disallow abbreviation settin" , "[parser]") {
     
     EXPECT_SUCCESS(ARGS(), RESULTS())
     EXPECT_SUCCESS(ARGS("--foo", "3"), RESULTS({"--foo", {"3"}}))
+    EXPECT_SUCCESS(ARGS("-foo", "3"), RESULTS({"--foo", {"3"}}))
     EXPECT_SUCCESS(ARGS("--foonly", "7", "--foodle", "--foo", "2"), RESULTS({"--foo", {"2"}}, {"--foodle", {"+"}}, {"--foonly", {"7"}}))
+    EXPECT_SUCCESS(ARGS("-foonly", "7", "-foodle", "-foo", "2"), RESULTS({"--foo", {"2"}}, {"--foodle", {"+"}}, {"--foonly", {"7"}}))
 }
 
 TEST_CASE( "Custom prefixes" , "[parser]") {
@@ -478,9 +515,6 @@ TEST_CASE( "Repeat 2-or-3 option" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-www", "42"), RESULTS({"-w", {nullopt, nullopt, "42"}}))
     EXPECT_SUCCESS(ARGS("--work=42", "-w", "-w34"), RESULTS({"-w", {"42", nullopt, "34"}}))
 }
-
-#pragma endregion
-
 
 
 

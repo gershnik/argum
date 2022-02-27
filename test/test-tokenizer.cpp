@@ -61,6 +61,13 @@ namespace Argum {
     }
 }
 
+TEST_CASE( "Settings boundaries" , "[tokenizer]") {
+
+    CHECK_THROWS_AS(ArgumentTokenizer::Settings().addShortPrefix("-").addLongPrefix("-"), invalid_argument);
+    CHECK_THROWS_AS(ArgumentTokenizer::Settings().addLongPrefix("-").addShortPrefix("-"), invalid_argument);
+    CHECK_THROWS_AS(ArgumentTokenizer::Settings().addValueDelimiter('-').addValueDelimiter('-'), invalid_argument);
+}
+
 
 TEST_CASE( "Null Command Line" , "[tokenizer]") {
 

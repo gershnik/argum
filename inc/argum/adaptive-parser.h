@@ -674,7 +674,9 @@ namespace Argum {
 
                         auto & option = m_owner.m_options[token.idx];
                         if (!std::holds_alternative<OptionHandler<OptionArgument::None>>(option.m_handler)) {
-                            currentOptionExpectsArgument = true;
+                            currentOptionExpectsArgument = !token.argument;
+                        } else {
+                            currentOptionExpectsArgument = false;
                         }
 
                     } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
