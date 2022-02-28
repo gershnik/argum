@@ -253,12 +253,16 @@ namespace Argum {
                 m_name(std::move(name_)) {
             }
 
-            auto handler(PositionalHandler h) & -> Positional & {
-                this->m_handler = std::move(h);
+            template<class H>
+            auto handler(H && h) & -> Positional & 
+            requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
+                this->m_handler = std::forward<H>(h);
                 return *this;
             }
-            auto handler(PositionalHandler h) && -> Positional && {
-                return std::move(static_cast<Positional *>(this)->handler(h));
+            template<class H>
+            auto handler(H && h) && -> Positional && 
+            requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
+                return std::move(static_cast<Positional *>(this)->handler(std::forward<H>(h)));
             }
 
             auto occurs(Quantifier r) & -> Positional & {

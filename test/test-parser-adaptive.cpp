@@ -4,13 +4,14 @@ TEST_CASE( "Changing positionals on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
     AdaptiveParser parser;
-    parser.add(Positional("p").occurs(ZeroOrMoreTimes).handler([&](unsigned idx, string_view val){
-        if (idx == 1) {
-            parser.add(POSITIONAL("f"));
-        }
+    parser.add(Positional("p").occurs(ZeroOrMoreTimes).handler([&results, &parser](unsigned idx, string_view val){
         auto & list = results["p"]; 
         CHECK(list.size() == idx); 
         list.push_back(string(val));
+
+        if (idx == 1) {
+            parser.add(POSITIONAL("f"));
+        }
     }));
     AdaptiveParser savedParser = parser;
 
@@ -30,16 +31,18 @@ TEST_CASE( "Changing options on the fly" , "[parser]") {
     
     AdaptiveParser parser;
     parser.add(Positional("p").occurs(ZeroOrMoreTimes).handler([&](unsigned idx, string_view val){
-        if (idx == 1) {
-            parser.add(Option("-c").handler([&](string_view val){
-                parser.add(POSITIONAL("f"));
-                auto & list = results["-c"]; 
-                list.push_back(string(val));
-            }));
-        }
         auto & list = results["p"]; 
         CHECK(list.size() == idx); 
         list.push_back(string(val));
+
+        if (idx == 1) {
+            parser.add(Option("-c").handler([&](string_view val){
+                auto & list = results["-c"]; 
+                list.push_back(string(val));
+                
+                parser.add(POSITIONAL("f"));
+            }));
+        }
     }));    
     AdaptiveParser savedParser = parser;
 
