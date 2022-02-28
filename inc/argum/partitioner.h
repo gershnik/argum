@@ -14,6 +14,7 @@
 #include <span>
 #include <vector>
 #include <optional>
+#include <algorithm>
 
 
 namespace Argum {
@@ -72,7 +73,7 @@ namespace Argum {
             std::transform(this->m_ranges.begin(), this->m_ranges.end(), results.begin(), [&n](const auto range) {
                 auto length = std::min(n, range.second);
                 n -= length;
-                return range.first + length;
+                return SizeType(range.first + length);
             });
             results.back() = n;
             return results;
