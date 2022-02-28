@@ -10,8 +10,7 @@
 
 
 #include "adaptive-parser.h"
-#include "tokenizer.h"
-#include "validators.h"
+#include "help-formatter.h"
 
 
 #endif 

@@ -11,7 +11,6 @@
 #include "common.h"
 
 #include <type_traits>
-#include <span>
 #include <vector>
 #include <optional>
 #include <algorithm>

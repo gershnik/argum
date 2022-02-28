@@ -64,7 +64,7 @@ def amalgamate():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', '-d', default=str(Path.cwd))
+    parser.add_argument('--dir', '-d', default=str(Path.cwd()))
     parser.add_argument('template')
     parser.add_argument('output')
     args = parser.parse_args()
