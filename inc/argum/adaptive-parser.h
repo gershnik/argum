@@ -189,6 +189,54 @@ namespace Argum {
             auto help(StringViewType str) && -> Option && {
                 return std::move(static_cast<Option *>(this)->help(str));
             }
+
+            auto formatSyntax() const -> StringType {
+                constexpr auto brop = CharConstants::squareBracketOpen;
+                constexpr auto brcl = CharConstants::squareBracketClose;
+
+                StringType ret;
+
+                if (m_occurs.min() == 0)
+                    ret += brop;
+                ret.append(m_names.main()).append(formatArgSyntax());
+                if (m_occurs.min() == 0)
+                    ret += brcl;
+
+                return ret;
+            }
+
+            auto formatArgSyntax() const -> StringType {
+                constexpr auto space = CharConstants::space;
+                constexpr auto brop = CharConstants::squareBracketOpen;
+                constexpr auto brcl = CharConstants::squareBracketClose;
+
+                StringType ret;
+                std::visit([&](const auto & handler) {
+                    using HandlerType = std::decay_t<decltype(handler)>;
+                    if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
+                        ret.append({space, brop}).append(m_argName).append({brcl});
+                    } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Required>>)  {
+                        ret.append({space}).append(m_argName);
+                    }
+                }, m_handler);
+                return ret;
+            }
+
+            auto formatHelpName() const -> StringType {
+            
+                auto argSyntax = this->formatArgSyntax();
+                StringType ret = m_names.all().front();
+                ret += argSyntax;
+                std::for_each(m_names.all().begin() + 1, m_names.all().end(), [&](const auto & name) {
+                    ret.append(Messages::listJoiner()).append(name).append(argSyntax);
+                });
+
+                return ret;
+            }
+
+            auto formatHelpDescription() const -> const StringType & {
+                return m_description;
+            }
         private:
             OptionNames m_names;
             Handler m_handler = []() {};
@@ -227,6 +275,45 @@ namespace Argum {
             }
             auto help(StringViewType str) && -> Positional && {
                 return std::move(static_cast<Positional *>(this)->help(str));
+            }
+
+            auto formatSyntax() const -> StringType {
+                constexpr auto space = CharConstants::space;
+                constexpr auto brop = CharConstants::squareBracketOpen;
+                constexpr auto brcl = CharConstants::squareBracketClose;
+                constexpr auto ellipsis = CharConstants::ellipsis;
+
+                StringType ret;
+
+                if (m_occurs.min() == 0)
+                    ret += brop;
+                ret += m_name;
+                unsigned idx = 1;
+                for (; idx < m_occurs.min(); ++idx) {
+                    ret.append({space}).append(m_name);
+                }
+                if (idx != m_occurs.min()) {
+                    ret.append({space, brop}).append(m_name);
+                    if (m_occurs.max() != Quantifier::infinity) {
+                        for (++idx; idx < m_occurs.max(); ++idx)
+                            ret.append({space}).append(m_name);
+                    } else {
+                        ret.append({space}).append(ellipsis);
+                    }
+                    ret += brcl;
+                }
+                if (m_occurs.min() == 0)
+                    ret += brcl;
+
+                return ret;
+            }
+
+            auto formatHelpName() const -> const StringType & {
+                return m_name;
+            }
+
+            auto formatHelpDescription() const -> const StringType & {
+                return m_description;
             }
         private:
             StringType m_name;
@@ -302,161 +389,12 @@ namespace Argum {
             return parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/true);
         }
 
-        auto formatUsage(StringViewType progName) const -> StringType {
-
-            constexpr auto endl = CharConstants::endl;
-
-            StringType ret = Messages::usageStart();
-            ret.append(this->formatSyntax(progName)).append(2, endl);
-
-            auto calcRes = this->calculateDescriptionNames();
-            auto & [maxNameLen, optionNames] = calcRes;
-            if (maxNameLen > 21)
-                maxNameLen = 21;
-
-            if (!this->m_positionals.empty()) {
-                ret.append(Messages::positionalHeader());
-                for(auto & pos: this->m_positionals)
-                    ret.append({endl}).append(this->formatItemDescription(pos.m_name, pos.m_description, 2, maxNameLen));
-                ret.append(2, endl);
-            }
-
-            if (!this->m_options.empty()) {
-                ret.append(Messages::optionsHeader());
-                for(size_t idx = 0; idx < this->m_options.size(); ++idx) {
-                    auto & opt = this->m_options[idx];
-                    auto name = optionNames[idx];
-                    ret.append({endl}).append(this->formatItemDescription(name, opt.m_description, 2, maxNameLen));
-                }
-                ret.append(2, endl);
-            }
-            return ret;
+        auto options() const -> const std::vector<Option> & {
+            return this->m_options;
         }
 
-        auto formatSyntax(StringViewType progName) const -> StringType {
-
-            constexpr auto space = CharConstants::space;
-
-            StringType ret(progName);
-
-            for(auto & opt: this->m_options)
-                ret.append({space}).append(this->formatOptionSyntax(opt));
-
-            for (auto & pos: this->m_positionals)
-                ret.append({space}).append(this->formatPositionalSyntax(pos));
-            
-            return ret;
-        }
-
-        auto formatOptionSyntax(const Option & opt) const -> StringType {
-            constexpr auto brop = CharConstants::squareBracketOpen;
-            constexpr auto brcl = CharConstants::squareBracketClose;
-
-            StringType ret;
-
-            if (opt.m_occurs.min() == 0)
-                ret += brop;
-            ret.append(opt.m_names.main()).append(this->formatOptionArgSyntax(opt));
-            if (opt.m_occurs.min() == 0)
-                ret += brcl;
-
-            return ret;
-        }
-
-        auto formatPositionalSyntax(const Positional & pos) const -> StringType {
-            constexpr auto space = CharConstants::space;
-            constexpr auto brop = CharConstants::squareBracketOpen;
-            constexpr auto brcl = CharConstants::squareBracketClose;
-            constexpr auto ellipsis = CharConstants::ellipsis;
-
-            StringType ret;
-
-            if (pos.m_occurs.min() == 0)
-                ret += brop;
-            ret += pos.m_name;
-            unsigned idx = 1;
-            for (; idx < pos.m_occurs.min(); ++idx) {
-                ret.append({space}).append(pos.m_name);
-            }
-            if (idx != pos.m_occurs.min()) {
-                ret.append({space, brop}).append(pos.m_name);
-                if (pos.m_occurs.max() != Quantifier::infinity) {
-                    for (++idx; idx < pos.m_occurs.max(); ++idx)
-                        ret.append({space}).append(pos.m_name);
-                } else {
-                    ret.append({space}).append(ellipsis);
-                }
-                ret += brcl;
-            }
-            if (pos.m_occurs.min() == 0)
-                ret += brcl;
-
-            return ret;
-        }
-
-        auto calculateDescriptionNames() const -> std::pair<size_t, std::vector<StringType>> {
-            size_t maxNameLen = 0;
-            std::vector<StringType> optionNames;
-
-            std::for_each(this->m_positionals.begin(), this->m_positionals.end(), [&](auto & pos){
-                if (pos.m_name.length() > maxNameLen)
-                    maxNameLen = pos.m_name.length();
-            });
-            std::for_each(this->m_options.begin(), this->m_options.end(), [&](auto & opt){
-                auto name = this->formatOptionNameForDescription(opt);
-                optionNames.emplace_back(std::move(name));
-                if (optionNames.back().length() > maxNameLen)
-                    maxNameLen = optionNames.back().length();
-            });
-            return {maxNameLen, std::move(optionNames)};
-        }
-
-        auto formatOptionNameForDescription(const Option & opt) const -> StringType {
-            
-            StringType ret = opt.m_names.all().front();
-            ret += this->formatOptionArgSyntax(opt);
-            std::for_each(opt.m_names.all().begin() + 1, opt.m_names.all().end(), [&](const auto & name) {
-                ret.append(Messages::listJoiner()).append(name).append(this->formatOptionArgSyntax(opt));
-            });
-
-            return ret;
-        }
-
-        auto formatItemDescription(StringViewType name, 
-                                   StringViewType description, 
-                                   size_t leadingSpaceCount,
-                                   size_t maxNameLen) const -> StringType {
-            constexpr auto space = CharConstants::space;
-            constexpr auto endl = CharConstants::endl;
-
-            StringType ret;
-
-            ret.append(leadingSpaceCount, space).append(name);
-            if (name.length() > maxNameLen) {
-                ret += endl;
-            } else {
-                ret.append(maxNameLen - name.length() + 2, space);
-            }
-            ret += description;
-
-            return Indent<CharType>{unsigned(maxNameLen + leadingSpaceCount + 2)}.apply(ret);
-        }
-
-        auto formatOptionArgSyntax(const Option & opt) const -> StringType {
-            constexpr auto space = CharConstants::space;
-            constexpr auto brop = CharConstants::squareBracketOpen;
-            constexpr auto brcl = CharConstants::squareBracketClose;
-
-            StringType ret;
-            std::visit([&](const auto & handler) {
-                using HandlerType = std::decay_t<decltype(handler)>;
-                if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
-                    ret.append({space, brop}).append(opt.m_argName).append({brcl});
-                } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Required>>)  {
-                    ret.append({space}).append(opt.m_argName);
-                }
-            }, opt.m_handler);
-            return ret;
+        auto positionals() const -> const std::vector<Positional> & {
+            return this->m_positionals;
         }
 
     private:
