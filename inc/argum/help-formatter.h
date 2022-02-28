@@ -13,6 +13,7 @@
 
 #include <string_view>
 #include <string>
+#include <vector>
 
 namespace Argum {
 
@@ -23,8 +24,8 @@ namespace Argum {
         using StringViewType = std::basic_string_view<CharType>;
         using StringType = std::basic_string<CharType>;
     private:
-        using CharConstants = CharConstants<CharType>;
-        using Messages = Messages<CharType>;
+        using CharConstants = Argum::CharConstants<CharType>;
+        using Messages = Argum::Messages<CharType>;
 
     public:
         HelpFormatter(const Parser & parser, StringViewType progName):
