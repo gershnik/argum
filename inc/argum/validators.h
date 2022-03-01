@@ -175,9 +175,8 @@ namespace Argum {
         auto formatEntry = [&str](const auto & arg) {
             std::basic_string<Char> entry;
             entry += CharConstants<Char>::endl;
-            Indent<Char> indent(indent.defaultValue);
-            entry.append(indent.apply(describe<Char>(arg)));
-            str.append(indent.apply(entry));
+            entry.append(indent(describe<Char>(arg)));
+            str.append(indent(entry));
         };
 
         if constexpr (Comb == ValidatorCombination::And)

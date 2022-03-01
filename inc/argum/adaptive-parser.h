@@ -15,6 +15,7 @@
 #include "tokenizer.h"
 #include "partitioner.h"
 #include "command-line.h"
+#include "help-formatter.h"
 
 #include <string>
 #include <string_view>
@@ -399,6 +400,14 @@ namespace Argum {
 
         auto positionals() const -> const std::vector<Positional> & {
             return this->m_positionals;
+        }
+
+        auto formatUsage(StringViewType progName) const -> StringType {
+            return HelpFormatter(*this, progName).formatUsage();
+        }
+
+        auto formatHelp(StringViewType progName) const -> StringType {
+            return HelpFormatter(*this, progName).formatHelp();
         }
 
     private:

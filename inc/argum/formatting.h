@@ -212,46 +212,77 @@ namespace Argum {
         return ret;
     }
 
-    template<Character Char>
-    class Indent {
-    public:
-        static constexpr unsigned defaultValue = 4;
+    template<StringLike T>
+    auto indent(T && input, unsigned count = 4) -> std::basic_string<CharTypeOf<T>> {
 
-        Indent() : m_count(Indent::defaultValue) {}
-        Indent(unsigned c) : m_count(c) {}
+        using Char = CharTypeOf<T>;
+        std::basic_string_view<Char> str(std::forward<T>(input));
 
-        auto apply(const std::basic_string<Char> & str) const -> std::basic_string<Char> {
-            std::basic_string<Char> ret;
-            size_t start = 0;
-            for ( ; ; ) {
-                auto lineEnd = str.find(CharConstants<Char>::endl, start);
-                ret += str.substr(start, lineEnd + 1);
-                if (lineEnd == str.npos)
-                    break;
-                for(unsigned i = 0; i < this->m_count; ++i)
-                    ret += CharConstants<char>::space;
-                start = lineEnd + 1;
+        std::basic_string<Char> ret;
+        size_t start = 0;
+        for ( ; ; ) {
+            auto lineEnd = str.find(CharConstants<Char>::endl, start);
+            if (lineEnd == str.npos)
+                break;
+            ret += str.substr(start, lineEnd + 1 - start);
+            start = lineEnd + 1;
+            ret.append(count, CharConstants<char>::space);
+        }
+        ret += str.substr(start);
+        return ret;
+    }
+
+    template<StringLike T>
+    auto wordWrap(T && input, unsigned maxLength) -> std::basic_string<CharTypeOf<T>> {
+        
+        using Char = CharTypeOf<T>;
+        
+        
+        if (maxLength == 0)
+            return std::basic_string<Char>();
+
+        std::basic_string_view<Char> str(std::forward<T>(input));
+        if (str.size() < maxLength)
+            return std::basic_string<Char>(std::forward<T>(input));
+
+        std::basic_string<Char> ret;
+        ret.reserve(str.size());
+        
+        size_t endOfLastAdded = 0;
+        size_t lastSpacePos = str.npos;
+        for(size_t i = 0; i < str.size() && str.size() - endOfLastAdded > maxLength; ++i) {
+            Char c = str[i];
+            if (c == CharConstants<Char>::endl) {
+                ret += str.substr(endOfLastAdded, i + 1 - endOfLastAdded);
+                endOfLastAdded = i + 1;
+                lastSpacePos = str.npos;
+                continue;
             }
-            ret += str.substr(start);
-            return ret;
-        }
+            
+            if (c == CharConstants<Char>::space) {
+                lastSpacePos = i;
+            }
 
-        auto count() {
-            return this->m_count;
-        }
+            if (i - endOfLastAdded == maxLength) {
 
-        auto operator+(unsigned rhs) const {
-            return Indent{this->m_count + rhs};
+                if (lastSpacePos != str.npos) {
+
+                    ret += str.substr(endOfLastAdded, lastSpacePos - endOfLastAdded);
+                    ret += CharConstants<Char>::endl;
+                    endOfLastAdded = lastSpacePos + 1;
+                } else {
+
+                    ret += str.substr(endOfLastAdded, i - endOfLastAdded);
+                    ret += CharConstants<Char>::endl;
+                    endOfLastAdded = i;
+                }
+                lastSpacePos = str.npos;
+            }
         }
-        auto operator-(unsigned rhs) const {
-            return Indent{this->m_count > rhs ? this->m_count - rhs : 0};
-        }
-        auto operator*(unsigned rhs) const {
-            return Indent{this->m_count * rhs};
-        }
-    private:
-        unsigned m_count = 0;
-    };
+        ret.append(str.substr(endOfLastAdded));
+
+        return ret;
+    }
 
 }
 

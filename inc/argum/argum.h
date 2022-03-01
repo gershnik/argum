@@ -10,7 +10,6 @@
 
 
 #include "adaptive-parser.h"
-#include "help-formatter.h"
 
 
 #endif 
