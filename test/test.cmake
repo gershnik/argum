@@ -65,6 +65,7 @@ target_sources(test
         test/test-parser-options-positionals.cpp
         test/test-parser-help.cpp
         test/test-parser-adaptive.cpp
+        test/test-parser-validation.cpp
 
         test/response.txt
         test/response1.txt

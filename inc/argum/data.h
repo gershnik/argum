@@ -78,13 +78,13 @@ namespace Argum {
         unsigned m_max = 0;
     };
 
-    inline constexpr Quantifier ZeroOrOneTime  (0, 1);
-    inline constexpr Quantifier NeverOrOnce    = ZeroOrOneTime;
-    inline constexpr Quantifier OneTime        (1, 1);
-    inline constexpr Quantifier Once           = OneTime;
-    inline constexpr Quantifier ZeroOrMoreTimes(0, Quantifier::infinity);
-    inline constexpr Quantifier OneOrMoreTimes (1, Quantifier::infinity);
-    inline constexpr Quantifier OnceOrMore     = OneOrMoreTimes;
+    inline constexpr Quantifier zeroOrOneTime  (0, 1);
+    inline constexpr Quantifier neverOrOnce    = zeroOrOneTime;
+    inline constexpr Quantifier oneTime        (1, 1);
+    inline constexpr Quantifier once           = oneTime;
+    inline constexpr Quantifier zeroOrMoreTimes(0, Quantifier::infinity);
+    inline constexpr Quantifier oneOrMoreTimes (1, Quantifier::infinity);
+    inline constexpr Quantifier onceOrMore     = oneOrMoreTimes;
 
     template<class Char>
     class BasicParsingException : public std::runtime_error {

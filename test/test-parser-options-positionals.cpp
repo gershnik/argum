@@ -8,7 +8,7 @@ TEST_CASE( "Mix of options and positionals" , "[parser]") {
     parser.add(OPTION_NO_ARG("-n", "--no-arg"));
     parser.add(OPTION_OPT_ARG("-o", "--opt-arg"));
     parser.add(OPTION_REQ_ARG("-r", "--req-arg"));
-    parser.add(POSITIONAL("p").occurs(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("p").occurs(zeroOrMoreTimes));
     parser.add(POSITIONAL("f"));
 
     EXPECT_FAILURE(ARGS("a", "-o", "-q", "c"), UNRECOGNIZED_OPTION("-q"))
@@ -31,8 +31,8 @@ TEST_CASE( "More complicated partitioning" , "[parser]") {
     parser.add(OPTION_REQ_ARG("-r", "--req-arg"));
     parser.add(POSITIONAL("p1").occurs(Quantifier(2, 3)));
     parser.add(POSITIONAL("p2").occurs(Quantifier(1, 2)));
-    parser.add(POSITIONAL("p3").occurs(ZeroOrMoreTimes));
-    parser.add(POSITIONAL("p4").occurs(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("p3").occurs(zeroOrMoreTimes));
+    parser.add(POSITIONAL("p4").occurs(zeroOrMoreTimes));
     parser.add(POSITIONAL("f"));
 
     EXPECT_FAILURE(ARGS("a", "-o", "-q", "c"), UNRECOGNIZED_OPTION("-q"))
@@ -50,7 +50,7 @@ TEST_CASE( "Negative number args when numeric options are present" , "[parser]")
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("x").occurs(NeverOrOnce));
+    parser.add(POSITIONAL("x").occurs(neverOrOnce));
     parser.add(OPTION_NO_ARG("-4"));
 
     EXPECT_SUCCESS(ARGS(), RESULTS())
@@ -67,7 +67,7 @@ TEST_CASE( "Empty arguments" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(POSITIONAL("x").occurs(NeverOrOnce));
+    parser.add(POSITIONAL("x").occurs(neverOrOnce));
     parser.add(OPTION_REQ_ARG("-y", "--yyy"));
 
     EXPECT_FAILURE(ARGS("-y"), MISSING_OPTION_ARGUMENT("-y"))
@@ -82,8 +82,8 @@ TEST_CASE( "Prefix character only arguments" , "[parser]") {
 
     AdaptiveParser parser(AdaptiveParser::Settings::commonUnix().addShortPrefix("+"));
     
-    parser.add(POSITIONAL("foo").occurs(NeverOrOnce));
-    parser.add(POSITIONAL("bar").occurs(NeverOrOnce));
+    parser.add(POSITIONAL("foo").occurs(neverOrOnce));
+    parser.add(POSITIONAL("bar").occurs(neverOrOnce));
     parser.add(OPTION_NO_ARG("-+-"));
 
     EXPECT_FAILURE(ARGS("-y"), UNRECOGNIZED_OPTION("-y"))
@@ -99,7 +99,7 @@ TEST_CASE( "Option with optional arg followed by optional positional" , "[parser
 
     AdaptiveParser parser;
     parser.add(OPTION_OPT_ARG("-x"));
-    parser.add(POSITIONAL("y").occurs(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("y").occurs(zeroOrMoreTimes));
 
     EXPECT_SUCCESS(ARGS(), RESULTS())
     EXPECT_SUCCESS(ARGS("-x"), RESULTS({"-x", {nullopt}}))
@@ -150,7 +150,7 @@ TEST_CASE( "options that may or may not be arguments" , "[parser]") {
     AdaptiveParser parser;
     parser.add(OPTION_REQ_ARG("-x"));
     parser.add(OPTION_REQ_ARG("-3"));
-    parser.add(POSITIONAL("z").occurs(ZeroOrMoreTimes));
+    parser.add(POSITIONAL("z").occurs(zeroOrMoreTimes));
 
     EXPECT_FAILURE(ARGS("-x"), MISSING_OPTION_ARGUMENT("-x"))
     EXPECT_FAILURE(ARGS("-y2.5"), UNRECOGNIZED_OPTION("-y2.5"))

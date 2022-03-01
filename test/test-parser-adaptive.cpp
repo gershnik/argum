@@ -4,7 +4,7 @@ TEST_CASE( "Changing positionals on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
     AdaptiveParser parser;
-    parser.add(Positional("p").occurs(ZeroOrMoreTimes).handler([&results, &parser](unsigned idx, string_view val){
+    parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&results, &parser](unsigned idx, string_view val){
         auto & list = results["p"]; 
         CHECK(list.size() == idx); 
         list.push_back(string(val));
@@ -30,7 +30,7 @@ TEST_CASE( "Changing options on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
     AdaptiveParser parser;
-    parser.add(Positional("p").occurs(ZeroOrMoreTimes).handler([&](unsigned idx, string_view val){
+    parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&](unsigned idx, string_view val){
         auto & list = results["p"]; 
         CHECK(list.size() == idx); 
         list.push_back(string(val));

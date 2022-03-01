@@ -293,7 +293,7 @@ namespace Argum {
     requires(std::is_same_v<Comp, std::greater_equal<unsigned>> ||
              std::is_same_v<Comp, std::less_equal<unsigned>> || 
              std::is_same_v<Comp, std::greater<unsigned>> ||
-             std::is_same_v<Comp, std::greater<unsigned>> ||
+             std::is_same_v<Comp, std::less<unsigned>> ||
              std::is_same_v<Comp, std::equal_to<unsigned>> ||
              std::is_same_v<Comp, std::not_equal_to<unsigned>>)
     class ItemOccurs {
@@ -326,40 +326,21 @@ namespace Argum {
         friend auto describe(const ItemOccurs & val)  {
 
             using Messages = Messages<ResChar>;
-            constexpr auto inf = std::numeric_limits<unsigned>::max();
-
+            
             auto typeName = IsOption ? Messages::option() : Messages::positionalArg();
-            if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) switch(val.m_count) {
-                break; case 0:   return format(Messages::itemUnrestricted(), typeName, val.m_name);
-                break; case 1:   return format(Messages::itemRequired(), typeName, val.m_name);
-                break; default:  return format(Messages::itemOccursAtLeast(), typeName, val.m_name, val.m_count);
-            }
-            else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) switch(val.m_count) {
-                break; case 0:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
-                break; case 1:   return format(Messages::itemRequired(), typeName, val.m_name);
-                break; default:  return format(Messages::itemOccursAtMost(), typeName, val.m_name, val.m_count);
-                break; case inf: return format(Messages::itemUnrestricted(), typeName, val.m_name);
-            }
-            else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) switch(val.m_count) {
-                break; case 0:   return format(Messages::itemRequired(), typeName, val.m_name);
-                break; default:  return format(Messages::itemOccursMoreThan(), typeName, val.m_name, val.m_count);
-            }
-            else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) switch(val.m_count) {
-                break; case 0:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
-                break; case 1:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
-                break; default:  return format(Messages::itemOccursLessThan(), typeName, val.m_name, val.m_count);
-                break; case inf: return format(Messages::itemUnrestricted(), typeName, val.m_name);
-            }
-            else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>) switch(val.m_count) {
-                break; case 0:   return format(Messages::itemMustNotBePresent(), typeName, val.m_name);
-                break; case 1:   return format(Messages::itemRequired(), typeName, val.m_name);
-                break; default:  return format(Messages::itemOccursExactly(), typeName, val.m_name, val.m_count);
-            }
-            else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) switch(val.m_count) {
-                break; case 0:   return format(Messages::itemRequired(), typeName, val.m_name);
-                break; default:  return format(Messages::itemDoesNotOccursExactly(), typeName, val.m_name, val.m_count);
-                break; case inf: return format(Messages::itemUnrestricted(), typeName, val.m_name);
-            }
+            if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) {
+                return format(Messages::itemMustBePresentGE(val.m_count), typeName, val.m_name, val.m_count);
+            } else if constexpr (std::is_same_v<Comp, std::less_equal<unsigned>>) {
+                return format(Messages::itemMustBePresentLE(val.m_count), typeName, val.m_name, val.m_count);
+            } else if constexpr (std::is_same_v<Comp, std::greater<unsigned>>) {
+                return format(Messages::itemMustBePresentG(val.m_count), typeName, val.m_name, val.m_count);
+            } else if constexpr (std::is_same_v<Comp, std::less<unsigned>>) {
+                return format(Messages::itemMustBePresentL(val.m_count), typeName, val.m_name, val.m_count);
+            } else if constexpr (std::is_same_v<Comp, std::equal_to<unsigned>>) {
+                return format(Messages::itemMustBePresentEQ(val.m_count), typeName, val.m_name, val.m_count);
+            } else if constexpr (std::is_same_v<Comp, std::not_equal_to<unsigned>>) {
+                return format(Messages::itemMustBePresentNEQ(val.m_count), typeName, val.m_name, val.m_count);
+            } 
         }
     private:
         std::basic_string<Char> m_name;

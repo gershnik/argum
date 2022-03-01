@@ -467,10 +467,12 @@ TEST_CASE( "Required option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").occurs(Once));
+    parser.add(OPTION_OPT_ARG("-w", "--work").occurs(once));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))
+    EXPECT_FAILURE(ARGS("-ww"), VALIDATION_ERROR("invalid arguments: option -w must occur at most once"))
+    EXPECT_FAILURE(ARGS("-w", "--work"), VALIDATION_ERROR("invalid arguments: option -w must occur at most once"))
 
     EXPECT_SUCCESS(ARGS("-w"), RESULTS({"-w", {nullopt}}))
     EXPECT_SUCCESS(ARGS("-w", "42"), RESULTS({"-w", {"42"}}))
@@ -484,7 +486,7 @@ TEST_CASE( "Repeat one-or-more option" , "[parser]") {
     map<string, vector<Value>> results;
 
     AdaptiveParser parser;
-    parser.add(OPTION_OPT_ARG("-w", "--work").occurs(OneOrMoreTimes));
+    parser.add(OPTION_OPT_ARG("-w", "--work").occurs(oneOrMoreTimes));
 
     EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: option -w must be present"))

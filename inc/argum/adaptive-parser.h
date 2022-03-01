@@ -241,7 +241,7 @@ namespace Argum {
         private:
             OptionNames m_names;
             Handler m_handler = []() {};
-            Quantifier m_occurs = ZeroOrMoreTimes;
+            Quantifier m_occurs = zeroOrMoreTimes;
 
             StringType m_argName = Messages::defaultArgName();
             StringType m_description;
@@ -323,7 +323,7 @@ namespace Argum {
         private:
             StringType m_name;
             PositionalHandler m_handler = [](unsigned, StringViewType) {};
-            Quantifier m_occurs = Once;
+            Quantifier m_occurs = once;
             StringType m_description;
         };
 
@@ -459,14 +459,7 @@ namespace Argum {
                 });
 
                 completeOption();
-
-                //We could use normal validators for this but it is faster to do it manually
-                validatePositionals();
-                
-                for(auto & [validator, desc]: m_owner.m_validators) {
-                    if (!validator(m_validationData))
-                        throw ValidationError(desc);
-                }
+                validate();
                 return ret;
             }
 
@@ -651,15 +644,22 @@ namespace Argum {
                 return remainingPositionalCount;
             }
 
-            auto validatePositionals() {
+            auto validate() {
+
+                //We could use normal validators for this but it is faster to do it manually
                 for(auto idx = (m_positionalIndex >= 0 ? unsigned(m_positionalIndex) : 0u); 
                     idx != unsigned(m_owner.m_positionals.size());
                     ++idx) {
                     
                     auto & positional = m_owner.m_positionals[unsigned(idx)];
                     auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_occurs.min());
-                    if (!validator(this->m_validationData))
+                    if (!validator(m_validationData))
                         throw ValidationError(validator);
+                }
+                
+                for(auto & [validator, desc]: m_owner.m_validators) {
+                    if (!validator(m_validationData))
+                        throw ValidationError(desc);
                 }
             }
 

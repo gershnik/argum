@@ -32,20 +32,60 @@ namespace Argum {
         static constexpr auto allOrNoneMustBeTrue()         { return pr ## "either all or none of the following must be true:"; }\
         static constexpr auto option()                      { return pr ## "option"; }\
         static constexpr auto positionalArg()               { return pr ## "positional argument"; }\
-        static constexpr auto itemUnrestricted()            { return pr ## "{1} {2} can occur any number of times"; }\
-        static constexpr auto itemRequired()                { return pr ## "{1} {2} must be present"; }\
-        static constexpr auto itemMustNotBePresent()        { return pr ## "{1} {2} must not be present"; }\
-        static constexpr auto itemOccursAtLeast()           { return pr ## "{1} {2} must occur at least {3} times"; }\
-        static constexpr auto itemOccursAtMost()            { return pr ## "{1} {2} must occur at most {3} times"; }\
-        static constexpr auto itemOccursLessThan()          { return pr ## "{1} {2} must occur less than {3} times"; }\
-        static constexpr auto itemOccursMoreThan()          { return pr ## "{1} {2} must occur more than {3} times"; }\
-        static constexpr auto itemOccursExactly()           { return pr ## "{1} {2} must occur exactly {3} times"; }\
-        static constexpr auto itemDoesNotOccursExactly()    { return pr ## "{1} {2} must NOT occur {3} times"; }\
         static constexpr auto usageStart()                  { return pr ## "Usage: "; }\
         static constexpr auto defaultArgName()              { return pr ## "ARG"; }\
         static constexpr auto positionalHeader()            { return pr ## "positional arguments:"; }\
         static constexpr auto optionsHeader()               { return pr ## "options:"; }\
         static constexpr auto listJoiner()                  { return pr ## ", "; }\
+        static constexpr auto itemUnrestricted()            { return pr ## "{1} {2} can occur any number of times"; }\
+        static constexpr auto itemMustBePresent()           { return pr ## "{1} {2} must be present"; }\
+        static constexpr auto itemMustNotBePresent()        { return pr ## "{1} {2} must not be present"; }\
+        static constexpr auto itemMustBePresentGE(unsigned val) { \
+            switch(val) { \
+                break; case 0:   return itemUnrestricted(); \
+                break; case 1:   return itemMustBePresent(); \
+                break; default:  return pr ## "{1} {2} must occur at least {3} times"; \
+            } \
+        }\
+        static constexpr auto itemMustBePresentG(unsigned val) { \
+            switch(val) { \
+                break; case 0:   return itemMustBePresent(); \
+                break; default:  return pr ## "{1} {2} must occur more than {3} times"; \
+            }\
+        }\
+        static constexpr auto itemMustBePresentLE(unsigned val) { \
+            constexpr auto inf = std::numeric_limits<unsigned>::max();\
+            switch(val) { \
+                break; case 0:   return itemMustNotBePresent(); \
+                break; case 1:   return pr ## "{1} {2} must occur at most once"; \
+                break; default:  return pr ## "{1} {2} must occur at most {3} times"; \
+                break; case inf: return itemUnrestricted(); \
+            }\
+        }\
+        static constexpr auto itemMustBePresentL(unsigned val) { \
+            constexpr auto inf = std::numeric_limits<unsigned>::max();\
+            switch(val) { \
+                break; case 0:   return itemMustNotBePresent();\
+                break; case 1:   return itemMustNotBePresent();\
+                break; default:  return pr ## "{1} {2} must occur less than {3} times";\
+                break; case inf: return itemUnrestricted();\
+            }\
+        }\
+        static constexpr auto itemMustBePresentEQ(unsigned val) { \
+            switch(val) { \
+                break; case 0:   return itemMustNotBePresent();\
+                break; case 1:   return itemMustBePresent();\
+                break; default:  return pr ## "{1} {2} must occur {3} times";\
+            }\
+        }\
+        static constexpr auto itemMustBePresentNEQ(unsigned val) { \
+            constexpr auto inf = std::numeric_limits<unsigned>::max();\
+            switch(val) { \
+                break; case 0:   return itemMustBePresent();\
+                break; default:  return pr ## "{1} {2} must NOT occur {3} times"; \
+                break; case inf: return itemUnrestricted();\
+            }\
+        }\
     };
 
     ARGUM_DEFINE_MESSAGES(char, )
