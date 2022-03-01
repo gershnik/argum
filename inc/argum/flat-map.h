@@ -24,13 +24,15 @@ namespace Argum {
 
     private:
         struct Comparator {
-            auto operator()(const value_type & lhs, const auto & rhs) {
+            template<class X>
+            auto operator()(const value_type & lhs, const X & rhs) const {
                 return lhs < rhs;
             }
-            auto operator()(const auto & lhs, const value_type & rhs) {
+            template<class X>
+            auto operator()(const X & lhs, const value_type & rhs) const {
                 return lhs < rhs;
             }
-            auto operator()(const value_type & lhs, const value_type & rhs) {
+            auto operator()(const value_type & lhs, const value_type & rhs) const {
                 return lhs < rhs;
             }
         };
@@ -103,10 +105,12 @@ namespace Argum {
         using const_iterator = typename std::vector<value_type>::const_iterator;
     private:
         struct Comparator {
-            auto operator()(const value_type & lhs, const auto & rhs) {
+            template<class X>
+            auto operator()(const value_type & lhs, const X & rhs) const {
                 return lhs.key() < rhs;
             }
-            auto operator()(const auto & lhs, const value_type & rhs) {
+            template<class X>
+            auto operator()(const X & lhs, const value_type & rhs) const {
                 return lhs < rhs.key();
             }
             auto operator()(const value_type & lhs, const value_type & rhs) {

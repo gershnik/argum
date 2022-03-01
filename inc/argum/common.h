@@ -15,7 +15,11 @@
 
 #include <assert.h>
 
-#define ARGUM_DECLARE_FRIENDLY_NAME(stem, type, prefix) using prefix ## stem = Basic##stem<type>;
+#ifndef ARGUM_MOD_EXPORTED
+    #define ARGUM_MOD_EXPORTED
+#endif
+
+#define ARGUM_DECLARE_FRIENDLY_NAME(stem, type, prefix) ARGUM_MOD_EXPORTED using prefix ## stem = Basic##stem<type>;
     
 #define ARGUM_DECLARE_FRIENDLY_NAMES(stem) \
     ARGUM_DECLARE_FRIENDLY_NAME(stem, char, ) \

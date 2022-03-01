@@ -19,6 +19,7 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED
     template<class Char>
     class ParsingValidationData {
     public:
@@ -97,11 +98,13 @@ namespace Argum {
 
     //MARK: - OppositeOf
     
+    ARGUM_MOD_EXPORTED
     template<AnyParserValidator Validator>
     auto operator!(const Validator & val) {
         return NotValidator<std::decay_t<Validator>>(std::forward<Validator>(val));
     }
 
+    ARGUM_MOD_EXPORTED
     template<AnyParserValidator Validator>
     auto oppositeOf(Validator && val) {
         return !std::forward<Validator>(val);
@@ -167,6 +170,7 @@ namespace Argum {
         TupleType m_items;
     };
 
+    ARGUM_MOD_EXPORTED
     template<class Char, ValidatorCombination Comb, DescribableParserValidator<Char>... Args>
     auto describe(const CombinedValidator<Comb, Args...> & val)  {
 
@@ -231,12 +235,14 @@ namespace Argum {
 
     //MARK: - AllOf
 
+    ARGUM_MOD_EXPORTED
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto operator&&(V1 && v1, V2 && v2)  {
         return combine<ValidatorCombination::And>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
+    ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto allOf(First && first, Rest && ...rest)  {
@@ -245,12 +251,14 @@ namespace Argum {
 
     //MARK: - AnyOf
 
+    ARGUM_MOD_EXPORTED
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto operator||(V1 && v1, V2 && v2)  {
         return combine<ValidatorCombination::Or>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
+    ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto anyOf(First && first, Rest && ...rest)  {
@@ -259,12 +267,14 @@ namespace Argum {
 
     //MARK: - OnlyOneOf
 
+    ARGUM_MOD_EXPORTED
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto onlyOneOf(V1 && v1, V2 && v2)  {
         return combine<ValidatorCombination::Xor>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
+    ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto onlyOneOf(First && first, Rest && ...rest)  {
@@ -274,12 +284,14 @@ namespace Argum {
 
     //MARK: - AllOrNoneOf
 
+    ARGUM_MOD_EXPORTED
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto allOrNoneOf(V1 && v1, V2 && v2)  {
         return combine<ValidatorCombination::NXor>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
+    ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto allOrNoneOf(First && first, Rest && ...rest)  {
@@ -348,52 +360,52 @@ namespace Argum {
     };
 
 
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto OptionRequired(S name) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, 0);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto OptionAbsent(S name) {
         return ItemOccurs<CharTypeOf<S>, true, std::equal_to<unsigned>>(name, 0);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto OptionOccursAtLeast(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater_equal<unsigned>>(name, count);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto OptionOccursAtMost(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::less_equal<unsigned>>(name, count);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto OptionOccursMoreThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, count);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto OptionOccursLessThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::less<unsigned>>(name, count);
     }
 
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto PositionalRequired(S name) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, 0);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto PositionalAbsent(S name) {
         return ItemOccurs<CharTypeOf<S>, false, std::equal_to<unsigned>>(name, 0);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto PositionalOccursAtLeast(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater_equal<unsigned>>(name, count);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto PositionalOccursAtMost(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::less_equal<unsigned>>(name, count);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto PositionalOccursMoreThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, count);
     }
-    template<StringLike S>
+    ARGUM_MOD_EXPORTED template<StringLike S>
     auto PositionalOccursLessThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::less<unsigned>>(name, count);
     }

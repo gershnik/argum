@@ -23,6 +23,7 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED
     template<class Char>
     class BasicArgumentTokenizer final {
 

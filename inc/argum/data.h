@@ -19,6 +19,7 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED
     template<class Char>
     class BasicOptionNames final {
     
@@ -54,7 +55,7 @@ namespace Argum {
         Required
     };
 
-    class Quantifier {
+    ARGUM_MOD_EXPORTED class Quantifier {
     public:
         static constexpr unsigned infinity = std::numeric_limits<unsigned>::max();
 
@@ -78,14 +79,15 @@ namespace Argum {
         unsigned m_max = 0;
     };
 
-    inline constexpr Quantifier zeroOrOneTime  (0, 1);
-    inline constexpr Quantifier neverOrOnce    = zeroOrOneTime;
-    inline constexpr Quantifier oneTime        (1, 1);
-    inline constexpr Quantifier once           = oneTime;
-    inline constexpr Quantifier zeroOrMoreTimes(0, Quantifier::infinity);
-    inline constexpr Quantifier oneOrMoreTimes (1, Quantifier::infinity);
-    inline constexpr Quantifier onceOrMore     = oneOrMoreTimes;
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier zeroOrOneTime  (0, 1);
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier neverOrOnce    = zeroOrOneTime;
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier oneTime        (1, 1);
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier once           = oneTime;
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier zeroOrMoreTimes(0, Quantifier::infinity);
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier oneOrMoreTimes (1, Quantifier::infinity);
+    ARGUM_MOD_EXPORTED inline constexpr Quantifier onceOrMore     = oneOrMoreTimes;
 
+    ARGUM_MOD_EXPORTED
     template<class Char>
     class BasicParsingException : public std::runtime_error {
     public:
@@ -103,6 +105,7 @@ namespace Argum {
         std::basic_string<Char> m_message;
     };
 
+    ARGUM_MOD_EXPORTED
     template<>
     class BasicParsingException<char> : public std::runtime_error {
     public:

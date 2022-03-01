@@ -18,6 +18,7 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED
     template<class Parser>
     class HelpFormatter {
     public:

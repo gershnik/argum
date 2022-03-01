@@ -21,6 +21,7 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED 
     template<class Char>
     auto makeArgSpan(int argc, Char ** argv) -> std::span<const Char *> {
         if (argc > 0)
@@ -28,6 +29,7 @@ namespace Argum {
         return std::span(const_cast<const Char **>(argv), size_t(0));
     }
 
+    ARGUM_MOD_EXPORTED
     template<class Char>
     class BasicResponseFileReader {
     public:
