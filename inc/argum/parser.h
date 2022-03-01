@@ -5,8 +5,8 @@
 // license that can be found in the LICENSE file or at
 // https://github.com/gershnik/argum/blob/master/LICENSE
 //
-#ifndef HEADER_ARGUM_ADAPTIVE_PARSER_H_INCLUDED
-#define HEADER_ARGUM_ADAPTIVE_PARSER_H_INCLUDED
+#ifndef HEADER_ARGUM_PARSER_H_INCLUDED
+#define HEADER_ARGUM_PARSER_H_INCLUDED
 
 #include "char-constants.h"
 #include "messages.h"

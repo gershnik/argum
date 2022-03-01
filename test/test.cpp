@@ -1,9 +1,3 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
-
-#include <argum/argum.h>
-
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 

@@ -22,7 +22,6 @@ target_compile_definitions(argum
 
 target_sources(argum
     PRIVATE
-        inc/argum/argum.h
         inc/argum/common.h
         inc/argum/char-constants.h
         inc/argum/messages.h

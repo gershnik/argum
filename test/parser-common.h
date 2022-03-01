@@ -3,7 +3,7 @@
 #define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message) 
 
 #include <argum/help-formatter.h>
-#include <argum/adaptive-parser.h>
+#include <argum/parser.h>
 
 #include "catch.hpp"
 
