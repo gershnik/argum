@@ -98,7 +98,7 @@ namespace Argum {
         
 
         struct HelpContent {
-            size_t maxNameLen = 0;
+            unsigned maxNameLen = 0;
             std::vector<std::pair<StringType, StringType>> optionItems;
             std::vector<std::pair<StringType, StringType>> positionalItems;
         };
@@ -109,13 +109,13 @@ namespace Argum {
             std::for_each(this->m_parser.positionals().begin(), this->m_parser.positionals().end(), [&](auto & pos){
                 auto name = pos.formatHelpName();
                 if (name.length() > ret.maxNameLen)
-                    ret.maxNameLen = name.length();
+                    ret.maxNameLen = unsigned(name.length());
                 ret.positionalItems.emplace_back(std::move(name), pos.formatHelpDescription());
             });
             std::for_each(this->m_parser.options().begin(), this->m_parser.options().end(), [&](auto & opt){
                 auto name = opt.formatHelpName();
                 if (name.length() > ret.maxNameLen)
-                    ret.maxNameLen = name.length();
+                    ret.maxNameLen = unsigned(name.length());
                 ret.optionItems.emplace_back(std::move(name), opt.formatHelpDescription());
             });
             return ret;
@@ -123,7 +123,7 @@ namespace Argum {
 
         auto formatItemHelp(StringViewType name, 
                             StringViewType description,
-                            size_t maxNameLen) const -> StringType {
+                            unsigned maxNameLen) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto endl = CharConstants::endl;
 
