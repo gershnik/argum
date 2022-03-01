@@ -5,14 +5,14 @@ TEST_CASE( "Positional boundary Cases" , "[parser]") {
     map<string, vector<Value>> results;
 
     {
-        AdaptiveParser parser;
+        Parser parser;
         parser.add(Positional("p")); //positional with no handler
         
         EXPECT_SUCCESS(ARGS("x"), RESULTS())
     }
 
     {
-        AdaptiveParser parser;
+        Parser parser;
         parser.add(POSITIONAL("p")); 
         parser.add(POSITIONAL("p"));  //duplicate names are fine though stupid
         CHECK_THROWS_AS(parser.add(POSITIONAL("p").occurs(Quantifier(6,0))), invalid_argument);
@@ -23,7 +23,7 @@ TEST_CASE( "Positional boundary Cases" , "[parser]") {
 TEST_CASE( "Simple positional" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
@@ -38,7 +38,7 @@ TEST_CASE( "Simple positional" , "[parser]") {
 TEST_CASE( "Positional with explicit repeat once" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(oneTime));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
@@ -51,7 +51,7 @@ TEST_CASE( "Positional with explicit repeat once" , "[parser]") {
 TEST_CASE( "Positional with explicit repeat twice" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(Quantifier(2)));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must occur at least 2 times"))
@@ -65,7 +65,7 @@ TEST_CASE( "Positional with explicit repeat twice" , "[parser]") {
 TEST_CASE( "Positional with unlimited repeat" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(zeroOrMoreTimes));
 
     EXPECT_FAILURE(ARGS("-x"), UNRECOGNIZED_OPTION("-x"))
@@ -79,7 +79,7 @@ TEST_CASE( "Positional with unlimited repeat" , "[parser]") {
 TEST_CASE( "Positional with one or more repeat" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(oneOrMoreTimes));
 
     EXPECT_FAILURE(ARGS(), VALIDATION_ERROR("invalid arguments: positional argument foo must be present"))
@@ -93,7 +93,7 @@ TEST_CASE( "Positional with one or more repeat" , "[parser]") {
 TEST_CASE( "Positional with zero or once repeat" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(zeroOrOneTime));
 
     EXPECT_FAILURE(ARGS("a", "b"), EXTRA_POSITIONAL("b"))
@@ -106,7 +106,7 @@ TEST_CASE( "Positional with zero or once repeat" , "[parser]") {
 TEST_CASE( "Two positionals" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar"));
 
@@ -121,7 +121,7 @@ TEST_CASE( "Two positionals" , "[parser]") {
 TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(once));
 
@@ -136,7 +136,7 @@ TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[parser
 TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(2));
     parser.add(POSITIONAL("bar"));
 
@@ -152,7 +152,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[parser]") {
 TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(zeroOrMoreTimes));
 
@@ -167,7 +167,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[parser]
 TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(oneOrMoreTimes));
 
@@ -182,7 +182,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[parse
 TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(neverOrOnce));
 
@@ -197,7 +197,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[parse
 TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(zeroOrMoreTimes));
     parser.add(POSITIONAL("bar"));
 
@@ -212,7 +212,7 @@ TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[parser]
 TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(oneOrMoreTimes));
     parser.add(POSITIONAL("bar"));
 
@@ -226,7 +226,7 @@ TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[parse
 TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(neverOrOnce));
     parser.add(POSITIONAL("bar"));
 
@@ -241,7 +241,7 @@ TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[parse
 TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[parser]") {
     map<wstring, vector<WValue>> results;
 
-    WAdaptiveParser parser;
+    WParser parser;
     parser.add(WPOSITIONAL(L"foo").occurs(2));
     parser.add(WPOSITIONAL(L"bar").occurs(zeroOrMoreTimes));
 
@@ -256,7 +256,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[parser]
 TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[parser]") {
     map<wstring, vector<WValue>> results;
 
-    WAdaptiveParser parser;
+    WParser parser;
     parser.add(WPOSITIONAL(L"foo").occurs(2));
     parser.add(WPOSITIONAL(L"bar").occurs(oneOrMoreTimes));
 
@@ -272,7 +272,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[parse
 TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(2));
     parser.add(POSITIONAL("bar").occurs(neverOrOnce));
 
@@ -288,7 +288,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[parser]"
 TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(zeroOrMoreTimes));
     parser.add(POSITIONAL("baz"));
@@ -305,7 +305,7 @@ TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[parser]") {
 TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(oneOrMoreTimes));
     parser.add(POSITIONAL("baz"));
@@ -322,7 +322,7 @@ TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[parser]") {
 TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo"));
     parser.add(POSITIONAL("bar").occurs(neverOrOnce));
     parser.add(POSITIONAL("baz"));
@@ -339,7 +339,7 @@ TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[parser]") {
 TEST_CASE( "Two positionals with repeats: ?, ?" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(neverOrOnce));
     parser.add(POSITIONAL("bar").occurs(neverOrOnce));
 
@@ -354,7 +354,7 @@ TEST_CASE( "Two positionals with repeats: ?, ?" , "[parser]") {
 TEST_CASE( "Two positionals with repeats: ?, *" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(neverOrOnce));
     parser.add(POSITIONAL("bar").occurs(zeroOrMoreTimes));
 
@@ -369,7 +369,7 @@ TEST_CASE( "Two positionals with repeats: ?, *" , "[parser]") {
 TEST_CASE( "Two positionals with repeats: ?, +" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("foo").occurs(neverOrOnce));
     parser.add(POSITIONAL("bar").occurs(onceOrMore));
 

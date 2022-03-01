@@ -30,7 +30,7 @@
 namespace Argum {
 
     template<class Char>
-    class BasicAdaptiveParser {
+    class BasicParser {
 
     public:
         using CharType = Char;
@@ -61,7 +61,7 @@ namespace Argum {
             using Type = std::function<void (std::basic_string_view<C>)>; 
         };
 
-        using ArgumentTokenizer = BasicArgumentTokenizer<Char>;
+        using Tokenizer = BasicTokenizer<Char>;
         using ValidationData = ParsingValidationData<Char>;
 
     public:
@@ -69,7 +69,7 @@ namespace Argum {
 
         using PositionalHandler = std::function<void (unsigned, StringViewType)>;
 
-        using Settings = typename ArgumentTokenizer::Settings;
+        using Settings = typename Tokenizer::Settings;
         
         struct UnrecognizedOption : public ParsingException {
             UnrecognizedOption(StringViewType option_): 
@@ -125,7 +125,7 @@ namespace Argum {
         };
 
         class Option {
-            friend class BasicAdaptiveParser;
+            friend class BasicParser;
         public:
             using Handler = std::variant<
                 OptionHandler<OptionArgument::None>,
@@ -248,7 +248,7 @@ namespace Argum {
         };
 
         class Positional {
-            friend class BasicAdaptiveParser;
+            friend class BasicParser;
         public:
             Positional(StringViewType name_) :
                 m_name(std::move(name_)) {
@@ -328,9 +328,9 @@ namespace Argum {
         };
 
     public:
-        BasicAdaptiveParser() = default;
+        BasicParser() = default;
 
-        BasicAdaptiveParser(Settings settings): m_tokenizer(settings) {
+        BasicParser(Settings settings): m_tokenizer(settings) {
         }
 
         auto add(Option option) -> void {
@@ -413,7 +413,7 @@ namespace Argum {
     private:
         class ParsingState {
         public:
-            ParsingState(const BasicAdaptiveParser & owner): 
+            ParsingState(const BasicParser & owner): 
                 m_owner(owner),
                 m_updateCountAtLastRecalc(owner.m_updateCount - 1) {
             }
@@ -421,37 +421,37 @@ namespace Argum {
             template<ArgIterator<CharType> It>
             auto parse(It argFirst, It argLast, bool stopOnUnknown) -> std::vector<StringType> {
             
-                auto ret = m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> typename ArgumentTokenizer::TokenResult {
+                auto ret = m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> typename Tokenizer::TokenResult {
 
                     using TokenType = std::decay_t<decltype(token)>;
 
-                    if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
+                    if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 
                         resetOption(token.idx, token.usedName, token.argument);
-                        return ArgumentTokenizer::Continue;
+                        return Tokenizer::Continue;
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionStopToken>) {
 
                         completeOption();
-                        return ArgumentTokenizer::Continue;
+                        return Tokenizer::Continue;
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::ArgumentToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::ArgumentToken>) {
 
                         if (!handlePositional(token.value, argFirst + token.argIdx, argLast)) {
                             if (stopOnUnknown)
-                                return ArgumentTokenizer::StopBefore;
+                                return Tokenizer::StopBefore;
                             throw ExtraPositional(token.value);
                         }
-                        return ArgumentTokenizer::Continue;
+                        return Tokenizer::Continue;
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::UnknownOptionToken>) {
 
                         completeOption();
                         if (stopOnUnknown)
-                            return ArgumentTokenizer::StopBefore;
+                            return Tokenizer::StopBefore;
                         throw UnrecognizedOption(token.name);
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::AmbiguousOptionToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::AmbiguousOptionToken>) {
 
                         completeOption();
                         throw AmbiguousOption(token.name, std::move(token.possibilities));
@@ -614,7 +614,7 @@ namespace Argum {
                 m_owner.m_tokenizer.tokenize(remainingArgFirst, argLast, [&](const auto & token) {
                     using TokenType = std::decay_t<decltype(token)>;
 
-                    if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionToken>) {
+                    if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 
                         auto & option = m_owner.m_options[token.idx];
                         if (!std::holds_alternative<OptionHandler<OptionArgument::None>>(option.m_handler)) {
@@ -623,22 +623,22 @@ namespace Argum {
                             currentOptionExpectsArgument = false;
                         }
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::OptionStopToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionStopToken>) {
 
                         currentOptionExpectsArgument = false;
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::ArgumentToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::ArgumentToken>) {
 
                         if (!currentOptionExpectsArgument)
                             ++remainingPositionalCount;
                         else
                             currentOptionExpectsArgument = false;
 
-                    } else if constexpr (std::is_same_v<TokenType, typename ArgumentTokenizer::UnknownOptionToken>) {
+                    } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::UnknownOptionToken>) {
 
                         currentOptionExpectsArgument = false;
                     }
-                    return ArgumentTokenizer::Continue;
+                    return Tokenizer::Continue;
                 });
                 
                 return remainingPositionalCount;
@@ -664,7 +664,7 @@ namespace Argum {
             }
 
         private:
-            const BasicAdaptiveParser & m_owner;
+            const BasicParser & m_owner;
             size_t m_updateCountAtLastRecalc;
 
             int m_optionIndex = -1;
@@ -680,12 +680,12 @@ namespace Argum {
     private:
         std::vector<Option> m_options;
         std::vector<Positional> m_positionals;
-        ArgumentTokenizer m_tokenizer;
+        Tokenizer m_tokenizer;
         std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
         size_t m_updateCount = 0;
     };
 
-    ARGUM_DECLARE_FRIENDLY_NAMES(AdaptiveParser)
+    ARGUM_DECLARE_FRIENDLY_NAMES(Parser)
 
 }
 

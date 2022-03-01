@@ -4,7 +4,7 @@
 TEST_CASE( "Mix of options and positionals" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(OPTION_NO_ARG("-n", "--no-arg"));
     parser.add(OPTION_OPT_ARG("-o", "--opt-arg"));
     parser.add(OPTION_REQ_ARG("-r", "--req-arg"));
@@ -25,7 +25,7 @@ TEST_CASE( "Mix of options and positionals" , "[parser]") {
 TEST_CASE( "More complicated partitioning" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(OPTION_NO_ARG("-n", "--no-arg"));
     parser.add(OPTION_OPT_ARG("-o", "--opt-arg"));
     parser.add(OPTION_REQ_ARG("-r", "--req-arg"));
@@ -49,7 +49,7 @@ TEST_CASE( "More complicated partitioning" , "[parser]") {
 TEST_CASE( "Negative number args when numeric options are present" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("x").occurs(neverOrOnce));
     parser.add(OPTION_NO_ARG("-4"));
 
@@ -66,7 +66,7 @@ TEST_CASE( "Negative number args when numeric options are present" , "[parser]")
 TEST_CASE( "Empty arguments" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("x").occurs(neverOrOnce));
     parser.add(OPTION_REQ_ARG("-y", "--yyy"));
 
@@ -80,7 +80,7 @@ TEST_CASE( "Prefix character only arguments" , "[parser]") {
     
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser(AdaptiveParser::Settings::commonUnix().addShortPrefix("+"));
+    Parser parser(Parser::Settings::commonUnix().addShortPrefix("+"));
     
     parser.add(POSITIONAL("foo").occurs(neverOrOnce));
     parser.add(POSITIONAL("bar").occurs(neverOrOnce));
@@ -97,7 +97,7 @@ TEST_CASE( "Prefix character only arguments" , "[parser]") {
 TEST_CASE( "Option with optional arg followed by optional positional" , "[parser]") {
     map<string, vector<Value>> results;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(OPTION_OPT_ARG("-x"));
     parser.add(POSITIONAL("y").occurs(zeroOrMoreTimes));
 
@@ -116,7 +116,7 @@ TEST_CASE( "Stopping at unknown" , "[parser]") {
     map<string, vector<Value>> results;
     vector<string> remainder;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(POSITIONAL("x"));
     parser.add(OPTION_REQ_ARG("-z"));
 
@@ -147,7 +147,7 @@ TEST_CASE( "options that may or may not be arguments" , "[parser]") {
     map<string, vector<Value>> results;
     vector<string> remainder;
 
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(OPTION_REQ_ARG("-x"));
     parser.add(OPTION_REQ_ARG("-3"));
     parser.add(POSITIONAL("z").occurs(zeroOrMoreTimes));

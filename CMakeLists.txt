@@ -32,7 +32,7 @@ target_sources(argum
         inc/argum/data.h
         inc/argum/command-line.h
         inc/argum/tokenizer.h
-        inc/argum/adaptive-parser.h
+        inc/argum/parser.h
         inc/argum/validators.h
         inc/argum/help-formatter.h
 

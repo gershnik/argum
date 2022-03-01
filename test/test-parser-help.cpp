@@ -3,7 +3,7 @@
 TEST_CASE( "Argument help aligns when options are longer" , "[parser]") {
 
     map<string, vector<Value>> results;
-    AdaptiveParser parser;
+    Parser parser;
     
     parser.add(OPTION_NO_ARG("-h", "--help").help("show this help message and exit"));
     parser.add(OPTION_NO_ARG("-v", "--version").help("show program's version number and exit"));
@@ -31,7 +31,7 @@ options:
 TEST_CASE( "extremely small number of columns" , "[parser]") {
 
     map<string, vector<Value>> results;
-    AdaptiveParser parser;
+    Parser parser;
 
     parser.add(OPTION_NO_ARG("-h", "--help").help("show this help message and exit"));
     parser.add(OPTION_NO_ARG("-v", "--version").help("show program's version number and exit"));
@@ -84,7 +84,7 @@ options:
 TEST_CASE( "argument help aligns when options are longer" , "[parser]") {
 
     map<string, vector<Value>> results;
-    AdaptiveParser parser;
+    Parser parser;
 
     parser.add(OPTION_NO_ARG("-v").help("xcbfdjd"));
     parser.add(OPTION_REQ_ARG("--name", "-n").help("name\nhelp"));

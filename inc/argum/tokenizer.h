@@ -25,7 +25,7 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<class Char>
-    class BasicArgumentTokenizer final {
+    class BasicTokenizer final {
 
     private:
         using CharConstants = Argum::CharConstants<Char>;
@@ -111,7 +111,7 @@ namespace Argum {
         };
 
         class Settings {
-            friend BasicArgumentTokenizer;
+            friend BasicTokenizer;
         public:
             template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
             auto addLongPrefix(First && first, Rest && ...rest) & -> Settings & {
@@ -235,11 +235,11 @@ namespace Argum {
         };
         
     public:
-        BasicArgumentTokenizer():
-            BasicArgumentTokenizer(Settings::commonUnix()) {
+        BasicTokenizer():
+            BasicTokenizer(Settings::commonUnix()) {
         }
 
-        BasicArgumentTokenizer(Settings settings) {
+        BasicTokenizer(Settings settings) {
 
             this->m_prefixes = std::move(settings.m_prefixes);
             this->m_prefixTypes = std::move(settings.m_prefixTypes);
@@ -621,7 +621,7 @@ namespace Argum {
         bool m_allowAbrreviation = true;
     };
 
-    ARGUM_DECLARE_FRIENDLY_NAMES(ArgumentTokenizer)
+    ARGUM_DECLARE_FRIENDLY_NAMES(Tokenizer)
 }
 
 #endif

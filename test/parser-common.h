@@ -14,22 +14,22 @@ using namespace std;
 
 using namespace std::literals;
 
-using Option = AdaptiveParser::Option;
-using WOption = WAdaptiveParser::Option;
-using Positional = AdaptiveParser::Positional;
-using WPositional = WAdaptiveParser::Positional;
-using UnrecognizedOption = AdaptiveParser::UnrecognizedOption;
-using WUnrecognizedOption = WAdaptiveParser::UnrecognizedOption;
-using AmbiguousOption = AdaptiveParser::AmbiguousOption;
-using WAmbiguousOption = WAdaptiveParser::AmbiguousOption;
-using ExtraPositional = AdaptiveParser::ExtraPositional;
-using WExtraPositional = WAdaptiveParser::ExtraPositional;
-using MissingOptionArgument = AdaptiveParser::MissingOptionArgument;
-using WMissingOptionArgument = WAdaptiveParser::MissingOptionArgument;
-using ExtraOptionArgument = AdaptiveParser::ExtraOptionArgument;
-using WExtraOptionArgument = WAdaptiveParser::ExtraOptionArgument;
-using ValidationError = AdaptiveParser::ValidationError;
-using WValidationError = WAdaptiveParser::ValidationError;
+using Option = Parser::Option;
+using WOption = WParser::Option;
+using Positional = Parser::Positional;
+using WPositional = WParser::Positional;
+using UnrecognizedOption = Parser::UnrecognizedOption;
+using WUnrecognizedOption = WParser::UnrecognizedOption;
+using AmbiguousOption = Parser::AmbiguousOption;
+using WAmbiguousOption = WParser::AmbiguousOption;
+using ExtraPositional = Parser::ExtraPositional;
+using WExtraPositional = WParser::ExtraPositional;
+using MissingOptionArgument = Parser::MissingOptionArgument;
+using WMissingOptionArgument = WParser::MissingOptionArgument;
+using ExtraOptionArgument = Parser::ExtraOptionArgument;
+using WExtraOptionArgument = WParser::ExtraOptionArgument;
+using ValidationError = Parser::ValidationError;
+using WValidationError = WParser::ValidationError;
 
 template<class Char>
 using BasicValue = optional<basic_string<Char>>;
@@ -42,14 +42,14 @@ inline void reportInvalidArgument(const char * message) {
 }
 
 template<class Char>
-inline auto parse(const BasicAdaptiveParser<Char> & parser, initializer_list<const Char *> args, 
+inline auto parse(const BasicParser<Char> & parser, initializer_list<const Char *> args, 
                   map<basic_string<Char>, vector<BasicValue<Char>>> & results) {
     results.clear();
     parser.parse(args.begin(), args.end());
 }
 
 template<class Char>
-inline auto parseUntilUnknown(const BasicAdaptiveParser<Char> & parser, initializer_list<const Char *> args,
+inline auto parseUntilUnknown(const BasicParser<Char> & parser, initializer_list<const Char *> args,
                               map<basic_string<Char>, vector<BasicValue<Char>>> & results) {
     results.clear();
     return parser.parseUntilUnknown(args.begin(), args.end());

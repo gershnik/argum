@@ -18,11 +18,11 @@ using namespace std;
 
 using namespace std::literals;
 
-using OptionToken = ArgumentTokenizer::OptionToken;
-using OptionStopToken = ArgumentTokenizer::OptionStopToken;
-using ArgumentToken = ArgumentTokenizer::ArgumentToken;
-using UnknownOptionToken = ArgumentTokenizer::UnknownOptionToken;
-using AmbiguousOptionToken = ArgumentTokenizer::AmbiguousOptionToken;
+using OptionToken = Tokenizer::OptionToken;
+using OptionStopToken = Tokenizer::OptionStopToken;
+using ArgumentToken = Tokenizer::ArgumentToken;
+using UnknownOptionToken = Tokenizer::UnknownOptionToken;
+using AmbiguousOptionToken = Tokenizer::AmbiguousOptionToken;
 
 
 
@@ -63,19 +63,19 @@ namespace Argum {
 
 TEST_CASE( "Settings boundaries" , "[tokenizer]") {
 
-    CHECK_THROWS_AS(ArgumentTokenizer::Settings().addShortPrefix("-").addLongPrefix("-"), invalid_argument);
-    CHECK_THROWS_AS(ArgumentTokenizer::Settings().addLongPrefix("-").addShortPrefix("-"), invalid_argument);
-    CHECK_THROWS_AS(ArgumentTokenizer::Settings().addValueDelimiter('-').addValueDelimiter('-'), invalid_argument);
+    CHECK_THROWS_AS(Tokenizer::Settings().addShortPrefix("-").addLongPrefix("-"), invalid_argument);
+    CHECK_THROWS_AS(Tokenizer::Settings().addLongPrefix("-").addShortPrefix("-"), invalid_argument);
+    CHECK_THROWS_AS(Tokenizer::Settings().addValueDelimiter('-').addValueDelimiter('-'), invalid_argument);
 }
 
 
 TEST_CASE( "Null Command Line" , "[tokenizer]") {
 
-    ArgumentTokenizer t;
+    Tokenizer t;
 
     auto ret = t.tokenize((const char **)nullptr, (const char **)nullptr, []([[maybe_unused]] const auto & token) {
         CHECK(false);
-        return ArgumentTokenizer::Continue;
+        return Tokenizer::Continue;
     });
     CHECK(ret == vector<string>{});
 }
@@ -94,7 +94,7 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
         INFO("token index: " << current); \
         CHECK(Token(token) == expected[current]);\
         ++current;\
-        return ArgumentTokenizer::Continue;\
+        return Tokenizer::Continue;\
     });\
     CHECK(current == std::size(expected));\
     CHECK(res == vector<string>{});\
@@ -104,7 +104,7 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
 
 TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
 
-    ArgumentTokenizer t;
+    Tokenizer t;
 
     TEST_TOKENIZER(t, ARGS(), TOKENS(
     ));
@@ -128,7 +128,7 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
 
 TEST_CASE( "Short option" , "[tokenizer]") {
 
-    ArgumentTokenizer t;
+    Tokenizer t;
 
     t.add(OptionNames("-c"));
 
@@ -157,7 +157,7 @@ TEST_CASE( "Short option" , "[tokenizer]") {
 
 TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
-    ArgumentTokenizer t;
+    Tokenizer t;
 
     t.add(OptionNames("-c"));
     t.add(OptionNames("-d"));
@@ -168,20 +168,20 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-c")
-                    return ArgumentTokenizer::StopBefore;
+                    return Tokenizer::StopBefore;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-cdefg"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-c")
-                    return ArgumentTokenizer::StopAfter;
+                    return Tokenizer::StopAfter;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-defg"});
     }
@@ -191,20 +191,20 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
-                    return ArgumentTokenizer::StopBefore;
+                    return Tokenizer::StopBefore;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-defg"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
-                    return ArgumentTokenizer::StopAfter;
+                    return Tokenizer::StopAfter;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-efg"});
     }
@@ -214,20 +214,20 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-e")
-                    return ArgumentTokenizer::StopBefore;
+                    return Tokenizer::StopBefore;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-efg"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-e")
-                    return ArgumentTokenizer::StopAfter;
+                    return Tokenizer::StopAfter;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{});
     }
@@ -237,20 +237,20 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
-                    return ArgumentTokenizer::StopBefore;
+                    return Tokenizer::StopBefore;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-defg", "qqq"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
-                    return ArgumentTokenizer::StopAfter;
+                    return Tokenizer::StopAfter;
             }
 
-            return ArgumentTokenizer::Continue;
+            return Tokenizer::Continue;
         });
         CHECK(res == vector<string>{"-efg", "qqq"});
     }

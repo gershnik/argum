@@ -3,7 +3,7 @@
 TEST_CASE( "Changing positionals on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&results, &parser](unsigned idx, string_view val){
         auto & list = results["p"]; 
         CHECK(list.size() == idx); 
@@ -13,7 +13,7 @@ TEST_CASE( "Changing positionals on the fly" , "[parser]") {
             parser.add(POSITIONAL("f"));
         }
     }));
-    AdaptiveParser savedParser = parser;
+    Parser savedParser = parser;
 
 
     EXPECT_FAILURE(ARGS("a", "b"), VALIDATION_ERROR("invalid arguments: positional argument f must be present"))
@@ -29,7 +29,7 @@ TEST_CASE( "Changing positionals on the fly" , "[parser]") {
 TEST_CASE( "Changing options on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
-    AdaptiveParser parser;
+    Parser parser;
     parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&](unsigned idx, string_view val){
         auto & list = results["p"]; 
         CHECK(list.size() == idx); 
@@ -44,7 +44,7 @@ TEST_CASE( "Changing options on the fly" , "[parser]") {
             }));
         }
     }));    
-    AdaptiveParser savedParser = parser;
+    Parser savedParser = parser;
 
     
     EXPECT_FAILURE(ARGS("a", "-c", "1"), UNRECOGNIZED_OPTION("-c"))
