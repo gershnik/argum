@@ -25,11 +25,6 @@ namespace Argum {
         static constexpr auto extraPositionalError()        { return pr ## "unexpected argument: {1}"; }\
         static constexpr auto validationError()             { return pr ## "invalid arguments: {1}"; }\
         static constexpr auto errorReadingResponseFile()    { return pr ## "error reading response file \"{1}\": {2}"; }\
-        static constexpr auto negationDesc()                { return pr ## "NOT {1}"; }\
-        static constexpr auto allMustBeTrue()               { return pr ## "all of the following must be true:"; }\
-        static constexpr auto oneOrMoreMustBeTrue()         { return pr ## "one or more of the following must be true:"; }\
-        static constexpr auto onlyOneMustBeTrue()           { return pr ## "only one of the following must be true:"; }\
-        static constexpr auto allOrNoneMustBeTrue()         { return pr ## "either all or none of the following must be true:"; }\
         static constexpr auto option()                      { return pr ## "option"; }\
         static constexpr auto positionalArg()               { return pr ## "positional argument"; }\
         static constexpr auto usageStart()                  { return pr ## "Usage: "; }\

@@ -120,7 +120,7 @@ namespace Argum {
             }
             template<DescribableParserValidator<CharType> Validator>
             ValidationError(Validator validator):
-                ParsingException(format(Messages::validationError(), describe<CharType>(validator))) {
+                ParsingException(format(Messages::validationError(), describe(validator))) {
             }
         };
 
@@ -354,7 +354,7 @@ namespace Argum {
 
         template<DescribableParserValidator<CharType> Validator>
         auto addValidator(Validator v) -> void  {
-            auto desc = describe<CharType>(v);
+            auto desc = describe(v);
             m_validators.emplace_back(std::move(v), std::move(desc));
         }
 

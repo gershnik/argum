@@ -52,14 +52,11 @@ namespace Argum {
     template<class T, class Char>
     concept DescribableParserValidator = ParserValidator<T, Char> && 
         requires(const T & val) {
-            { describe<Char>(val) } -> std::same_as<std::basic_string<Char>>;
+            { describe(val) } -> std::same_as<std::basic_string<Char>>;
         };
     
     template<class Char, class First, class... Rest>
     constexpr bool CompatibleParserValidators = ParserValidator<First, Char> && (ParserValidator<Rest, Char> && ...);
-    
-    template<class Char, class First, class... Rest>
-    constexpr bool CompatibleDescribableParserValidators = DescribableParserValidator<First, Char> && (DescribableParserValidator<Rest, Char> && ...);
     
     template<class T>
     concept AnyParserValidator =
@@ -87,10 +84,8 @@ namespace Argum {
             return !this->m_impl(data);
         }
         
-        template<class Char, DescribableParserValidator<Char> ImplD>
-        friend auto describe(const NotValidator<ImplD> & val)  {
-        
-            return format(Messages<Char>::negationDesc(), val.m_impl);
+        auto operator!() const -> const Impl & {
+            return m_impl;
         }
     private:
         Impl m_impl;
@@ -101,7 +96,7 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<AnyParserValidator Validator>
     auto operator!(const Validator & val) {
-        return NotValidator<std::decay_t<Validator>>(std::forward<Validator>(val));
+        return NotValidator<std::decay_t<Validator>>(val);
     }
 
     ARGUM_MOD_EXPORTED
@@ -115,8 +110,7 @@ namespace Argum {
     enum class ValidatorCombination : int {
         And,
         Or,
-        Xor,
-        NXor
+        Xor
     };
     
     template<ValidatorCombination Comb, class... Args>
@@ -143,23 +137,21 @@ namespace Argum {
                     return (args(data) || ...);
                 else if constexpr (Comb == ValidatorCombination::Xor)
                     return bool((args(data) ^ ...));
-                else if constexpr (Comb == ValidatorCombination::NXor)
-                    return !bool((args(data) ^ ...));
             }, this->m_items);
         }
 
         auto operator!() const {
 
-            return std::apply([](const Args & ...args) {
-                if constexpr (Comb == ValidatorCombination::And)
-                    return CombinedValidator<ValidatorCombination::Or, decltype(!args)...>(!args...);
-                else if constexpr (Comb == ValidatorCombination::Or)
-                    return CombinedValidator<ValidatorCombination::And, decltype(!args)...>(!args...);
-                else if constexpr (Comb == ValidatorCombination::Xor)
-                    return CombinedValidator<ValidatorCombination::NXor, Args...>(args...);
-                else if constexpr (Comb == ValidatorCombination::NXor)
-                    return CombinedValidator<ValidatorCombination::Xor, Args...>(args...);
-            }, this->m_items);
+            if constexpr (Comb == ValidatorCombination::Xor) {
+                return NotValidator<CombinedValidator>(*this);
+            } else {
+                return std::apply([](const Args & ...args) {
+                    if constexpr (Comb == ValidatorCombination::And)
+                        return CombinedValidator<ValidatorCombination::Or, decltype(!args)...>(!args...);
+                    else if constexpr (Comb == ValidatorCombination::Or)
+                        return CombinedValidator<ValidatorCombination::And, decltype(!args)...>(!args...);
+                }, this->m_items);
+            }
         }
         
         auto items() const -> const TupleType & {
@@ -169,34 +161,6 @@ namespace Argum {
     private:
         TupleType m_items;
     };
-
-    ARGUM_MOD_EXPORTED
-    template<class Char, ValidatorCombination Comb, DescribableParserValidator<Char>... Args>
-    auto describe(const CombinedValidator<Comb, Args...> & val)  {
-
-        std::basic_string<Char> str;
-        
-        auto formatEntry = [&str](const auto & arg) {
-            std::basic_string<Char> entry;
-            entry += CharConstants<Char>::endl;
-            entry.append(indent(describe<Char>(arg)));
-            str.append(indent(entry));
-        };
-
-        if constexpr (Comb == ValidatorCombination::And)
-            str = Messages<Char>::allMustBeTrue();
-        else if constexpr (Comb == ValidatorCombination::Or)
-            str = Messages<Char>::oneOrMoreMustBeTrue();
-        else if constexpr (Comb == ValidatorCombination::Xor)
-            str = Messages<Char>::onlyOneMustBeTrue();
-        else if constexpr (Comb == ValidatorCombination::NXor)
-            str = Messages<Char>::allOrNoneMustBeTrue();
-        std::apply([formatEntry] (const Args & ...args) {
-            (formatEntry(args), ...);
-        }, val.items());
-
-        return str;
-    }
 
     template<ValidatorCombination Comb, class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
@@ -214,6 +178,15 @@ namespace Argum {
             std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), v2.items())
         );
     }
+    
+    template<ValidatorCombination Comb, class V1, class... Args2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    auto combine(V1 && v1, CombinedValidator<Comb, Args2...> && v2)  {
+        using R1 = std::decay_t<V1>;
+        return CombinedValidator<Comb, R1, Args2...>(
+            std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), std::move(v2.items()))
+        );
+    }
 
     template<ValidatorCombination Comb, class V2, class... Args1>
     requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
@@ -223,6 +196,15 @@ namespace Argum {
             std::tuple_cat(v1.items(), std::tuple<R2>(std::forward<V2>(v2)))
         );
     }
+    
+    template<ValidatorCombination Comb, class V2, class... Args1>
+    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    auto combine(CombinedValidator<Comb, Args1...> && v1, V2 && v2)  {
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<Comb, Args1..., R2>(
+            std::tuple_cat(std::move(v1.items()), std::tuple<R2>(std::forward<V2>(v2)))
+        );
+    }
 
     template<ValidatorCombination Comb, class... Args1, class... Args2>
     requires(AnyCompatibleParserValidators<Args1..., Args2...>)
@@ -230,6 +212,33 @@ namespace Argum {
                  const CombinedValidator<Comb, Args2...> & v2)  {
         return CombinedValidator<Comb, Args1..., Args2...>(
             std::tuple_cat(v1.items(), v2.items())
+        );
+    }
+    
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(CombinedValidator<Comb, Args1...> && v1,
+                 const CombinedValidator<Comb, Args2...> & v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(std::move(v1.items()), v2.items())
+        );
+    }
+    
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(const CombinedValidator<Comb, Args1...> & v1,
+                 CombinedValidator<Comb, Args2...> && v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(v1.items(), std::move(v2.items()))
+        );
+    }
+    
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(CombinedValidator<Comb, Args1...> && v1,
+                 CombinedValidator<Comb, Args2...> && v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(std::move(v1.items()), std::move(v2.items()))
         );
     }
 
@@ -265,6 +274,16 @@ namespace Argum {
         return (std::forward<First>(first) || ... || std::forward<Rest>(rest));
     }
 
+    //MARK: - NoneOf
+
+    ARGUM_MOD_EXPORTED
+    ARGUM_MOD_EXPORTED
+    template<class First, class... Rest>
+    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    auto noneOf(First && first, Rest && ...rest)  {
+        return !anyOf(std::forward<First>(first), std::forward<Rest>(rest)...);
+    }
+
     //MARK: - OnlyOneOf
 
     ARGUM_MOD_EXPORTED
@@ -278,8 +297,22 @@ namespace Argum {
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto onlyOneOf(First && first, Rest && ...rest)  {
-        return combine<ValidatorCombination::Xor>(std::forward<First>(first), 
-                                                  onlyOneOf(std::forward<Rest>(rest)...));
+        //careful about forwarding twice
+        auto notAll = !allOf(rest...);
+        return combine<ValidatorCombination::Xor>(std::forward<First>(first), onlyOneOf(std::forward<Rest>(rest)...))
+                && std::move(notAll);
+    }
+
+    //MARK: - OneOrNoneOf
+
+    ARGUM_MOD_EXPORTED
+    template<class First, class... Rest>
+    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    auto oneOrNoneOf(First && first, Rest && ...rest)  {
+        //careful about forwarding twice
+        auto all = allOf(!first, !rest...);
+        return onlyOneOf(std::forward<First>(first), std::forward<Rest>(rest)...) 
+                || std::move(all);
     }
 
     //MARK: - AllOrNoneOf
@@ -288,15 +321,17 @@ namespace Argum {
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto allOrNoneOf(V1 && v1, V2 && v2)  {
-        return combine<ValidatorCombination::NXor>(std::forward<V1>(v1), std::forward<V2>(v2));
+        return !combine<ValidatorCombination::Xor>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto allOrNoneOf(First && first, Rest && ...rest)  {
-        return combine<ValidatorCombination::NXor>(std::forward<First>(first), 
-                                                   allOrNoneOf(std::forward<Rest>(rest)...));
+        //careful about forwarding twice
+        auto all = combine<ValidatorCombination::And>(first, allOf(rest...));
+        auto none = combine<ValidatorCombination::And>(!std::forward<First>(first), noneOf(std::forward<Rest>(rest)...));
+        return std::move(all) || std::move(none);
     }
 
     //MARK: - Occurence Validators
@@ -334,10 +369,9 @@ namespace Argum {
                 return ItemOccurs<Char, IsOption, std::equal_to<unsigned>>(this->m_name, this->m_count);
         }
 
-        template<class ResChar>
         friend auto describe(const ItemOccurs & val)  {
 
-            using Messages = Messages<ResChar>;
+            using Messages = Messages<Char>;
             
             auto typeName = IsOption ? Messages::option() : Messages::positionalArg();
             if constexpr (std::is_same_v<Comp, std::greater_equal<unsigned>>) {
@@ -361,7 +395,7 @@ namespace Argum {
 
 
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionRequired(S name) {
+    auto OptionPresent(S name) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, 0);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
@@ -386,7 +420,7 @@ namespace Argum {
     }
 
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalRequired(S name) {
+    auto PositionalPresent(S name) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, 0);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
