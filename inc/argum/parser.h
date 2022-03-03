@@ -338,7 +338,7 @@ namespace Argum {
             auto & added = this->m_options.emplace_back(std::move(option));
             this->m_tokenizer.add(this->m_options.back().m_names);
             if (added.m_occurs.min() > 0)
-                addValidator(OptionOccursAtLeast(added.m_names.main(), added.m_occurs.min()));
+                addValidator(optionOccursAtLeast(added.m_names.main(), added.m_occurs.min()));
             ++m_updateCount;
         }
         
@@ -527,7 +527,7 @@ namespace Argum {
             auto validateOptionMax(const Option & option) {
                 auto & name = option.m_names.main();
                 ++m_validationData.optionCount(name);
-                auto validator = OptionOccursAtMost(name, option.m_occurs.max());
+                auto validator = optionOccursAtMost(name, option.m_occurs.max());
                 if (!validator(m_validationData)) {
                     throw ValidationError(validator);
                 }
@@ -652,7 +652,7 @@ namespace Argum {
                     ++idx) {
                     
                     auto & positional = m_owner.m_positionals[unsigned(idx)];
-                    auto validator = PositionalOccursAtLeast(positional.m_name, positional.m_occurs.min());
+                    auto validator = positionalOccursAtLeast(positional.m_name, positional.m_occurs.min());
                     if (!validator(m_validationData))
                         throw ValidationError(validator);
                 }

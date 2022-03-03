@@ -13,8 +13,8 @@ TEST_CASE( "Mutually exclusive groups" , "[parser]") {
     parser.add(OPTION_NO_ARG("-b3"));
     parser.addValidator(
         oneOrNoneOf(
-            anyOf(OptionPresent("-a1"), OptionPresent("-a2"), OptionPresent("-a3")),
-            anyOf(OptionPresent("-b1"), OptionPresent("-b2"), OptionPresent("-b3"))
+            anyOf(optionPresent("-a1"), optionPresent("-a2"), optionPresent("-a3")),
+            anyOf(optionPresent("-b1"), optionPresent("-b2"), optionPresent("-b3"))
         ), 
         "option groups (-a1, -a2, -a2) and (-b1, -b2, -b3) are mutually exclusive"
     );
@@ -46,7 +46,7 @@ TEST_CASE( "If one then other" , "[parser]") {
     parser.add(OPTION_NO_ARG("-b1"));
     parser.add(OPTION_NO_ARG("-b2"));
     parser.addValidator(
-        !OptionPresent("-a1") || OptionPresent("-b1"), 
+        !optionPresent("-a1") || optionPresent("-b1"), 
         "if -a1 is specified then -b1 must be specified also"
     );
 

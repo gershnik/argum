@@ -49,13 +49,13 @@ auto operator!(TrueValidator) { return False; }
 auto operator!(FalseValidator) { return True; }
 
 
-TEST_CASE( "Validators: OptionPresent and OptionAbsent" , "[validators]") {
+TEST_CASE( "Validators: optionPresent and optionAbsent" , "[validators]") {
 
     ParsingValidationData<char> data;
 
-    auto present = OptionPresent("hah");
+    auto present = optionPresent("hah");
     CHECK(describe(present) == "option hah must be present");
-    auto absent = OptionAbsent("hah");
+    auto absent = optionAbsent("hah");
     CHECK(describe(absent) == "option hah must not be present");
     auto notPresent = !present;
     auto notAbsent = !absent;
@@ -91,13 +91,13 @@ TEST_CASE( "Validators: OptionPresent and OptionAbsent" , "[validators]") {
     CHECK(notAbsent(data));
 }
 
-TEST_CASE( "Validators: OptionOccursAtLeast and OptionOccursLessThan" , "[validators]") {
+TEST_CASE( "Validators: optionOccursAtLeast and optionOccursLessThan" , "[validators]") {
 
     ParsingValidationData<char> data;
 
-    auto atLeast = OptionOccursAtLeast("hah", 2);
+    auto atLeast = optionOccursAtLeast("hah", 2);
     CHECK(describe(atLeast) == "option hah must occur at least 2 times");
-    auto lessThan = OptionOccursLessThan("hah", 2);
+    auto lessThan = optionOccursLessThan("hah", 2);
     CHECK(describe(lessThan) == "option hah must occur less than 2 times");
     auto notAtLeast = !atLeast;
     auto notLestThan = !lessThan;
@@ -117,13 +117,13 @@ TEST_CASE( "Validators: OptionOccursAtLeast and OptionOccursLessThan" , "[valida
     CHECK(!lessThan(data));
 }
 
-TEST_CASE( "Validators: OptionOccursAtMost and OptionOccursMoreThan" , "[validators]") {
+TEST_CASE( "Validators: optionOccursAtMost and optionOccursMoreThan" , "[validators]") {
 
     ParsingValidationData<char> data;
 
-    auto atMost = OptionOccursAtMost("hah", 2);
+    auto atMost = optionOccursAtMost("hah", 2);
     CHECK(describe(atMost) == "option hah must occur at most 2 times");
-    auto moreThan = OptionOccursMoreThan("hah", 2);
+    auto moreThan = optionOccursMoreThan("hah", 2);
     CHECK(describe(moreThan) == "option hah must occur more than 2 times");
     auto notAtMost = !atMost;
     auto notMoreThan = !moreThan;
@@ -145,6 +145,32 @@ TEST_CASE( "Validators: OptionOccursAtMost and OptionOccursMoreThan" , "[validat
     data.optionCount("hah") = 3;
     CHECK(!atMost(data));
     CHECK(moreThan(data));
+}
+
+TEST_CASE( "Validators: optionOccursExactly and optionDoesntOccurExactly" , "[validators]") {
+
+    ParsingValidationData<char> data;
+
+    auto exactly = optionOccursExactly("hah", 2);
+    CHECK(describe(exactly) == "option hah must occur 2 times");
+    auto opposite = optionDoesntOccurExactly("hah", 2);
+    CHECK(describe(opposite) == "option hah must NOT occur 2 times");
+    auto notExactly = !exactly;
+    auto notOpposite = !opposite;
+    
+    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notExactly)>, std::decay_t<decltype(opposite)>>);
+    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notOpposite)>, std::decay_t<decltype(exactly)>>);
+
+    CHECK(!exactly(data));
+    CHECK(opposite(data));
+
+    data.optionCount("hah") = 1;
+    CHECK(!exactly(data));
+    CHECK(opposite(data));
+
+    data.optionCount("hah") = 2;
+    CHECK(exactly(data));
+    CHECK(!opposite(data));
 }
 
 TEST_CASE( "Validators: oppositeOf" , "[validators]") {
@@ -241,8 +267,8 @@ TEST_CASE( "Validators: oneOrNoneOf" , "[validators]") {
     CHECK(!oneOrNoneOf(True, True, True)(data));
 
 
-    auto val = oneOrNoneOf(anyOf(OptionPresent("-a1"), OptionPresent("-a2"), OptionPresent("-a3")),
-                           anyOf(OptionPresent("-b1"), OptionPresent("-b2"), OptionPresent("-b3")));
+    auto val = oneOrNoneOf(anyOf(optionPresent("-a1"), optionPresent("-a2"), optionPresent("-a3")),
+                           anyOf(optionPresent("-b1"), optionPresent("-b2"), optionPresent("-b3")));
     data.optionCount("-a1") = 1;
     data.optionCount("-b2") = 1;
     CHECK(!val(data));

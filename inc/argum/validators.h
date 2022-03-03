@@ -414,53 +414,69 @@ namespace Argum {
 
 
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionPresent(S name) {
+    auto optionPresent(S name) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, 0);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionAbsent(S name) {
+    auto optionAbsent(S name) {
         return ItemOccurs<CharTypeOf<S>, true, std::equal_to<unsigned>>(name, 0);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionOccursAtLeast(S name, unsigned count) {
+    auto optionOccursAtLeast(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater_equal<unsigned>>(name, count);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionOccursAtMost(S name, unsigned count) {
+    auto optionOccursAtMost(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::less_equal<unsigned>>(name, count);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionOccursMoreThan(S name, unsigned count) {
+    auto optionOccursMoreThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::greater<unsigned>>(name, count);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto OptionOccursLessThan(S name, unsigned count) {
+    auto optionOccursLessThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, true, std::less<unsigned>>(name, count);
+    }
+    ARGUM_MOD_EXPORTED template<StringLike S>
+    auto optionOccursExactly(S name, unsigned count) {
+        return ItemOccurs<CharTypeOf<S>, true, std::equal_to<unsigned>>(name, count);
+    }
+    ARGUM_MOD_EXPORTED template<StringLike S>
+    auto optionDoesntOccurExactly(S name, unsigned count) {
+        return ItemOccurs<CharTypeOf<S>, true, std::not_equal_to<unsigned>>(name, count);
     }
 
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalPresent(S name) {
+    auto positionalPresent(S name) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, 0);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalAbsent(S name) {
+    auto positionalAbsent(S name) {
         return ItemOccurs<CharTypeOf<S>, false, std::equal_to<unsigned>>(name, 0);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalOccursAtLeast(S name, unsigned count) {
+    auto positionalOccursAtLeast(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater_equal<unsigned>>(name, count);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalOccursAtMost(S name, unsigned count) {
+    auto positionalOccursAtMost(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::less_equal<unsigned>>(name, count);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalOccursMoreThan(S name, unsigned count) {
+    auto positionalOccursMoreThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::greater<unsigned>>(name, count);
     }
     ARGUM_MOD_EXPORTED template<StringLike S>
-    auto PositionalOccursLessThan(S name, unsigned count) {
+    auto positionalOccursLessThan(S name, unsigned count) {
         return ItemOccurs<CharTypeOf<S>, false, std::less<unsigned>>(name, count);
+    }
+    ARGUM_MOD_EXPORTED template<StringLike S>
+    auto positionalOccursExactly(S name, unsigned count) {
+        return ItemOccurs<CharTypeOf<S>, false, std::equal_to<unsigned>>(name, count);
+    }
+    ARGUM_MOD_EXPORTED template<StringLike S>
+    auto positionalDoesntOccurExactly(S name, unsigned count) {
+        return ItemOccurs<CharTypeOf<S>, false, std::not_equal_to<unsigned>>(name, count);
     }
     
 }
