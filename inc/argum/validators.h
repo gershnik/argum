@@ -115,173 +115,172 @@ namespace Argum {
         AllOrNone
     };
 
-    template<ValidatorCombination Comb, class First, class... Rest>
-    requires(AnyCompatibleParserValidators<First, Rest...>)
-    class CombinedValidator;
-
-    template<ValidatorCombination Comb, class First, class Second> 
-    requires(AnyCompatibleParserValidators<First, Second>)
-    class CombinedValidator<Comb, First, Second> {
-    public:
-        template<class CFirst, class CSecond>
-        requires(std::is_constructible_v<First, CFirst> && std::is_constructible_v<Second, CSecond>)
-        CombinedValidator(CFirst && first, CSecond && second): 
-            m_first(std::forward<CFirst>(first)),
-            m_second(std::forward<CSecond>(second)) {
-
-        }
-
-        template<class Char>
-        requires(CompatibleParserValidators<Char, First, Second>)
-        auto operator()(const ParsingValidationData<Char> & data) const {
-            if constexpr (Comb == ValidatorCombination::And) {
-                return this->m_first(data) && this->m_second(data);
-            } else if constexpr (Comb == ValidatorCombination::Or) {
-                return this->m_first(data) || this->m_second(data);
-            } else if constexpr (Comb == ValidatorCombination::OnlyOne) {
-                unsigned counter = 0;
-                return this->evalOneOrNone(data, counter) && counter == 1;
-            } else if constexpr (Comb == ValidatorCombination::OneOrNone) {
-                unsigned counter = 0;
-                return this->evalOneOrNone(data, counter);
-            } else if constexpr (Comb == ValidatorCombination::AllOrNone) {
-                unsigned counter = 0;
-                unsigned totalCounter = 0;
-                return this->evalAllOrNone(data, counter, totalCounter);
-            }
-        }
-
-        auto operator!() const {
-            
-            if constexpr (Comb == ValidatorCombination::And)
-                return CombinedValidator<ValidatorCombination::Or,
-                                         std::decay_t<decltype(!std::declval<First>())>,
-                                         std::decay_t<decltype(!std::declval<Second>())>>(!this->m_first, !this->m_second);
-            else if constexpr (Comb == ValidatorCombination::Or)
-                return CombinedValidator<ValidatorCombination::And,
-                                         std::decay_t<decltype(!std::declval<First>())>,
-                                         std::decay_t<decltype(!std::declval<Second>())>>(!this->m_first, !this->m_second);
-            else 
-                return NotValidator<CombinedValidator>(*this);
-        }
-    
-        template<class Char>
-        requires(CompatibleParserValidators<Char, First, Second>)
-        auto evalOneOrNone(const ParsingValidationData<Char> & data, unsigned & counter) const {
-            
-            if (this->m_first(data)) {
-                if (++counter > 1)
-                    return false;
-            }
-            
-            if (this->m_second(data)) {
-                if (++counter > 1)
-                    return false;
-            }
-
-            return true;
-        }
-
-        template<class Char>
-        requires(CompatibleParserValidators<Char, First, Second>)
-        auto evalAllOrNone(const ParsingValidationData<Char> & data, unsigned & counter, unsigned totalCounter) const {
-            
-            ++totalCounter;
-            counter += this->m_first(data);
-
-            if (counter != 0 && counter != totalCounter)
-                return false;
-
-            
-            ++totalCounter;
-            counter += this->m_second(data);
-
-            return counter == 0 || counter == totalCounter;
-        }
-    private:
-        std::decay_t<First> m_first;
-        std::decay_t<Second> m_second;
-    };
-
-    template<ValidatorCombination Comb, class First, class... Rest>
-    requires(AnyCompatibleParserValidators<First, Rest...>)
+    template<ValidatorCombination Comb, class... Args>
+    requires(sizeof...(Args) > 1 && AnyCompatibleParserValidators<Args...>)
     class CombinedValidator {
     public:
-        template<class CFirst, class... CRest>
-        requires(std::is_constructible_v<First, CFirst> && (std::is_constructible_v<Rest, CRest> && ...))
-        CombinedValidator(CFirst && first, CRest && ...rest): 
-            m_first(std::forward<CFirst>(first)),
-            m_rest(std::forward<CRest>(rest)...) {
+        using TupleType = std::tuple<Args...>;
+    public:
+        CombinedValidator(std::tuple<Args...> && args): m_items(std::move(args)) {
         }
-
-        CombinedValidator(First && first, CombinedValidator<Comb, Rest...> && rest): 
-            m_first(std::move(first)),
-            m_rest(std::move(rest)) {
+        template<class... CArgs>
+        requires(std::is_constructible_v<TupleType, CArgs && ...>)
+        CombinedValidator(CArgs && ...args): m_items(std::forward<CArgs>(args)...) {  
         }
 
         template<class Char>
-        requires(CompatibleParserValidators<Char, First, Rest...>)
-        auto operator()(const ParsingValidationData<Char> & data) const {
+        requires(CompatibleParserValidators<Char, Args...>)
+        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
             if constexpr (Comb == ValidatorCombination::And) {
-                return this->m_first(data) && this->m_rest(data);
+                return std::apply([&data](const Args & ...args) -> bool { return (args(data) && ...); }, this->m_items);
             } else if constexpr (Comb == ValidatorCombination::Or) {
-                return this->m_first(data) || this->m_rest(data);
+                return std::apply([&data](const Args & ...args) -> bool { return (args(data) || ...); }, this->m_items);
             } else if constexpr (Comb == ValidatorCombination::OnlyOne) {
                 unsigned counter = 0;
-                return this->evalOneOrNone(data, counter) && counter == 1;
+                return this->evalOneOrNone<sizeof...(Args)>(data, counter) && counter == 1;
             } else if constexpr (Comb == ValidatorCombination::OneOrNone) {
                 unsigned counter = 0;
-                return this->evalOneOrNone(data, counter);
+                return this->evalOneOrNone<sizeof...(Args)>(data, counter);
             } else if constexpr (Comb == ValidatorCombination::AllOrNone) {
                 unsigned counter = 0;
-                unsigned totalCounter = 0;
-                return this->evalAllOrNone(data, counter, totalCounter);
+                return this->evalAllOrNone<sizeof...(Args)>(data, counter);
             }
         }
 
         auto operator!() const {
             
-            if constexpr (Comb == ValidatorCombination::And)
-                return CombinedValidator<ValidatorCombination::Or, 
-                                         std::decay_t<decltype(!std::declval<First>())>,
-                                         std::decay_t<decltype(!std::declval<Rest>())>...>(!this->m_first, !this->m_rest);
-            else if constexpr (Comb == ValidatorCombination::Or)
-                return CombinedValidator<ValidatorCombination::And, 
-                                         std::decay_t<decltype(!std::declval<First>())>,
-                                         std::decay_t<decltype(!std::declval<Rest>())>...>(!this->m_first, !this->m_rest);
+            if constexpr (Comb == ValidatorCombination::And || Comb == ValidatorCombination::Or)
+                return std::apply([](const Args & ...args) {
+                    if constexpr (Comb == ValidatorCombination::And)
+                        return CombinedValidator<ValidatorCombination::Or, decltype(!args)...>(!args...);
+                    else if constexpr (Comb == ValidatorCombination::Or)
+                        return CombinedValidator<ValidatorCombination::And, decltype(!args)...>(!args...);
+                }, this->m_items);
             else 
                 return NotValidator<CombinedValidator>(*this);
         }
 
-        template<class Char>
-        requires(CompatibleParserValidators<Char, First, Rest...>)
-        auto evalOneOrNone(const ParsingValidationData<Char> & data, unsigned & counter) const {
-            
-            if (this->m_first(data)) {
-                if (++counter > 1)
-                    return false;
-            }
-            
-            return this->m_rest.evalOneOrNone(data, counter);
-        }
-
-        template<class Char>
-        requires(CompatibleParserValidators<Char, First, Rest...>)
-        auto evalAllOrNone(const ParsingValidationData<Char> & data, unsigned & counter, unsigned totalCounter) const {
-            
-            ++totalCounter;
-            counter += this->m_first(data);
-            
-            if (counter != 0 && counter != totalCounter)
-                return false;
-            
-            return this->m_rest.evalAllOrNone(data, counter, totalCounter);
+        auto items() const -> const TupleType & {
+            return m_items;
         }
 
     private:
-        First m_first;
-        CombinedValidator<Comb, Rest...> m_rest;
+
+        template<size_t N, class Char>
+        requires(CompatibleParserValidators<Char, Args...>)
+        auto evalOneOrNone(const ParsingValidationData<Char> & data, unsigned & counter) const {
+            
+            constexpr auto idx = sizeof...(Args) - N;
+
+            if (std::get<idx>(this->m_items)(data)) {
+                if (++counter > 1)
+                    return false;
+            }
+
+            if constexpr (N > 1) {
+                return this->evalOneOrNone<N - 1>(data, counter);
+            } else {
+                return true;
+            }
+        }
+
+        template<size_t N, class Char>
+        requires(CompatibleParserValidators<Char, Args...>)
+        auto evalAllOrNone(const ParsingValidationData<Char> & data, unsigned & counter) const {
+
+            constexpr auto idx = sizeof...(Args) - N;
+            
+            counter += std::get<idx>(this->m_items)(data);
+            
+            if (counter != 0 && counter != idx + 1)
+                return false;
+
+            if constexpr (N > 1) {
+                return this->evalAllOrNone<N - 1>(data, counter);
+            } else {
+                return true;
+            }
+        }
+
+    private:
+        TupleType m_items;
     };
+
+    template<ValidatorCombination Comb, class V1, class V2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
+    auto combine(V1 && v1, V2 && v2)  {
+        using R1 = std::decay_t<V1>;
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<Comb, R1, R2>(std::forward<V1>(v1), std::forward<V2>(v2));
+    }
+
+    template<ValidatorCombination Comb, class V1, class... Args2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    auto combine(V1 && v1, const CombinedValidator<Comb, Args2...> & v2)  {
+        using R1 = std::decay_t<V1>;
+        return CombinedValidator<Comb, R1, Args2...>(
+            std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), v2.items())
+        );
+    }
+    
+    template<ValidatorCombination Comb, class V1, class... Args2>
+    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    auto combine(V1 && v1, CombinedValidator<Comb, Args2...> && v2)  {
+        using R1 = std::decay_t<V1>;
+        return CombinedValidator<Comb, R1, Args2...>(
+            std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), std::move(v2.items()))
+        );
+    }
+
+    template<ValidatorCombination Comb, class V2, class... Args1>
+    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    auto combine(const CombinedValidator<Comb, Args1...> & v1, V2 && v2)  {
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<Comb, Args1..., R2>(
+            std::tuple_cat(v1.items(), std::tuple<R2>(std::forward<V2>(v2)))
+        );
+    }
+    
+    template<ValidatorCombination Comb, class V2, class... Args1>
+    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    auto combine(CombinedValidator<Comb, Args1...> && v1, V2 && v2)  {
+        using R2 = std::decay_t<V2>;
+        return CombinedValidator<Comb, Args1..., R2>(
+            std::tuple_cat(std::move(v1.items()), std::tuple<R2>(std::forward<V2>(v2)))
+        );
+    }
+
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(const CombinedValidator<Comb, Args1...> & v1, const CombinedValidator<Comb, Args2...> & v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(v1.items(), v2.items())
+        );
+    }
+    
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(CombinedValidator<Comb, Args1...> && v1, const CombinedValidator<Comb, Args2...> & v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(std::move(v1.items()), v2.items())
+        );
+    }
+    
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(const CombinedValidator<Comb, Args1...> & v1, CombinedValidator<Comb, Args2...> && v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(v1.items(), std::move(v2.items()))
+        );
+    }
+    
+    template<ValidatorCombination Comb, class... Args1, class... Args2>
+    requires(AnyCompatibleParserValidators<Args1..., Args2...>)
+    auto combine(CombinedValidator<Comb, Args1...> && v1, CombinedValidator<Comb, Args2...> && v2)  {
+        return CombinedValidator<Comb, Args1..., Args2...>(
+            std::tuple_cat(std::move(v1.items()), std::move(v2.items()))
+        );
+    }
 
     
     //MARK: - AllOf
@@ -290,14 +289,14 @@ namespace Argum {
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto operator&&(V1 && v1, V2 && v2)  {
-        return CombinedValidator<ValidatorCombination::And, std::decay_t<V1>, std::decay_t<V2>>(std::forward<V1>(v1), std::forward<V2>(v2));
+        return combine<ValidatorCombination::And>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto allOf(First && first, Rest && ...rest)  {
-        return CombinedValidator<ValidatorCombination::And, std::decay_t<First>, std::decay_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
+        return (std::forward<First>(first) &&  ... && std::forward<Rest>(rest));
     }
 
     //MARK: - AnyOf
@@ -306,14 +305,14 @@ namespace Argum {
     template<class V1, class V2>
     requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
     auto operator||(V1 && v1, V2 && v2)  {
-        return CombinedValidator<ValidatorCombination::Or, std::decay_t<V1>, std::decay_t<V2>>(std::forward<V1>(v1), std::forward<V2>(v2));
+        return combine<ValidatorCombination::Or>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
     requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
     auto anyOf(First && first, Rest && ...rest)  {
-        return CombinedValidator<ValidatorCombination::Or, std::decay_t<First>, std::decay_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
+        return (std::forward<First>(first) || ... || std::forward<Rest>(rest));
     }
 
     //MARK: - NoneOf
