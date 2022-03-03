@@ -174,9 +174,6 @@ TEST_CASE( "Validators: allOf" , "[validators]") {
     CHECK(!(True && True && False)(data));
     CHECK(!(True && False && True)(data));
     CHECK((True && True && True)(data));
-
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(True && True && False)>, CombinedValidator<ValidatorCombination::And, TrueValidator, TrueValidator, FalseValidator>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(allOf(True, True, False))>, std::decay_t<decltype(True && True && False)>>);
 }
 
 TEST_CASE( "Validators: anyOf" , "[validators]") {
@@ -190,9 +187,6 @@ TEST_CASE( "Validators: anyOf" , "[validators]") {
     CHECK((True || True || False)(data));
     CHECK((True || False || True)(data));
     CHECK((True || True || True)(data));
-
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(True || True || False)>, CombinedValidator<ValidatorCombination::Or, TrueValidator, TrueValidator, FalseValidator>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(anyOf(True, True, False))>, std::decay_t<decltype(True || True || False)>>);
 }
 
 TEST_CASE( "Validators: noneOf" , "[validators]") {
@@ -206,25 +200,27 @@ TEST_CASE( "Validators: noneOf" , "[validators]") {
     CHECK(!noneOf(True, False, True)(data));
     CHECK(!noneOf(True, True, False)(data));
     CHECK(!noneOf(True, True, True)(data));
-
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(noneOf(True, True, False))>, 
-                    CombinedValidator<ValidatorCombination::And, FalseValidator, FalseValidator, TrueValidator>>);
 }
 
 TEST_CASE( "Validators: onlyOneOf" , "[validators]") {
     ParsingValidationData<char> data;
 
-    CHECK(!onlyOneOf(False, False, False)(data));
-    CHECK(onlyOneOf(False, False, True)(data));
-    CHECK(onlyOneOf(False, True, False)(data));
-    CHECK(!onlyOneOf(False, True, True)(data));
-    CHECK(onlyOneOf(True, False, False)(data));
-    CHECK(!onlyOneOf(True, False, True)(data));
-    CHECK(!onlyOneOf(True, True, False)(data));
-    CHECK(!onlyOneOf(True, True, True)(data));
-
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(onlyOneOf(onlyOneOf(True, True), False))>, 
-                   CombinedValidator<ValidatorCombination::Xor, TrueValidator, TrueValidator, FalseValidator>>);
+    CHECK(!onlyOneOf(False, False, False, False)(data));
+    CHECK(onlyOneOf(False, False, False, True)(data));
+    CHECK(onlyOneOf(False, False, True, False)(data));
+    CHECK(!onlyOneOf(False, False, True, True)(data));
+    CHECK(onlyOneOf(False, True, False, False)(data));
+    CHECK(!onlyOneOf(False, True, False, True)(data));
+    CHECK(!onlyOneOf(False, True, True, False)(data));
+    CHECK(!onlyOneOf(False, True, True, True)(data));
+    CHECK(onlyOneOf(True, False, False, False)(data));
+    CHECK(!onlyOneOf(True, False, False, True)(data));
+    CHECK(!onlyOneOf(True, False, True, False)(data));
+    CHECK(!onlyOneOf(True, False, True, True)(data));
+    CHECK(!onlyOneOf(True, True, False, False)(data));
+    CHECK(!onlyOneOf(True, True, False, True)(data));
+    CHECK(!onlyOneOf(True, True, True, False)(data));
+    CHECK(!onlyOneOf(True, True, True, True)(data));
 }
 
 TEST_CASE( "Validators: oneOrNoneOf" , "[validators]") {
@@ -255,12 +251,20 @@ TEST_CASE( "Validators: oneOrNoneOf" , "[validators]") {
 TEST_CASE( "Validators: allOrNoneOf" , "[validators]") {
     ParsingValidationData<char> data;
 
-    CHECK(allOrNoneOf(False, False, False)(data));
-    CHECK(!allOrNoneOf(False, False, True)(data));
-    CHECK(!allOrNoneOf(False, True, False)(data));
-    CHECK(!allOrNoneOf(False, True, True)(data));
-    CHECK(!allOrNoneOf(True, False, False)(data));
-    CHECK(!allOrNoneOf(True, False, True)(data));
-    CHECK(!allOrNoneOf(True, True, False)(data));
-    CHECK(allOrNoneOf(True, True, True)(data));
+    CHECK(allOrNoneOf(False, False, False, False)(data));
+    CHECK(!allOrNoneOf(False, False, False, True)(data));
+    CHECK(!allOrNoneOf(False, False, True, False)(data));
+    CHECK(!allOrNoneOf(False, False, True, True)(data));
+    CHECK(!allOrNoneOf(False, True, False, False)(data));
+    CHECK(!allOrNoneOf(False, True, False, True)(data));
+    CHECK(!allOrNoneOf(False, True, True, False)(data));
+    CHECK(!allOrNoneOf(False, True, True, True)(data));
+    CHECK(!allOrNoneOf(True, False, False, False)(data));
+    CHECK(!allOrNoneOf(True, False, False, True)(data));
+    CHECK(!allOrNoneOf(True, False, True, False)(data));
+    CHECK(!allOrNoneOf(True, False, True, True)(data));
+    CHECK(!allOrNoneOf(True, True, False, False)(data));
+    CHECK(!allOrNoneOf(True, True, False, True)(data));
+    CHECK(!allOrNoneOf(True, True, True, False)(data));
+    CHECK(allOrNoneOf(True, True, True, True)(data));
 }
