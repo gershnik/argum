@@ -183,10 +183,6 @@ TEST_CASE( "Validators: oppositeOf" , "[validators]") {
     CHECK((!f)(data));
     CHECK(!oppositeOf(t)(data));
     CHECK(oppositeOf(f)(data));
-   
-
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(!!t)>, std::decay_t<decltype(t)>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(!!f)>, std::decay_t<decltype(f)>>);
 }
 
 TEST_CASE( "Validators: allOf" , "[validators]") {
