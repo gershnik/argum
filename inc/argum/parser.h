@@ -29,6 +29,256 @@
 
 namespace Argum {
 
+    template<class Char> class BasicParser;
+
+    template<class Char>
+    class BasicOption {
+        friend class BasicParser<Char>;
+
+    public:
+        using CharType = Char;
+        using StringType = std::basic_string<Char>;
+        using StringViewType = std::basic_string_view<Char>;
+        using OptionNames = BasicOptionNames<Char>;
+        using Argument = OptionArgument;
+
+    private:
+        using CharConstants = Argum::CharConstants<CharType>;
+        using Messages = Argum::Messages<CharType>;
+
+        template<class C, OptionArgument Argument> struct HandlerDeducer;
+
+        template<class C>
+        struct HandlerDeducer<C, OptionArgument::None> { 
+            using Type = std::function<void ()>; 
+        };
+        template<class C>
+        struct HandlerDeducer<C, OptionArgument::Optional> { 
+            using Type = std::function<void (std::optional<std::basic_string_view<C>>)>; 
+        };
+        template<class C>
+        struct HandlerDeducer<C, OptionArgument::Required> { 
+            using Type = std::function<void (std::basic_string_view<C>)>; 
+        };
+
+        template<OptionArgument Argument> using HandlerOf = typename HandlerDeducer<CharType, Argument>::Type;
+
+    public:
+        using Handler = std::variant<
+            HandlerOf<OptionArgument::None>,
+            HandlerOf<OptionArgument::Optional>,
+            HandlerOf<OptionArgument::Required>
+        >;
+        
+        BasicOption(OptionNames names) :
+            m_names(std::move(names)) {
+        }
+
+        template<class... Args>
+        requires(std::is_constructible_v<OptionNames, Args &&...>)
+        BasicOption(Args && ...args) :
+            m_names(std::forward<Args>(args)...) {
+        }
+
+        template<class H>
+        auto handler(H && h) & -> BasicOption &
+        requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
+                    std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
+                    std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
+
+            if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>>) {
+                this->m_handler.template emplace<HandlerOf<Argument::None>>(std::forward<H>(h));
+            } else if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>>)
+                this->m_handler.template emplace<HandlerOf<Argument::Optional>>(std::forward<H>(h));
+            else {
+                this->m_handler.template emplace<HandlerOf<Argument::Required>>(std::forward<H>(h));
+            }
+            return *this;
+        }
+
+        template<class H>
+        auto handler(H && h) && -> BasicOption &&
+        requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
+                    std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
+                    std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
+            return std::move(static_cast<BasicOption *>(this)->handler(std::forward<H>(h)));
+        }
+
+        auto occurs(Quantifier r) & -> BasicOption & {
+            this->m_occurs = r;
+            return *this;
+        }
+        auto occurs(Quantifier r) && -> BasicOption && {
+            return std::move(static_cast<BasicOption *>(this)->occurs(r));
+        }
+
+        auto argName(StringViewType n) & -> BasicOption & {
+            this->m_argName = n;
+            return *this;
+        }
+        auto argName(StringViewType n) && -> BasicOption && {
+            return std::move(static_cast<BasicOption *>(this)->argName(n));
+        }
+
+        auto help(StringViewType str) & -> BasicOption & {
+            this->m_description = str;
+            return *this;
+        }
+        auto help(StringViewType str) && -> BasicOption && {
+            return std::move(static_cast<BasicOption *>(this)->help(str));
+        }
+
+        auto formatSyntax() const -> StringType {
+            constexpr auto brop = CharConstants::squareBracketOpen;
+            constexpr auto brcl = CharConstants::squareBracketClose;
+
+            StringType ret;
+
+            if (this->m_occurs.min() == 0)
+                ret += brop;
+            ret.append(this->m_names.main()).append(this->formatArgSyntax());
+            if (this->m_occurs.min() == 0)
+                ret += brcl;
+
+            return ret;
+        }
+
+        auto formatArgSyntax() const -> StringType {
+            constexpr auto space = CharConstants::space;
+            constexpr auto brop = CharConstants::squareBracketOpen;
+            constexpr auto brcl = CharConstants::squareBracketClose;
+
+            StringType ret;
+            std::visit([&](const auto & handler) {
+                using HandlerType = std::decay_t<decltype(handler)>;
+                if constexpr (std::is_same_v<HandlerType, HandlerOf<Argument::Optional>>) {
+                    ret.append({space, brop}).append(this->m_argName).append({brcl});
+                } else if constexpr (std::is_same_v<HandlerType, HandlerOf<Argument::Required>>)  {
+                    ret.append({space}).append(this->m_argName);
+                }
+            }, this->m_handler);
+            return ret;
+        }
+
+        auto formatHelpName() const -> StringType {
+        
+            auto argSyntax = this->formatArgSyntax();
+            StringType ret = this->m_names.all().front();
+            ret += argSyntax;
+            std::for_each(this->m_names.all().begin() + 1, this->m_names.all().end(), [&](const auto & name) {
+                ret.append(Messages::listJoiner()).append(name).append(argSyntax);
+            });
+
+            return ret;
+        }
+
+        auto formatHelpDescription() const -> const StringType & {
+            return this->m_description;
+        }
+    private:
+        OptionNames m_names;
+        Handler m_handler = []() {};
+        Quantifier m_occurs = zeroOrMoreTimes;
+
+        StringType m_argName = Messages::defaultArgName();
+        StringType m_description;
+    };
+
+    ARGUM_DECLARE_FRIENDLY_NAMES(Option)
+
+    template<class Char>
+    class BasicPositional {
+        friend class BasicParser<Char>;
+    
+    public:
+        using CharType = Char;
+        using StringType = std::basic_string<Char>;
+        using StringViewType = std::basic_string_view<Char>;
+        using Handler = std::function<void (unsigned, StringViewType)>;
+
+    private:
+        using CharConstants = Argum::CharConstants<CharType>;
+
+    public:
+        BasicPositional(StringViewType name) :
+            m_name(std::move(name)) {
+        }
+
+        template<class H>
+        auto handler(H && h) & -> BasicPositional & 
+        requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
+            this->m_handler = std::forward<H>(h);
+            return *this;
+        }
+        template<class H>
+        auto handler(H && h) && -> BasicPositional && 
+        requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
+            return std::move(static_cast<BasicPositional *>(this)->handler(std::forward<H>(h)));
+        }
+
+        auto occurs(Quantifier r) & -> BasicPositional & {
+            this->m_occurs = r;
+            return *this;
+        }
+        auto occurs(Quantifier r) && -> BasicPositional && {
+            return std::move(static_cast<BasicPositional *>(this)->occurs(r));
+        }
+
+        auto help(StringViewType str) & -> BasicPositional &{
+            this->m_description = str;
+            return *this;
+        }
+        auto help(StringViewType str) && -> BasicPositional && {
+            return std::move(static_cast<BasicPositional *>(this)->help(str));
+        }
+
+        auto formatSyntax() const -> StringType {
+            constexpr auto space = CharConstants::space;
+            constexpr auto brop = CharConstants::squareBracketOpen;
+            constexpr auto brcl = CharConstants::squareBracketClose;
+            constexpr auto ellipsis = CharConstants::ellipsis;
+
+            StringType ret;
+
+            if (this->m_occurs.min() == 0)
+                ret += brop;
+            ret += this->m_name;
+            unsigned idx = 1;
+            for (; idx < this->m_occurs.min(); ++idx) {
+                ret.append({space}).append(this->m_name);
+            }
+            if (idx != this->m_occurs.min()) {
+                ret.append({space, brop}).append(this->m_name);
+                if (this->m_occurs.max() != Quantifier::infinity) {
+                    for (++idx; idx < this->m_occurs.max(); ++idx)
+                        ret.append({space}).append(this->m_name);
+                } else {
+                    ret.append({space}).append(ellipsis);
+                }
+                ret += brcl;
+            }
+            if (this->m_occurs.min() == 0)
+                ret += brcl;
+
+            return ret;
+        }
+
+        auto formatHelpName() const -> const StringType & {
+            return this->m_name;
+        }
+
+        auto formatHelpDescription() const -> const StringType & {
+            return this->m_description;
+        }
+    private:
+        StringType m_name;
+        Handler m_handler = [](unsigned, StringViewType) {};
+        Quantifier m_occurs = once;
+        StringType m_description;
+    };
+
+    ARGUM_DECLARE_FRIENDLY_NAMES(Positional)
+
     template<class Char>
     class BasicParser {
 
@@ -38,39 +288,21 @@ namespace Argum {
         using StringViewType = std::basic_string_view<Char>;
         using OptionNames = BasicOptionNames<Char>;
         using ParsingException = BasicParsingException<Char>;
+        using Option = BasicOption<Char>;
+        using Positional = BasicPositional<Char>;
+        using Settings = typename BasicTokenizer<Char>::Settings;
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
-
-        using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
-
-
-        template<class C, OptionArgument Argument> struct OptionHandlerDeducer;
-
-        template<class C>
-        struct OptionHandlerDeducer<C, OptionArgument::None> { 
-            using Type = std::function<void ()>; 
-        };
-        template<class C>
-        struct OptionHandlerDeducer<C, OptionArgument::Optional> { 
-            using Type = std::function<void (std::optional<std::basic_string_view<C>>)>; 
-        };
-        template<class C>
-        struct OptionHandlerDeducer<C, OptionArgument::Required> { 
-            using Type = std::function<void (std::basic_string_view<C>)>; 
-        };
-
         using Tokenizer = BasicTokenizer<Char>;
         using ValidationData = ParsingValidationData<Char>;
 
+        using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
+
+        template<OptionArgument Argument> using OptionHandler = typename Option::template HandlerOf<Argument>;
+
     public:
-        template<OptionArgument Argument> using OptionHandler = typename OptionHandlerDeducer<CharType, Argument>::Type;
-
-        using PositionalHandler = std::function<void (unsigned, StringViewType)>;
-
-        using Settings = typename Tokenizer::Settings;
-        
         struct UnrecognizedOption : public ParsingException {
             UnrecognizedOption(StringViewType option_): 
                 ParsingException(format(Messages::unrecognizedOptionError(), option_)),
@@ -122,209 +354,6 @@ namespace Argum {
             ValidationError(Validator validator):
                 ParsingException(format(Messages::validationError(), describe(validator))) {
             }
-        };
-
-        class Option {
-            friend class BasicParser;
-        public:
-            using Handler = std::variant<
-                OptionHandler<OptionArgument::None>,
-                OptionHandler<OptionArgument::Optional>,
-                OptionHandler<OptionArgument::Required>
-            >;
-            
-            Option(OptionNames names_) :
-                m_names(std::move(names_)) {
-            }
-
-            template<class... Args>
-            requires(std::is_constructible_v<OptionNames, Args &&...>)
-            Option(Args && ...args) :
-                m_names(std::forward<Args>(args)...) {
-            }
-
-            template<class H>
-            auto handler(H && h) & -> Option &
-            requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
-                     std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
-                     std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
-
-                if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>>) {
-                    this->m_handler.template emplace<OptionHandler<OptionArgument::None>>(std::forward<H>(h));
-                } else if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>>)
-                    this->m_handler.template emplace<OptionHandler<OptionArgument::Optional>>(std::forward<H>(h));
-                else {
-                    this->m_handler.template emplace<OptionHandler<OptionArgument::Required>>(std::forward<H>(h));
-                }
-                return *this;
-            }
-
-            template<class H>
-            auto handler(H && h) && -> Option &&
-            requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
-                     std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
-                     std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
-                return std::move(static_cast<Option *>(this)->handler(std::forward<H>(h)));
-            }
-
-            auto occurs(Quantifier r) & -> Option & {
-                this->m_occurs = r;
-                return *this;
-            }
-            auto occurs(Quantifier r) && -> Option && {
-                return std::move(static_cast<Option *>(this)->occurs(r));
-            }
-
-            auto argName(StringViewType n) & -> Option & {
-                this->m_argName = n;
-                return *this;
-            }
-            auto argName(StringViewType n) && -> Option && {
-                return std::move(static_cast<Option *>(this)->argName(n));
-            }
-
-            auto help(StringViewType str) & -> Option & {
-                this->m_description = str;
-                return *this;
-            }
-            auto help(StringViewType str) && -> Option && {
-                return std::move(static_cast<Option *>(this)->help(str));
-            }
-
-            auto formatSyntax() const -> StringType {
-                constexpr auto brop = CharConstants::squareBracketOpen;
-                constexpr auto brcl = CharConstants::squareBracketClose;
-
-                StringType ret;
-
-                if (m_occurs.min() == 0)
-                    ret += brop;
-                ret.append(m_names.main()).append(formatArgSyntax());
-                if (m_occurs.min() == 0)
-                    ret += brcl;
-
-                return ret;
-            }
-
-            auto formatArgSyntax() const -> StringType {
-                constexpr auto space = CharConstants::space;
-                constexpr auto brop = CharConstants::squareBracketOpen;
-                constexpr auto brcl = CharConstants::squareBracketClose;
-
-                StringType ret;
-                std::visit([&](const auto & handler) {
-                    using HandlerType = std::decay_t<decltype(handler)>;
-                    if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
-                        ret.append({space, brop}).append(m_argName).append({brcl});
-                    } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Required>>)  {
-                        ret.append({space}).append(m_argName);
-                    }
-                }, m_handler);
-                return ret;
-            }
-
-            auto formatHelpName() const -> StringType {
-            
-                auto argSyntax = this->formatArgSyntax();
-                StringType ret = m_names.all().front();
-                ret += argSyntax;
-                std::for_each(m_names.all().begin() + 1, m_names.all().end(), [&](const auto & name) {
-                    ret.append(Messages::listJoiner()).append(name).append(argSyntax);
-                });
-
-                return ret;
-            }
-
-            auto formatHelpDescription() const -> const StringType & {
-                return m_description;
-            }
-        private:
-            OptionNames m_names;
-            Handler m_handler = []() {};
-            Quantifier m_occurs = zeroOrMoreTimes;
-
-            StringType m_argName = Messages::defaultArgName();
-            StringType m_description;
-        };
-
-        class Positional {
-            friend class BasicParser;
-        public:
-            Positional(StringViewType name_) :
-                m_name(std::move(name_)) {
-            }
-
-            template<class H>
-            auto handler(H && h) & -> Positional & 
-            requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
-                this->m_handler = std::forward<H>(h);
-                return *this;
-            }
-            template<class H>
-            auto handler(H && h) && -> Positional && 
-            requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
-                return std::move(static_cast<Positional *>(this)->handler(std::forward<H>(h)));
-            }
-
-            auto occurs(Quantifier r) & -> Positional & {
-                this->m_occurs = r;
-                return *this;
-            }
-            auto occurs(Quantifier r) && -> Positional && {
-                return std::move(static_cast<Positional *>(this)->occurs(r));
-            }
-
-            auto help(StringViewType str) & -> Positional &{
-                this->m_description = str;
-                return *this;
-            }
-            auto help(StringViewType str) && -> Positional && {
-                return std::move(static_cast<Positional *>(this)->help(str));
-            }
-
-            auto formatSyntax() const -> StringType {
-                constexpr auto space = CharConstants::space;
-                constexpr auto brop = CharConstants::squareBracketOpen;
-                constexpr auto brcl = CharConstants::squareBracketClose;
-                constexpr auto ellipsis = CharConstants::ellipsis;
-
-                StringType ret;
-
-                if (m_occurs.min() == 0)
-                    ret += brop;
-                ret += m_name;
-                unsigned idx = 1;
-                for (; idx < m_occurs.min(); ++idx) {
-                    ret.append({space}).append(m_name);
-                }
-                if (idx != m_occurs.min()) {
-                    ret.append({space, brop}).append(m_name);
-                    if (m_occurs.max() != Quantifier::infinity) {
-                        for (++idx; idx < m_occurs.max(); ++idx)
-                            ret.append({space}).append(m_name);
-                    } else {
-                        ret.append({space}).append(ellipsis);
-                    }
-                    ret += brcl;
-                }
-                if (m_occurs.min() == 0)
-                    ret += brcl;
-
-                return ret;
-            }
-
-            auto formatHelpName() const -> const StringType & {
-                return m_name;
-            }
-
-            auto formatHelpDescription() const -> const StringType & {
-                return m_description;
-            }
-        private:
-            StringType m_name;
-            PositionalHandler m_handler = [](unsigned, StringViewType) {};
-            Quantifier m_occurs = once;
-            StringType m_description;
         };
 
     public:

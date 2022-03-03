@@ -14,10 +14,6 @@ using namespace std;
 
 using namespace std::literals;
 
-using Option = Parser::Option;
-using WOption = WParser::Option;
-using Positional = Parser::Positional;
-using WPositional = WParser::Positional;
 using UnrecognizedOption = Parser::UnrecognizedOption;
 using WUnrecognizedOption = WParser::UnrecognizedOption;
 using AmbiguousOption = Parser::AmbiguousOption;
