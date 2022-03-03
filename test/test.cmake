@@ -5,6 +5,8 @@
 #  https://github.com/gershnik/argum/blob/master/LICENSE
 #
 
+find_package (Python3 COMPONENTS Interpreter)
+
 add_executable(test)
 
 set_property(TARGET test PROPERTY CXX_STANDARD 20)
@@ -113,3 +115,19 @@ add_custom_target(run-test
     DEPENDS ${TEST_DEPS}
     ${TEST_COMMAND}
 )
+
+if(${Python3_Interpreter_FOUND})
+
+    add_custom_target(amalgamate
+        COMMENT "Amalgamating"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../tools
+        COMMAND ${Python3_EXECUTABLE} amalgamate.py template.txt ../out/argum-all.h -d ../inc/argum 
+        COMMAND ${Python3_EXECUTABLE} amalgamate.py module-template.txt ../out/argum-module.ixx -d ../inc/argum 
+        DEPENDS 
+            ${UNICODE_DATA} 
+            ${UNICODE_SCRIPTS}
+    )
+
+    add_dependencies(test amalgamate)
+ 
+endif()
