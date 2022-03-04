@@ -49,7 +49,7 @@ namespace Argum {
 
     ARGUM_DECLARE_FRIENDLY_NAMES(OptionNames)
 
-    enum class OptionArgument  {
+    enum class OptionArgumentKind  {
         None,
         Optional,
         Required

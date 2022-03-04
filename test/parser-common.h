@@ -125,13 +125,9 @@ namespace std {
 #define WOPTION_OPT_ARG(n, ...) WOption(n __VA_OPT__(,) __VA_ARGS__).handler([&](optional<wstring_view> arg){ \
         arg ? results[n].push_back(wstring(*arg)) : results[n].push_back(nullopt); \
     })
-#define POSITIONAL(n) Positional(n).handler([&](unsigned idx, string_view value){ \
-        auto & list = results[n]; \
-        CHECK(list.size() == idx); \
-        list.push_back(string(value)); \
+#define POSITIONAL(n) Positional(n).handler([&](string_view value){ \
+        results[n].push_back(string(value)); \
     })
-#define WPOSITIONAL(n) WPositional(n).handler([&](unsigned idx, wstring_view value){ \
-        auto & list = results[n]; \
-        CHECK(list.size() == idx); \
-        list.push_back(wstring(value)); \
+#define WPOSITIONAL(n) WPositional(n).handler([&](wstring_view value){ \
+        results[n].push_back(wstring(value)); \
     })

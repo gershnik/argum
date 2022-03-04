@@ -4,12 +4,11 @@ TEST_CASE( "Changing positionals on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
     Parser parser;
-    parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&results, &parser](unsigned idx, string_view val){
+    parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&results, &parser](string_view val){
         auto & list = results["p"]; 
-        CHECK(list.size() == idx); 
         list.push_back(string(val));
 
-        if (idx == 1) {
+        if (list.size() == 2) {
             parser.add(POSITIONAL("f"));
         }
     }));
@@ -30,12 +29,11 @@ TEST_CASE( "Changing options on the fly" , "[parser]") {
     map<string, vector<Value>> results;
     
     Parser parser;
-    parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&](unsigned idx, string_view val){
+    parser.add(Positional("p").occurs(zeroOrMoreTimes).handler([&](string_view val){
         auto & list = results["p"]; 
-        CHECK(list.size() == idx); 
         list.push_back(string(val));
 
-        if (idx == 1) {
+        if (list.size() == 2) {
             parser.add(Option("-c").handler([&](string_view val){
                 auto & list = results["-c"]; 
                 list.push_back(string(val));

@@ -40,34 +40,35 @@ namespace Argum {
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
         using OptionNames = BasicOptionNames<Char>;
-        using Argument = OptionArgument;
+        using ArgumentKind = OptionArgumentKind;
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
 
-        template<class C, OptionArgument Argument> struct HandlerDeducer;
+        using NoArgHandler = std::function<void ()>; 
+        using OptArgHandler = std::function<void (std::optional<StringViewType>)>; 
+        using ReqArgHandler = std::function<void (StringViewType)>; 
 
-        template<class C>
-        struct HandlerDeducer<C, OptionArgument::None> { 
-            using Type = std::function<void ()>; 
-        };
-        template<class C>
-        struct HandlerDeducer<C, OptionArgument::Optional> { 
-            using Type = std::function<void (std::optional<std::basic_string_view<C>>)>; 
-        };
-        template<class C>
-        struct HandlerDeducer<C, OptionArgument::Required> { 
-            using Type = std::function<void (std::basic_string_view<C>)>; 
-        };
+        template<class HandlerType>
+        static constexpr auto argumentKindOf() -> ArgumentKind {
+            if constexpr (std::is_same_v<HandlerType, NoArgHandler>)
+                return ArgumentKind::None;
+            else if constexpr (std::is_same_v<HandlerType, OptArgHandler>) 
+                return ArgumentKind::Optional;
+            else if constexpr (std::is_same_v<HandlerType, ReqArgHandler>) 
+                return ArgumentKind::Required;
+        }
 
-        template<OptionArgument Argument> using HandlerOf = typename HandlerDeducer<CharType, Argument>::Type;
+        auto canHaveArgument() const -> bool {
+            return !std::holds_alternative<NoArgHandler>(m_handler);
+        }
 
     public:
         using Handler = std::variant<
-            HandlerOf<OptionArgument::None>,
-            HandlerOf<OptionArgument::Optional>,
-            HandlerOf<OptionArgument::Required>
+            NoArgHandler,
+            OptArgHandler,
+            ReqArgHandler
         >;
         
         BasicOption(OptionNames names) :
@@ -87,11 +88,11 @@ namespace Argum {
                     std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
 
             if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>>) {
-                this->m_handler.template emplace<HandlerOf<Argument::None>>(std::forward<H>(h));
+                this->m_handler.template emplace<NoArgHandler>(std::forward<H>(h));
             } else if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>>)
-                this->m_handler.template emplace<HandlerOf<Argument::Optional>>(std::forward<H>(h));
+                this->m_handler.template emplace<OptArgHandler>(std::forward<H>(h));
             else {
-                this->m_handler.template emplace<HandlerOf<Argument::Required>>(std::forward<H>(h));
+                this->m_handler.template emplace<ReqArgHandler>(std::forward<H>(h));
             }
             return *this;
         }
@@ -151,9 +152,10 @@ namespace Argum {
             StringType ret;
             std::visit([&](const auto & handler) {
                 using HandlerType = std::decay_t<decltype(handler)>;
-                if constexpr (std::is_same_v<HandlerType, HandlerOf<Argument::Optional>>) {
+                constexpr auto argumentKind = BasicOption::template argumentKindOf<HandlerType>();
+                if constexpr (argumentKind == ArgumentKind::Optional) {
                     ret.append({space, brop}).append(this->m_argName).append({brcl});
-                } else if constexpr (std::is_same_v<HandlerType, HandlerOf<Argument::Required>>)  {
+                } else if constexpr (argumentKind == ArgumentKind::Required)  {
                     ret.append({space}).append(this->m_argName);
                 }
             }, this->m_handler);
@@ -194,7 +196,7 @@ namespace Argum {
         using CharType = Char;
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
-        using Handler = std::function<void (unsigned, StringViewType)>;
+        using Handler = std::function<void (StringViewType)>;
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
@@ -206,13 +208,13 @@ namespace Argum {
 
         template<class H>
         auto handler(H && h) & -> BasicPositional & 
-        requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
+        requires(std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
             this->m_handler = std::forward<H>(h);
             return *this;
         }
         template<class H>
         auto handler(H && h) && -> BasicPositional && 
-        requires(std::is_invocable_v<std::decay_t<decltype(h)>, unsigned, StringViewType>) {
+        requires(std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
             return std::move(static_cast<BasicPositional *>(this)->handler(std::forward<H>(h)));
         }
 
@@ -272,7 +274,7 @@ namespace Argum {
         }
     private:
         StringType m_name;
-        Handler m_handler = [](unsigned, StringViewType) {};
+        Handler m_handler = [](StringViewType) {};
         Quantifier m_occurs = once;
         StringType m_description;
     };
@@ -299,8 +301,6 @@ namespace Argum {
         using ValidationData = ParsingValidationData<Char>;
 
         using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
-
-        template<OptionArgument Argument> using OptionHandler = typename Option::template HandlerOf<Argument>;
 
     public:
         struct UnrecognizedOption : public ParsingException {
@@ -508,11 +508,12 @@ namespace Argum {
                 validateOptionMax(option);
                 std::visit([&](const auto & handler) {
                     using HandlerType = std::decay_t<decltype(handler)>;
-                    if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::None>>) {
+                    constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
+                    if constexpr (argumentKind == OptionArgumentKind::None) {
                         if (m_optionArgument)
                             throw ExtraOptionArgument(m_optionName);
                         handler();
-                    } else if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::Optional>>) {
+                    } else if constexpr (argumentKind == OptionArgumentKind::Optional) {
                         handler(m_optionArgument);
                     } else {
                         if (!m_optionArgument)
@@ -533,7 +534,8 @@ namespace Argum {
                 validateOptionMax(option);
                 auto ret = std::visit([&](const auto & handler) {
                         using HandlerType = std::decay_t<decltype(handler)>;
-                        if constexpr (std::is_same_v<HandlerType, OptionHandler<OptionArgument::None>>) {
+                        constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
+                        if constexpr (argumentKind == OptionArgumentKind::None) {
                             if (m_optionArgument)
                                 throw ExtraOptionArgument(m_optionName);
                             handler();
@@ -591,7 +593,7 @@ namespace Argum {
                 }
                 
                 auto & count = m_validationData.positionalCount(positional->m_name);
-                positional->m_handler(count, value);
+                positional->m_handler(value);
                 ++count;
                 return true;
             }
@@ -646,7 +648,7 @@ namespace Argum {
                     if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 
                         auto & option = m_owner.m_options[token.idx];
-                        if (!std::holds_alternative<OptionHandler<OptionArgument::None>>(option.m_handler)) {
+                        if (option.canHaveArgument()) {
                             currentOptionExpectsArgument = !token.argument;
                         } else {
                             currentOptionExpectsArgument = false;
