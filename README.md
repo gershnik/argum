@@ -2,16 +2,15 @@
 
 Fully-featured, powerful and simple to use C++ command line argument parser.
 
-<!-- TOC -->
+<!-- TOC depthfrom:2 -->
 
-- [Argum](#argum)
-    - [Features and goals](#features-and-goals)
-    - [Examples](#examples)
-    - [Integration](#integration)
-    - [FAQ](#faq)
-        - [Why another command line library?](#why-another-command-line-library)
-        - [Why is it using exceptions?](#why-is-it-using-exceptions)
-        - [Why is it using plain iterators for input rather than ranges?](#why-is-it-using-plain-iterators-for-input-rather-than-ranges)
+- [Features and goals](#features-and-goals)
+- [Examples](#examples)
+- [Integration](#integration)
+- [FAQ](#faq)
+    - [Why another command line library?](#why-another-command-line-library)
+    - [Why is it using exceptions?](#why-is-it-using-exceptions)
+    - [Why is it using plain iterators for input rather than ranges?](#why-is-it-using-plain-iterators-for-input-rather-than-ranges)
 
 <!-- /TOC -->
 
