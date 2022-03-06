@@ -249,7 +249,7 @@ namespace Argum {
             for (; idx < this->m_occurs.min(); ++idx) {
                 ret.append({space}).append(this->m_name);
             }
-            if (idx != this->m_occurs.min()) {
+            if (idx < this->m_occurs.max()) {
                 ret.append({space, brop}).append(this->m_name);
                 if (this->m_occurs.max() != Quantifier::infinity) {
                     for (++idx; idx < this->m_occurs.max(); ++idx)

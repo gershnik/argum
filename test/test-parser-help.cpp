@@ -110,3 +110,37 @@ options:
 
 }
 
+TEST_CASE( "quantifiers of positionals are printed correctly" , "[parser]") {
+    map<string, vector<Value>> results;
+    {
+      Parser parser;
+      parser.add(POSITIONAL("fob").occurs(neverOrOnce));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG [fob]");
+    }
+    {
+      Parser parser;
+      parser.add(POSITIONAL("fob").occurs(Quantifier{0, 2}));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG [fob [fob]]");
+    }
+    {
+      Parser parser;
+      parser.add(POSITIONAL("fob").occurs(Quantifier{1, 2}));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG fob [fob]");
+    }
+    {
+      Parser parser;
+      parser.add(POSITIONAL("fob").occurs(zeroOrMoreTimes));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG [fob [fob ...]]");
+    }
+    {
+      Parser parser;
+      parser.add(POSITIONAL("fob").occurs(oneOrMoreTimes));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG fob [fob ...]");
+    }
+    {
+      Parser parser;
+      parser.add(POSITIONAL("fob").occurs(Quantifier(2)));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG fob fob");
+    }
+}
+
