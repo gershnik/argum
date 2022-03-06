@@ -24,9 +24,8 @@ int main(int argc, char * argv[]) {
     } catch (ParsingException & ex) {
         //all parsing issues are reported via classes derived from ParsingException
         std::cerr << ex.message() << '\n';
-        //print the formatted usage string. The argument is the name of our program.
-        //IMPORTANT: never assume that argc > 0. See [this vulnerability][1] for 
-        //gory details of what can happen if you do
+        //print the formatted usage string. The argument to formatUsage is the name of our program 
+        //we want printed in the usage string
         std::cerr << parser.formatUsage(argc ? argv[0] : "prog") << '\n';
         return EXIT_FAILURE;
     }
@@ -49,7 +48,8 @@ As you can see, the program accepts no command line arguments at all. Note, that
 
 This example demonstrates the basics of handling errors and displaying usage information to the user. All errors produced during parsing are reported via classes derived from `ParsingException` (itself a subclass of `std::exception`). We handle the exception by printing the error message and the program's short usage string. 
 Note that we have to pass the name of our program to `formatUsage`. It does not make any assumptions of what the name you want printed 
-is or whether it should be taken from `argv[0]`. 
+is or whether it should be taken from `argv[0]`. It is common to use `argv[0]` but it is not the only choice - some people prefer to hardcode the name. **IMPORTANT**: if you do use `argv[0]` never assume that `argc > 0` and it is valid. See [this vulnerability][1] for 
+gory details of what can happen if you do.
 
 In addition to standard `what()` method that can be used to display error information `ParsingException` also has the `message()` method, used above. The difference between the two is that `message()` returns a `string_view` and has a `wchar_t` counterpart. Here is the same code for Windows `wmain()` that uses `wchar_t` throughout.
 In what follows we will also omit the `#include` and `using namespace` parts - these are assumed throughout this tutorial.
@@ -173,7 +173,7 @@ int main(int argc, char * argv[]) {
         parser.parse(argc, argv);
     } catch (ParsingException & ex) {
         std::cerr << ex.message() << '\n';
-        std::cerr << parser.formatUsage(progname) << '\n'
+        std::cerr << parser.formatUsage(progname) << '\n';
         return EXIT_FAILURE;
     }
 
@@ -239,7 +239,7 @@ int main(int argc, char * argv[]) {
         parser.parse(argc, argv);
     } catch (ParsingException & ex) {
         std::cerr << ex.message() << '\n';
-        std::cerr << parser.formatUsage(progname) << '\n'
+        std::cerr << parser.formatUsage(progname) << '\n';
         return EXIT_FAILURE;
     }
 
@@ -276,11 +276,84 @@ invalid arguments: 45 abc is not a number
 Usage: ./prog [--help] square
 ```
 
+What if we wanted to make the positional argument optional? This is also easy. Starting from the next example let's move lengthy lambdas into separate functions to make code clearer.
+
+```cpp
+
+#include <charconv>
+
+[[noreturn]] void printUsageAndExit(const Parser & parser, const char * progname) {
+    std::cout << parser.formatHelp(progname);
+    std::exit(EXIT_SUCCESS);
+}
+
+int parseSquarableInt(std::string_view value) {
+    int ret;
+    auto [ptr, ec]  = std::from_chars(value.data(), value.data() + value.size(), ret);
+    if (ec == std::errc::invalid_argument || ptr != value.data() + value.size())
+        throw Parser::ValidationError(std::string(value) + " is not a number");
+    else if (ec == std::errc::result_out_of_range)
+        throw Parser::ValidationError(std::string(value) + " is out of range");
+    if (abs(ret) > std::numeric_limits<int>::max() / abs(ret))
+        throw Parser::ValidationError(std::string(value) + " is out of range");
+    return ret;
+}
+
+int main(int argc, char * argv[]) {
+
+    std::optional<int> numberToSquare; //the value is now optional
+
+    const char * progname = (argc ? argv[0] : "prog");
+    Parser parser;
+    parser.add(
+        Positional("square").
+        help("display a square of a given number"). 
+        occurs(neverOrOnce).  //you can also say zeroOrOneTime or Quantifier(0,1)
+        handler([&](const std::string_view & value) { 
+            numberToSquare = parseSquarableInt(value);
+    }));
+    parser.add(
+        Option("--help", "-h").help("show this help message and exit"). 
+        handler([&]() {
+            printUsageAndExit(parser, progname);
+    }));
+
+    try {
+        parser.parse(argc, argv);
+    } catch (ParsingException & ex) {
+        std::cerr << ex.message() << '\n';
+        std::cerr << parser.formatUsage(progname) << '\n';
+        return EXIT_FAILURE;
+    }
+
+    if (numberToSquare)
+        std::cout << *numberToSquare * *numberToSquare << '\n';
+}
+```
+
+Note the `occurs()` call. It takes a `Quantifier` object that specifies minimum and maximum number of times a positional can occur. There are some predefined quantifiers such as: `zeroOrOneTime` or `neverOrOnce` (both mean the same), `oneTime` or `once` (this is the default), `zeroOrMoreTimes` and `oneOrMoreTimes` or `onceOrMore` which cover most common scenarios. For anything else you can pass a 
+`Quantifer(min, max)`.
+
+Running the changed code now produces
+
+```bash
+$ ./prog --help                                                   
+Usage: ./prog [--help] [square]
+
+positional arguments:
+  square      display a square of a given number
+
+options:
+  --help, -h  show this help message and exit
+
+$ ./prog
+$ ./prog 5
+25
+```
 
 
+<!-- References -->
 
-## References
-
-[1]: <https://blog.qualys.com/vulnerabilities-threat-research/2022/01/25/pwnkit-local-privilege-escalation-vulnerability-discovered-in-polkits-pkexec-cve-2021-4034> "PwnKit: Local Privilege Escalation Vulnerability Discovered in polkit’s pkexec (CVE-2021-4034)"
+[1]: <https://blog.qualys.com/vulnerabilities-threat-research/2022/01/25/pwnkit-local-privilege-escalation-vulnerability-discovered-in-polkits-pkexec-cve-2021-4034> 
 
 
