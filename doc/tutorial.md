@@ -42,7 +42,7 @@ int main(int argc, char * argv[]) {
 
 Assuming this code has been compiled into an application named `prog` following are the results of running it:
 
-```bash
+```console
 $ ./prog
 $ ./prog --help
 unrecognized option: --help
@@ -114,7 +114,7 @@ The code should be self-explanatory: we added an option named `--help` or `-h` w
 help message "show this help message and exit" and a handler that prints out the program help and exits.
 
 Running this code produces
-```bash
+```console
 $ ./prog
 $ ./prog --help
 Usage: ./prog [--help]
@@ -139,7 +139,7 @@ Usage: ./prog [--help]
 
 Note the last error. Option `--help` we added does not accept argument - this is because its handler doesn't have one. An attempt to pass what unambiguously looks like an argument results in error. However, let's try this
 
-```bash
+```console
 $ ./prog --help foo bar
 Usage: ./prog [--help]
 
@@ -192,7 +192,7 @@ int main(int argc, char * argv[]) {
 ```
 
 Running this code produces the following
-```bash
+```console
 $ ./prog       
 invalid arguments: positional argument echo must be present
 Usage: ./prog [--help] echo
@@ -262,7 +262,7 @@ Argum itself uses when command line validation (described below) fails.
 
 Running this code produces
 
-```bash
+```console
 $ ./prog --help    
 Usage: ./prog [--help] square
 
@@ -344,7 +344,7 @@ Note the `occurs()` call. It takes a `Quantifier` object that specifies minimum 
 
 Running the changed code now produces
 
-```bash
+```console
 $ ./prog --help                                                   
 Usage: ./prog [--help] [square]
 
@@ -411,9 +411,9 @@ int main(int argc, char * argv[]) {
 
 Running this produces
 
-<pre>
-<b>$</b> ./prog --help                        
-<span style="color:gray">Usage: ./prog [--help] [source [source ...]] destination
+```console
+$ ./prog --help                        
+Usage: ./prog [--help] [source [source ...]] destination
 
 positional arguments:
   source       source file
@@ -421,20 +421,20 @@ positional arguments:
 
 options:
   --help, -h   show this help message and exit
-</span>
-<b>$</b> ./prog
-<span style="color:gray">invalid arguments: positional argument destination must be present
-Usage: ./prog [--help] [source [source ...]] destination</span>
-<b>$</b> ./prog a
-<span style="color:gray">sources: 
-destination: a</span>
-<b>$</b> ./prog a b
-<span style="color:gray">sources: a
-destination: b</span>
-<b>$</b> ./prog a b c
-<span style="color:gray">sources: a, b
-destination: c</span>
-</pre>
+
+$ ./prog
+invalid arguments: positional argument destination must be present
+Usage: ./prog [--help] [source [source ...]] destination
+$ ./prog a
+sources: 
+destination: a
+$ ./prog a b
+sources: a
+destination: b
+$ ./prog a b c
+sources: a, b
+destination: c
+```
 
 <!-- References -->
 
