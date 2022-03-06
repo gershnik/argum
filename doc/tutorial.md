@@ -1,5 +1,13 @@
 # Argum Tutorial
 
+<!-- TOC depthfrom:2 -->
+
+- [The basics](#the-basics)
+- [Adding help](#adding-help)
+- [Positional arguments](#positional-arguments)
+
+<!-- /TOC -->
+
 ## The basics
 
 Let us start with a very simple example which does (almost) nothing:
@@ -264,14 +272,14 @@ positional arguments:
 options:
   --help, -h  show this help message and exit
 
-$ ./prog 4         
+$ ./prog 4       
 16
-$ ./prog foo   
+$ ./prog foo
 invalid arguments: foo is not a number
-Usage: ./prog [--help] square                                                                                                             
+Usage: ./prog [--help] square
 $ ./prog 1234567890
 invalid arguments: 1234567890 is out of range
-$ ./prog "45 abc"                          
+$ ./prog "45 abc"
 invalid arguments: 45 abc is not a number
 Usage: ./prog [--help] square
 ```
@@ -332,7 +340,7 @@ int main(int argc, char * argv[]) {
 ```
 
 Note the `occurs()` call. It takes a `Quantifier` object that specifies minimum and maximum number of times a positional can occur. There are some predefined quantifiers such as: `zeroOrOneTime` or `neverOrOnce` (both mean the same), `oneTime` or `once` (this is the default), `zeroOrMoreTimes` and `oneOrMoreTimes` or `onceOrMore` which cover most common scenarios. For anything else you can pass a 
-`Quantifer(min, max)`.
+`Quantifer(min, max)`. To specify "unlimited" for max pass `Quantifer::infinity`.
 
 Running the changed code now produces
 
@@ -351,6 +359,82 @@ $ ./prog 5
 25
 ```
 
+What happens if you have multiple positionals defined with different quantifiers? How does the parser decide which argument belongs where?
+The algorithm it follows is very simple:
+1. First it makes sure that there is enough arguments to satisfy the minima of all of them. If not an error is reported.
+2. Once the minima are satisfied the parser **greedily** tries to match up to each positional maximum from left to right.
+If you are familiar with regular expressions and quantifiers there this is the exact same approach.
+
+Let's look at a concrete example. Consider a utility that takes zero or more source files and one destination file as input. It would
+be coded like this
+
+```cpp
+int main(int argc, char * argv[]) {
+
+    std::vector<std::string> sources;
+    std::string destination;
+
+    const char * progname = (argc ? argv[0] : "prog");
+    Parser parser;
+    parser.add(
+        Positional("source").
+        help("source file"). 
+        occurs(zeroOrMoreTimes).
+        handler([&](const std::string_view & value) { 
+            sources.emplace_back(value);
+    }));
+    parser.add(
+        Positional("destination").
+        help("destination file"). 
+        occurs(once). //this could be omitted as it is the default
+        handler([&](const std::string_view & value) { 
+            destination = value;
+    }));
+    parser.add(
+        Option("--help", "-h").help("show this help message and exit"). 
+        handler([&]() {
+            printUsageAndExit(parser, progname);
+    }));
+
+    try {
+        parser.parse(argc, argv);
+    } catch (ParsingException & ex) {
+        std::cerr << ex.message() << '\n';
+        std::cerr << parser.formatUsage(progname) << '\n';
+        return EXIT_FAILURE;
+    }
+
+    std::cout << "sources: " << join(sources.begin(), sources.end(), ", ") << '\n'; //join is a useful helper in Argum
+    std::cout << "destination: " << destination << '\n';
+}
+```
+
+Running this produces
+
+<pre>
+<b>$</b> ./prog --help                        
+<span style="color:gray">Usage: ./prog [--help] [source [source ...]] destination
+
+positional arguments:
+  source       source file
+  destination  destination file
+
+options:
+  --help, -h   show this help message and exit
+</span>
+<b>$</b> ./prog
+<span style="color:gray">invalid arguments: positional argument destination must be present
+Usage: ./prog [--help] [source [source ...]] destination</span>
+<b>$</b> ./prog a
+<span style="color:gray">sources: 
+destination: a</span>
+<b>$</b> ./prog a b
+<span style="color:gray">sources: a
+destination: b</span>
+<b>$</b> ./prog a b c
+<span style="color:gray">sources: a, b
+destination: c</span>
+</pre>
 
 <!-- References -->
 
