@@ -386,6 +386,9 @@ namespace Argum {
                     return handler(OptionToken{argIdx, it->value(), std::move(usedName), std::move(arg)});
             }
             
+            if (auto maybeToken = this->matchNumber(argIdx, option, nameStart)) {
+                return handler(*maybeToken);
+            }
             return handler(UnknownOptionToken{argIdx, std::move(usedName), std::move(arg)});
         }
 

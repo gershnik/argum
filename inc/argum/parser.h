@@ -130,14 +130,28 @@ namespace Argum {
         }
 
         auto formatSyntax() const -> StringType {
+            constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
-
+            
             StringType ret;
 
             if (this->m_occurs.min() == 0)
                 ret += brop;
-            ret.append(this->m_names.main()).append(this->formatArgSyntax());
+            StringType nameAndArg = StringType(this->m_names.main()).append(this->formatArgSyntax());
+            ret.append(nameAndArg);
+            unsigned idx = 1;
+            for (; idx < this->m_occurs.min(); ++idx) {
+                ret.append({space}).append(nameAndArg);
+            }
+            if (this->m_occurs.max() != Quantifier::infinity && 
+                idx < this->m_occurs.max()) {
+                
+                ret.append({space, brop}).append(nameAndArg);
+                for (++idx; idx < this->m_occurs.max(); ++idx)
+                    ret.append({space}).append(nameAndArg);
+                ret += brcl;
+            }
             if (this->m_occurs.min() == 0)
                 ret += brcl;
 

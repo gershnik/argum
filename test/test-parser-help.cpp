@@ -144,3 +144,37 @@ TEST_CASE( "quantifiers of positionals are printed correctly" , "[parser]") {
     }
 }
 
+TEST_CASE( "quantifiers of options are printed correctly" , "[parser]") {
+    map<string, vector<Value>> results;
+    {
+      Parser parser;
+      parser.add(OPTION_NO_ARG("--fob").occurs(neverOrOnce));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG [--fob]");
+    }
+    {
+      Parser parser;
+      parser.add(OPTION_NO_ARG("--fob").occurs(Quantifier{0, 2}));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG [--fob [--fob]]");
+    }
+    {
+      Parser parser;
+      parser.add(OPTION_NO_ARG("--fob").occurs(Quantifier{1, 2}));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG --fob [--fob]");
+    }
+    {
+      Parser parser;
+      parser.add(OPTION_NO_ARG("--fob").occurs(zeroOrMoreTimes));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG [--fob]");
+    }
+    {
+      Parser parser;
+      parser.add(OPTION_NO_ARG("--fob").occurs(oneOrMoreTimes));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG --fob");
+    }
+    {
+      Parser parser;
+      parser.add(OPTION_NO_ARG("--fob").occurs(Quantifier(2)));
+      CHECK(parser.formatUsage("PROG") == "Usage: PROG --fob --fob");
+    }
+}
+

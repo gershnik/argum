@@ -213,6 +213,26 @@ TEST_CASE( "Short option with a numeric option string" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-1-2"), RESULTS({"-1", {"-2"}}))
 }
 
+TEST_CASE( "Long option with a numeric option string" , "[parser]") {
+    map<string, vector<Value>> results;
+
+    Parser parser(Parser::Settings().addLongPrefix("-", "--").addValueDelimiter('='));
+    parser.add(OPTION_REQ_ARG("-1"));
+
+    EXPECT_FAILURE(ARGS("-1"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(ARGS("a"), EXTRA_POSITIONAL("a"))
+    EXPECT_FAILURE(ARGS("-1", "--foo"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(ARGS("-1", "-y"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(ARGS("-1", "-1"), MISSING_OPTION_ARGUMENT("-1"))
+    EXPECT_FAILURE(ARGS("-1-2"), UNRECOGNIZED_OPTION("-1-2"))
+
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("-1", "a"), RESULTS({"-1", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-1=a"), RESULTS({"-1", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-1", "-2"), RESULTS({"-1", {"-2"}}))
+    EXPECT_SUCCESS(ARGS("-1=-2"), RESULTS({"-1", {"-2"}}))
+}
+
 TEST_CASE( "Option with a double-dash option string" , "[parser]") {
     map<string, vector<Value>> results;
 
