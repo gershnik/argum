@@ -7,6 +7,9 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 - [Features and goals](#features-and-goals)
 - [Example](#example)
 - [Integration](#integration)
+    - [Single header](#single-header)
+    - [Module](#module)
+    - [CMake](#cmake)
 - [FAQ](#faq)
     - [Why another command line library?](#why-another-command-line-library)
     - [Why is it using exceptions?](#why-is-it-using-exceptions)
@@ -141,11 +144,11 @@ int main(int argc, char * argv[]) {
 
 You can integrate Argum into your code in the following ways
 
-**1. Single header** 
+### 1. Single header 
 
 Download `argum-all.h` from the Releases page, drop it into your project and `#include` it. This is the simplest way.
 
-**2. Module**
+### 2. Module
   
 If you are lucky (or unlucky?) to have a compiler and build system that support modules you can try to use **experimental** 
 module file. Download `argum-module.ixx` from Releases page and integrate it into you project. Note, that of the compilers I
@@ -153,7 +156,7 @@ have access to, only MSVC currently supports modules to any usable extent and, e
 There also appears to be no definite canonical way to write library modules yet (should I `#include` standard library headers or
 `import` them etc. etc.) Use at your own risk.
 
-**3. CMake**
+### 3. CMake
   
 With modern CMake you can easily integrate Argum as follows:
 ```cmake
