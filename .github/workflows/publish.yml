@@ -1,0 +1,54 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Amalgamate
+        shell: bash
+        working-directory: ${{github.workspace}}/tools
+        run: |
+           python3 amalgamate.py -d $GITHUB_WORKSPACE/inc/argum template.txt $GITHUB_WORKSPACE/out/argum.h
+           python3 amalgamate.py -d $GITHUB_WORKSPACE/inc/argum module-template.txt $GITHUB_WORKSPACE/out/argum-module.ixx
+
+      - name: Release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: true
+          prerelease: false
+          release_name: ${{ github.ref }}
+          tag_name: ${{ github.ref }}
+          body: ...edit me...
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload amalgamated header
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{github.workspace}}/out/argum.h
+          asset_name: argum.h
+          asset_content_type: text/plain
+      
+      - name: Upload amalgamated module
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{github.workspace}}/out/argum-module.ixx
+          asset_name: argum-module.ixx
+          asset_content_type: text/plain
