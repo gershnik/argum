@@ -5,13 +5,13 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 <!-- TOC depthfrom:2 -->
 
 - [Features and goals](#features-and-goals)
-- [Examples](#examples)
+- [Example](#example)
 - [Integration](#integration)
 - [FAQ](#faq)
     - [Why another command line library?](#why-another-command-line-library)
     - [Why is it using exceptions?](#why-is-it-using-exceptions)
     - [Why options cannot have more than 1 argument? ArgParse allows that](#why-options-cannot-have-more-than-1-argument-argparse-allows-that)
-    - [Why is it using std::ranges?](#why-is-it-using-stdranges)
+    - [Why isn't it using std::ranges?](#why-isnt-it-using-stdranges)
 
 <!-- /TOC -->
 
