@@ -146,7 +146,7 @@ You can integrate Argum into your code in the following ways
 
 ### 1. Single header 
 
-Download `argum-all.h` from the Releases page, drop it into your project and `#include` it. This is the simplest way.
+Download `argum.h` from the Releases page, drop it into your project and `#include` it. This is the simplest way.
 
 ### 2. Module
   
