@@ -404,7 +404,8 @@ int main(int argc, char * argv[]) {
         return EXIT_FAILURE;
     }
 
-    std::cout << "sources: " << join(sources.begin(), sources.end(), ", ") << '\n'; //join is a useful helper in Argum
+    //join() is a useful helper found in Argum
+    std::cout << "sources: " << join(sources.begin(), sources.end(), ", ") << '\n'; 
     std::cout << "destination: " << destination << '\n';
 }
 ```
