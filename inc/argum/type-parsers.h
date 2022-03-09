@@ -94,8 +94,8 @@ namespace Argum {
     private:
         using StringType = std::basic_string<Char>;
         using RegexType = std::basic_regex<Char>;
-        using CharConstants = CharConstants<Char>;
-        using Messages = Messages<Char>;
+        using CharConstants = Argum::CharConstants<Char>;
+        using Messages = Argum::Messages<Char>;
         using ValidationError = typename BasicParser<Char>::ValidationError;
     public:
         BasicChoiceParser(Settings settings = Settings()) : m_options(std::regex_constants::ECMAScript) {
