@@ -450,7 +450,11 @@ namespace Argum {
         }
 
         auto formatHelp(StringViewType progName) const -> StringType {
-            return HelpFormatter(*this, progName).formatHelp();
+            HelpFormatter formatter(*this, progName);
+            StringType ret = formatter.formatUsage();
+            ret.append(2, CharConstants::endl);
+            ret.append(formatter.formatHelp());
+            return ret;
         }
 
     private:

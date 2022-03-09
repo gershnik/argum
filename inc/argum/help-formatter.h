@@ -57,8 +57,7 @@ namespace Argum {
 
             constexpr auto endl = CharConstants::endl;
 
-            StringType ret = this->formatUsage();
-            ret.append(2, endl);
+            StringType ret;
 
             auto helpContent = this->calculateHelpContent();
             if (helpContent.maxNameLen > m_layout.helpNameMaxWidth)

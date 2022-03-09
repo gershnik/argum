@@ -34,6 +34,9 @@ namespace Argum {
         static constexpr auto positionalHeader()            { return pr ## "positional arguments:"; }\
         static constexpr auto optionsHeader()               { return pr ## "options:"; }\
         static constexpr auto listJoiner()                  { return pr ## ", "; }\
+        static constexpr auto notANumber()                  { return pr ## "value \"{1}\" is not a number"; } \
+        static constexpr auto outOfRange()                  { return pr ## "value \"{1}\" is out of range"; } \
+        static constexpr auto notAValidChoice()             { return pr ## "value \"{1}\" is not one of the valid choices {{{2}}"; } \
         static constexpr auto itemUnrestricted()            { return pr ## "{1} {2} can occur any number of times"; }\
         static constexpr auto itemMustBePresent()           { return pr ## "{1} {2} must be present"; }\
         static constexpr auto itemMustNotBePresent()        { return pr ## "{1} {2} must not be present"; }\

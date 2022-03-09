@@ -47,17 +47,19 @@ A simple example of file processing utility of some kind is given below.
 It demonstrates many of the most important features of the library. More examples can be found of the wiki.
 
 ```cpp
-#include <argum/parser.h>
+#include "argum.h"
 #include <iostream>
 
 using namespace Argum;
 using namespace std;
 
+enum Encoding { defaultEncoding, Base64, Hex };
+
 int main(int argc, char * argv[]) {
 
     vector<string> sources;
     string destination;
-    optional<string> encoding = "default";
+    optional<Encoding> encoding = defaultEncoding;
     optional<string> compression;
     int compressionLevel = 9;
 
@@ -85,11 +87,16 @@ int main(int argc, char * argv[]) {
             cout << parser.formatHelp(progname);
             exit(EXIT_SUCCESS);
     }));
+    ChoiceParser encodingChoices;
+    encodingChoices.addChoice("default");
+    encodingChoices.addChoice("base64");
+    encodingChoices.addChoice("hex");
     parser.add(
         Option("--format", "-f", "--encoding", "-e").
         help("output file format"). 
+        argName(encodingChoices.description()).
         handler([&](string_view value) {
-            encoding = value;
+            encoding = Encoding(encodingChoices.parse(value));
     }));
     parser.add(
         Option("--compress", "-c").
@@ -104,15 +111,7 @@ int main(int argc, char * argv[]) {
         argName("LEVEL").
         help("compression level, requires --compress"). 
         handler([&](const string_view & value) {
-            try {
-              size_t endPos;
-              compressionLevel = stoi(string(value), &endPos);
-              if (endPos == value.size())
-                  return;
-            } catch(std::exception &) {
-              //ignore - see below
-            }
-            throw Parser::ValidationError("compression level must be a number");
+            compressionLevel = parseIntegral<int>(value);
     }));
     parser.addValidator(
         oneOrNoneOf(

@@ -35,6 +35,7 @@ target_sources(argum
         inc/argum/parser.h
         inc/argum/validators.h
         inc/argum/help-formatter.h
+        inc/argum/type-parsers.h
 
 )
 
