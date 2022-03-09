@@ -53,11 +53,13 @@ It demonstrates many of the most important features of the library. More example
 using namespace Argum;
 using namespace std;
 
+enum Encoding { defaultEncoding, Base64, Hex };
+
 int main(int argc, char * argv[]) {
 
     vector<string> sources;
     string destination;
-    optional<string> encoding = "default";
+    optional<Encoding> encoding = defaultEncoding;
     optional<string> compression;
     int compressionLevel = 9;
 
@@ -85,11 +87,16 @@ int main(int argc, char * argv[]) {
             cout << parser.formatHelp(progname);
             exit(EXIT_SUCCESS);
     }));
+    ChoiceParser encodingChoices;
+    encodingChoices.addChoice("default");
+    encodingChoices.addChoice("base64");
+    encodingChoices.addChoice("hex");
     parser.add(
         Option("--format", "-f", "--encoding", "-e").
         help("output file format"). 
+        argName(encodingChoices.description()).
         handler([&](string_view value) {
-            encoding = value;
+            encoding = Encoding(encodingChoices.parse(value));
     }));
     parser.add(
         Option("--compress", "-c").

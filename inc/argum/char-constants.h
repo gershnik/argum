@@ -30,8 +30,13 @@ namespace Argum {
         static constexpr auto space                         = prefix ## ' '; \
         static constexpr auto squareBracketOpen             = prefix ## '['; \
         static constexpr auto squareBracketClose            = prefix ## ']'; \
+        static constexpr auto pipe                          = prefix ## '|'; \
         static constexpr auto endl                          = prefix ## '\n'; \
         static constexpr auto ellipsis                      = prefix ## "..."; \
+        static constexpr auto mustEscapeInRegex             = prefix ## R"([.^$|()\[\]{}*+?\\])"; \
+        static constexpr auto regexEscapeReplacement        = prefix ## R"(\\&)"; \
+        static constexpr auto falseNames                    = {prefix ## "0", prefix ## "false", prefix ## "off", prefix ## "no"}; \
+        static constexpr auto trueNames                     = {prefix ## "1", prefix ## "true", prefix ## "on", prefix ## "yes"}; \
         \
         static auto isSpace(type c) -> bool; \
         static auto toLong(const type * str, type ** str_end, int base) -> long; \
