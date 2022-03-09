@@ -15,6 +15,7 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED
     template<class T, StringLike S> 
     requires(std::is_integral_v<T>)
     auto parseIntegral(S && str, int base = 0) -> T {
