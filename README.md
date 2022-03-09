@@ -47,7 +47,7 @@ A simple example of file processing utility of some kind is given below.
 It demonstrates many of the most important features of the library. More examples can be found of the wiki.
 
 ```cpp
-#include <argum/parser.h>
+#include "argum.h"
 #include <iostream>
 
 using namespace Argum;
@@ -104,15 +104,7 @@ int main(int argc, char * argv[]) {
         argName("LEVEL").
         help("compression level, requires --compress"). 
         handler([&](const string_view & value) {
-            try {
-              size_t endPos;
-              compressionLevel = stoi(string(value), &endPos);
-              if (endPos == value.size())
-                  return;
-            } catch(std::exception &) {
-              //ignore - see below
-            }
-            throw Parser::ValidationError("compression level must be a number");
+            compressionLevel = parseIntegral<int>(value);
     }));
     parser.addValidator(
         oneOrNoneOf(

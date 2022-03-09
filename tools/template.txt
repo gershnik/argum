@@ -11,6 +11,6 @@
 ##SYS_INCLUDES##
 
 #include "parser.h"
-
+#include "type-parsers.h"
 
 #endif 

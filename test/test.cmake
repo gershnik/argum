@@ -68,6 +68,7 @@ target_sources(test
         test/test-parser-help.cpp
         test/test-parser-adaptive.cpp
         test/test-parser-validation.cpp
+        test/test-type-parsers.cpp
 
         test/response.txt
         test/response1.txt
@@ -121,7 +122,7 @@ if(${Python3_Interpreter_FOUND})
     add_custom_target(amalgamate
         COMMENT "Amalgamating"
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../tools
-        COMMAND ${Python3_EXECUTABLE} amalgamate.py template.txt ../out/argum-all.h -d ../inc/argum 
+        COMMAND ${Python3_EXECUTABLE} amalgamate.py template.txt ../out/argum.h -d ../inc/argum 
         COMMAND ${Python3_EXECUTABLE} amalgamate.py module-template.txt ../out/argum-module.ixx -d ../inc/argum 
         DEPENDS 
             ${UNICODE_DATA} 

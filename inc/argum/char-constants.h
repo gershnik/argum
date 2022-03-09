@@ -34,7 +34,10 @@ namespace Argum {
         static constexpr auto ellipsis                      = prefix ## "..."; \
         \
         static auto isSpace(type c) -> bool; \
+        static auto toLong(const type * str, type ** str_end, int base) -> long; \
         static auto toLongLong(const type * str, type ** str_end, int base) -> long long; \
+        static auto toULong(const type * str, type ** str_end, int base) -> unsigned long; \
+        static auto toULongLong(const type * str, type ** str_end, int base) -> unsigned long long; \
         static auto toLongDouble(const type * str, type ** str_end) -> long double; \
     };
 
@@ -45,12 +48,33 @@ namespace Argum {
     
     inline auto CharConstants<char>::isSpace(char c) -> bool { return isspace(c); }
     inline auto CharConstants<wchar_t>::isSpace(wchar_t c) -> bool { return iswspace(c); }
+
+    inline auto CharConstants<char>::toLong(const char * str, char ** str_end, int base) -> long {
+        return strtol(str, str_end, base);
+    }
+    inline auto CharConstants<wchar_t>::toLong(const wchar_t * str, wchar_t ** str_end, int base) -> long {
+        return wcstol(str, str_end, base);
+    }
     
     inline auto CharConstants<char>::toLongLong(const char * str, char ** str_end, int base) -> long long {
         return strtoll(str, str_end, base);
     }
     inline auto CharConstants<wchar_t>::toLongLong(const wchar_t * str, wchar_t ** str_end, int base) -> long long {
         return wcstoll(str, str_end, base);
+    }
+
+    inline auto CharConstants<char>::toULong(const char * str, char ** str_end, int base) -> unsigned long {
+        return strtoul(str, str_end, base);
+    }
+    inline auto CharConstants<wchar_t>::toULong(const wchar_t * str, wchar_t ** str_end, int base) -> unsigned long {
+        return wcstoul(str, str_end, base);
+    }
+    
+    inline auto CharConstants<char>::toULongLong(const char * str, char ** str_end, int base) -> unsigned long long {
+        return strtoull(str, str_end, base);
+    }
+    inline auto CharConstants<wchar_t>::toULongLong(const wchar_t * str, wchar_t ** str_end, int base) -> unsigned long long {
+        return wcstoull(str, str_end, base);
     }
     
     inline auto CharConstants<char>::toLongDouble(const char * str, char ** str_end) -> long double {
