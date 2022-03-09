@@ -51,11 +51,7 @@ TEST_CASE( "extremely small number of columns" , "[parser]") {
 [-h] [-v] [-x]
 [--y Y] foo bar)__");
 
-    CHECK(formatter.formatHelp() == R"__(Usage: PROG
-[-h] [-v] [-x]
-[--y Y] foo bar
-
-positional
+    CHECK(formatter.formatHelp() == R"__(positional
 arguments:
  foo
    FOO HELP
