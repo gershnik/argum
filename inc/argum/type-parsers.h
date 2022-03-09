@@ -28,7 +28,7 @@ namespace Argum {
 
         if (value.empty())
             throw ValidationError(format(Messages::notANumber(), value));
-        
+
         T ret;
         Char * endPtr;
 
@@ -36,16 +36,16 @@ namespace Argum {
         if constexpr (std::is_signed_v<T>) {
 
             if constexpr (sizeof(T) <= sizeof(long)) {
-                long res = CharConstants::toLong(value.data(), &endPtr, base);
+                auto res = CharConstants::toLong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
-                    if (res < (long)std::numeric_limits<T>::min() || res > (long)std::numeric_limits<T>::max())
+                    if (res < (decltype(res))std::numeric_limits<T>::min() || res > (decltype(res))std::numeric_limits<T>::max())
                         throw ValidationError(format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
             } else  {
-                long long res = CharConstants::toLongLong(value.data(), &endPtr, base);
+                auto res = CharConstants::toLongLong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
-                    if (res < (long long)std::numeric_limits<T>::min() || res > (long long)std::numeric_limits<T>::max())
+                    if (res < (decltype(res))std::numeric_limits<T>::min() || res > (decltype(res))std::numeric_limits<T>::max())
                         throw ValidationError(format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
@@ -54,16 +54,16 @@ namespace Argum {
         } else {
 
             if constexpr (sizeof(T) <= sizeof(unsigned long)) {
-                unsigned long res = CharConstants::toULong(value.data(), &endPtr, base);
+                auto res = CharConstants::toULong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
-                    if (res > (long)std::numeric_limits<T>::max())
+                    if (res > (decltype(res))std::numeric_limits<T>::max())
                         throw ValidationError(format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
             } else  {
-                unsigned long long res = CharConstants::toULongLong(value.data(), &endPtr, base);
+                auto res = CharConstants::toULongLong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
-                    if (res > (long long)std::numeric_limits<T>::max())
+                    if (res > (decltype(res))std::numeric_limits<T>::max())
                         throw ValidationError(format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
