@@ -21,6 +21,12 @@ using Catch::Matchers::Message;
                          Message(format("invalid arguments: value \"{1}\" {2}", (expr), (err))));
 #define EXPECT_INT_SUCCESS(type, expr, res) CHECK(parseIntegral<type>(expr) == res);
 
+#define EXPECT_FLOAT_FAILURE(type, expr, err) \
+    CHECK_THROWS_MATCHES(parseFloatingPoint<type>(expr), \
+                         BasicParser<decay_t<decltype(expr[0])>>::ValidationError, \
+                         Message(format("invalid arguments: value \"{1}\" {2}", (expr), (err))));
+#define EXPECT_FLOAT_SUCCESS(type, expr, res) CHECK(parseFloatingPoint<type>(expr) == res);
+
 #define EXPECT_CHOICE_FAILURE(expr, choices) \
     CHECK_THROWS_MATCHES(parser.parse(expr), \
                          BasicParser<decay_t<decltype(expr[0])>>::ValidationError, \
@@ -65,6 +71,42 @@ TEST_CASE( "Integral Int", "[type-parsers") {
     EXPECT_INT_SUCCESS(int, "5", 5);
     EXPECT_INT_SUCCESS(int, L"-1", -1);
     EXPECT_INT_SUCCESS(int, "65", 65);
+}
+
+TEST_CASE( "Floating Float", "[type-parsers") {
+
+    EXPECT_FLOAT_FAILURE(float, "", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(float, "a", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(float, "1a", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(float, "12345678901234E3456", OUT_OF_RANGE);
+    
+    EXPECT_FLOAT_SUCCESS(float, "5", 5.f);
+    EXPECT_FLOAT_SUCCESS(float, L"-1", -1.f);
+    EXPECT_FLOAT_SUCCESS(float, "65.3", 65.3f);
+}
+
+TEST_CASE( "Floating Double", "[type-parsers") {
+
+    EXPECT_FLOAT_FAILURE(double, "", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(double, "a", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(double, "1a", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(double, "12345678901234E3456", OUT_OF_RANGE);
+    
+    EXPECT_FLOAT_SUCCESS(double, "5", 5.);
+    EXPECT_FLOAT_SUCCESS(double, L"-1", -1.);
+    EXPECT_FLOAT_SUCCESS(double, "65.3", 65.3);
+}
+
+TEST_CASE( "Floating Long Double", "[type-parsers") {
+
+    EXPECT_FLOAT_FAILURE(long double, "", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(long double, "a", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(long double, "1a", NOT_A_NUMBER);
+    EXPECT_FLOAT_FAILURE(long double, "12345678901279934E345678", OUT_OF_RANGE);
+    
+    EXPECT_FLOAT_SUCCESS(long double, "5", 5.l);
+    EXPECT_FLOAT_SUCCESS(long double, L"-1", -1.l);
+    EXPECT_FLOAT_SUCCESS(long double, "65.3", 65.3l);
 }
 
 TEST_CASE( "Simple Choice", "[type-parsers") {

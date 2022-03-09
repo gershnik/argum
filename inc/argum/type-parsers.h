@@ -82,6 +82,43 @@ namespace Argum {
     }
 
     ARGUM_MOD_EXPORTED
+    template<class T, StringLike S> 
+    requires(std::is_floating_point_v<T>)
+    auto parseFloatingPoint(S && str) -> T {
+
+        using Char = CharTypeOf<S>;
+        using ValidationError = typename BasicParser<Char>::ValidationError;
+        using CharConstants = CharConstants<Char>;
+        using Messages = Messages<Char>;
+
+        std::basic_string<Char> value(std::forward<S>(str));
+
+        if (value.empty())
+            throw ValidationError(format(Messages::notANumber(), value));
+
+        T ret;
+        Char * endPtr;
+
+        errno = 0;
+        if constexpr (std::is_same_v<T, float>) {
+            ret = CharConstants::toFloat(value.data(), &endPtr);
+        } else if constexpr (std::is_same_v<T, double>) {
+            ret = CharConstants::toDouble(value.data(), &endPtr);
+        } else if constexpr (std::is_same_v<T, long double>) {
+            ret = CharConstants::toLongDouble(value.data(), &endPtr);
+        }
+
+        if (errno == ERANGE)
+            throw ValidationError(format(Messages::outOfRange(), value));
+        for ( ; endPtr != value.data() + value.size(); ++endPtr) {
+            if (!CharConstants::isSpace(*endPtr))
+                throw ValidationError(format(Messages::notANumber(), value));
+        }
+        
+        return ret;
+    }
+
+    ARGUM_MOD_EXPORTED
     template<Character Char>
     class BasicChoiceParser {
     public:

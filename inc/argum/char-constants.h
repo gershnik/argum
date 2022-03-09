@@ -43,6 +43,8 @@ namespace Argum {
         static auto toLongLong(const type * str, type ** str_end, int base) -> long long; \
         static auto toULong(const type * str, type ** str_end, int base) -> unsigned long; \
         static auto toULongLong(const type * str, type ** str_end, int base) -> unsigned long long; \
+        static auto toFloat(const type * str, type ** str_end) -> float; \
+        static auto toDouble(const type * str, type ** str_end) -> double; \
         static auto toLongDouble(const type * str, type ** str_end) -> long double; \
     };
 
@@ -80,6 +82,20 @@ namespace Argum {
     }
     inline auto CharConstants<wchar_t>::toULongLong(const wchar_t * str, wchar_t ** str_end, int base) -> unsigned long long {
         return wcstoull(str, str_end, base);
+    }
+
+    inline auto CharConstants<char>::toFloat(const char * str, char ** str_end) -> float {
+        return strtof(str, str_end);
+    }
+    inline auto CharConstants<wchar_t>::toFloat(const wchar_t * str, wchar_t ** str_end) -> float {
+        return wcstof(str, str_end);
+    }
+
+    inline auto CharConstants<char>::toDouble(const char * str, char ** str_end) -> double {
+        return strtod(str, str_end);
+    }
+    inline auto CharConstants<wchar_t>::toDouble(const wchar_t * str, wchar_t ** str_end) -> double {
+        return wcstod(str, str_end);
     }
     
     inline auto CharConstants<char>::toLongDouble(const char * str, char ** str_end) -> long double {
