@@ -44,7 +44,7 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 ## Example
 
 A simple example of file processing utility of some kind is given below. 
-It demonstrates many of the most important features of the library. More examples can be found of the wiki.
+It demonstrates many of the most important features of the library. More examples can be found on the [Wiki](https://github.com/gershnik/argum/wiki).
 
 ```cpp
 #include "argum.h"
