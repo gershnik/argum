@@ -13,7 +13,7 @@ using namespace std::literals;
 
 struct TrueValidator {
 
-    auto operator()(const ParsingValidationData<char> &) const -> bool {
+    auto operator()(const ValidationData &) const -> bool {
         return true;
     }
 
@@ -30,7 +30,7 @@ static constexpr TrueValidator True;
 
 struct FalseValidator {
 
-    auto operator()(const ParsingValidationData<char> &) const -> bool {
+    auto operator()(const ValidationData &) const -> bool {
         return false;
     }
 
@@ -51,7 +51,7 @@ auto operator!(FalseValidator) { return True; }
 
 TEST_CASE( "Validators: optionPresent and optionAbsent" , "[validators]") {
 
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     auto present = optionPresent("hah");
     CHECK(describe(present) == "option hah must be present");
@@ -93,7 +93,7 @@ TEST_CASE( "Validators: optionPresent and optionAbsent" , "[validators]") {
 
 TEST_CASE( "Validators: optionOccursAtLeast and optionOccursLessThan" , "[validators]") {
 
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     auto atLeast = optionOccursAtLeast("hah", 2);
     CHECK(describe(atLeast) == "option hah must occur at least 2 times");
@@ -119,7 +119,7 @@ TEST_CASE( "Validators: optionOccursAtLeast and optionOccursLessThan" , "[valida
 
 TEST_CASE( "Validators: optionOccursAtMost and optionOccursMoreThan" , "[validators]") {
 
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     auto atMost = optionOccursAtMost("hah", 2);
     CHECK(describe(atMost) == "option hah must occur at most 2 times");
@@ -149,7 +149,7 @@ TEST_CASE( "Validators: optionOccursAtMost and optionOccursMoreThan" , "[validat
 
 TEST_CASE( "Validators: optionOccursExactly and optionDoesntOccurExactly" , "[validators]") {
 
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     auto exactly = optionOccursExactly("hah", 2);
     CHECK(describe(exactly) == "option hah must occur 2 times");
@@ -174,10 +174,10 @@ TEST_CASE( "Validators: optionOccursExactly and optionDoesntOccurExactly" , "[va
 }
 
 TEST_CASE( "Validators: oppositeOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
-    auto t = [](const ParsingValidationData<char> & ) { return true; };
-    auto f = [](const ParsingValidationData<char> & ) { return false; };
+    auto t = [](const ValidationData & ) { return true; };
+    auto f = [](const ValidationData & ) { return false; };
 
     CHECK(!(!t)(data));
     CHECK((!f)(data));
@@ -186,7 +186,7 @@ TEST_CASE( "Validators: oppositeOf" , "[validators]") {
 }
 
 TEST_CASE( "Validators: allOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     CHECK(!(False && False && False)(data));
     CHECK(!(False && True && False)(data));
@@ -205,7 +205,7 @@ TEST_CASE( "Validators: allOf" , "[validators]") {
 }
 
 TEST_CASE( "Validators: anyOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     CHECK(!(False || False || False)(data));
     CHECK((False || True || False)(data));
@@ -224,7 +224,7 @@ TEST_CASE( "Validators: anyOf" , "[validators]") {
 }
 
 TEST_CASE( "Validators: noneOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     CHECK(noneOf(False, False, False)(data));
     CHECK(!noneOf(False, False, True)(data));
@@ -237,7 +237,7 @@ TEST_CASE( "Validators: noneOf" , "[validators]") {
 }
 
 TEST_CASE( "Validators: onlyOneOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     CHECK(!onlyOneOf(False, False, False, False)(data));
     CHECK(onlyOneOf(False, False, False, True)(data));
@@ -258,7 +258,7 @@ TEST_CASE( "Validators: onlyOneOf" , "[validators]") {
 }
 
 TEST_CASE( "Validators: oneOrNoneOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     CHECK(oneOrNoneOf(False, False)(data));
     CHECK(oneOrNoneOf(False, True)(data));
@@ -283,7 +283,7 @@ TEST_CASE( "Validators: oneOrNoneOf" , "[validators]") {
 }
 
 TEST_CASE( "Validators: allOrNoneOf" , "[validators]") {
-    ParsingValidationData<char> data;
+    ValidationData data;
 
     CHECK(allOrNoneOf(False, False, False, False)(data));
     CHECK(!allOrNoneOf(False, False, False, True)(data));

@@ -312,9 +312,9 @@ namespace Argum {
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
         using Tokenizer = BasicTokenizer<Char>;
-        using ValidationData = ParsingValidationData<Char>;
+        using ValidationData = BasicValidationData<Char>;
 
-        using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
+        using ValidatorFunction = std::function<bool (const ValidationData &)>;
 
     public:
         struct UnrecognizedOption : public ParsingException {
@@ -723,7 +723,7 @@ namespace Argum {
             int m_positionalIndex = -1;
             std::vector<unsigned> m_positionalSizes;
             
-            ParsingValidationData<CharType> m_validationData;
+            ValidationData m_validationData;
         };
 
     private:
