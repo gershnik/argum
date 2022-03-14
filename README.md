@@ -2,6 +2,11 @@
 
 Fully-featured, powerful and simple to use C++ command line argument parser.
 
+[![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
+[![Standard](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
+[![License](https://img.shields.io/badge/license-BSD-brightgreen.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Tests](https://github.com/gershnik/argum/actions/workflows/test.yml/badge.svg)](https://github.com/gershnik/argum/actions/workflows/test.yml)
+
 <!-- TOC depthfrom:2 -->
 
 - [Features and goals](#features-and-goals)
@@ -210,21 +215,5 @@ Having multiple options arguments is a very bad idea. Consider this. Normally wi
 ### Why isn't it using `std::ranges`?
 
 This is simply due to the fact that, currently, not all compilers have standard libraries have ranges yet. Once ranges become widely available this library will integrate them.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
