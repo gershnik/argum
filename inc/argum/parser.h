@@ -311,10 +311,11 @@ namespace Argum {
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
-        using Tokenizer = BasicTokenizer<Char>;
-        using ValidationData = ParsingValidationData<Char>;
+        using Tokenizer = BasicTokenizer<CharType>;
+        using ValidationData = BasicValidationData<CharType>;
+        using HelpFormatter = BasicHelpFormatter<CharType>;
 
-        using ValidatorFunction = std::function<bool (const ParsingValidationData<CharType> &)>;
+        using ValidatorFunction = std::function<bool (const ValidationData &)>;
 
     public:
         struct UnrecognizedOption : public ParsingException {
@@ -386,6 +387,11 @@ namespace Argum {
         }
         
         auto add(Positional positional) {
+            //for expected number of positionals this is faster than maintaining a map
+            for(auto & existing: this->m_positionals) {
+                if (existing.m_name == positional.m_name)
+                    ARGUM_INVALID_ARGUMENT("duplicate positional name");
+            }
             this->m_positionals.emplace_back(std::move(positional));
             ++m_updateCount;
         }
@@ -723,7 +729,7 @@ namespace Argum {
             int m_positionalIndex = -1;
             std::vector<unsigned> m_positionalSizes;
             
-            ParsingValidationData<CharType> m_validationData;
+            ValidationData m_validationData;
         };
 
     private:

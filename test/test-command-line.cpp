@@ -68,3 +68,9 @@ TEST_CASE( "Wide response file" , "[command-line]") {
     });
     CHECK(expanded == vector<wstring>{L"first", L"foo", L"bar", L"hello", L"world", L"baz", L"last"});
 }
+
+TEST_CASE( "Trim in place" , "[command-line]") {
+
+    std::string str = "help help";
+    CHECK(trimInPlace(str) == "help help");
+}

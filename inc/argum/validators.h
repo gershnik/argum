@@ -21,7 +21,7 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<class Char>
-    class ParsingValidationData {
+    class BasicValidationData {
     public:
         auto optionCount(std::basic_string_view<Char> name) const -> unsigned {
             auto it = this->m_optionCounts.find(name);
@@ -46,8 +46,10 @@ namespace Argum {
         FlatMap<std::basic_string<Char>, unsigned> m_positionalCounts;
     };
 
+    ARGUM_DECLARE_FRIENDLY_NAMES(ValidationData)
+
     template<class T, class Char>
-    concept ParserValidator = std::is_invocable_r_v<bool, T, const ParsingValidationData<Char>>;
+    concept ParserValidator = std::is_invocable_r_v<bool, T, const BasicValidationData<Char>>;
     
     template<class T, class Char>
     concept DescribableParserValidator = ParserValidator<T, Char> && 
@@ -80,7 +82,7 @@ namespace Argum {
         
         template<class Char>
         requires(ParserValidator<Impl, Char>)
-        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+        auto operator()(const BasicValidationData<Char> & data) const -> bool {
             return !this->m_impl(data);
         }
         
@@ -130,7 +132,7 @@ namespace Argum {
 
         template<class Char>
         requires(CompatibleParserValidators<Char, Args...>)
-        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+        auto operator()(const BasicValidationData<Char> & data) const -> bool {
             if constexpr (Comb == ValidatorCombination::And) {
                 return std::apply([&data](const Args & ...args) -> bool { return (args(data) && ...); }, this->m_items);
             } else if constexpr (Comb == ValidatorCombination::Or) {
@@ -168,7 +170,7 @@ namespace Argum {
 
         template<size_t N, class Char>
         requires(CompatibleParserValidators<Char, Args...>)
-        auto evalOneOrNone(const ParsingValidationData<Char> & data, unsigned & counter) const {
+        auto evalOneOrNone(const BasicValidationData<Char> & data, unsigned & counter) const {
             
             constexpr auto idx = sizeof...(Args) - N;
 
@@ -186,7 +188,7 @@ namespace Argum {
 
         template<size_t N, class Char>
         requires(CompatibleParserValidators<Char, Args...>)
-        auto evalAllOrNone(const ParsingValidationData<Char> & data, unsigned & counter) const {
+        auto evalAllOrNone(const BasicValidationData<Char> & data, unsigned & counter) const {
 
             constexpr auto idx = sizeof...(Args) - N;
             
@@ -365,7 +367,7 @@ namespace Argum {
     public:
         ItemOccurs(std::basic_string_view<Char> name, unsigned count) : m_name(name), m_count(count) {}
 
-        auto operator()(const ParsingValidationData<Char> & data) const -> bool {
+        auto operator()(const BasicValidationData<Char> & data) const -> bool {
             if constexpr (IsOption)
                 return Comp()(data.optionCount(this->m_name), this->m_count);
             else

@@ -58,6 +58,17 @@ namespace Argum {
         }
 
         //throws ResponseFileReader::Exception on I/O failures
+        auto expand(int argc, CharType ** argv) -> std::vector<StringType> {
+            return expand(makeArgSpan(argc, argv));
+        }
+
+        //throws ResponseFileReader::Exception on I/O failures
+        template<class Splitter>
+        auto expand(int argc, CharType ** argv, Splitter && splitter) -> std::vector<StringType> {
+            return expand(makeArgSpan(argc, argv), std::forward<Splitter>(splitter));
+        }
+
+        //throws ResponseFileReader::Exception on I/O failures
         template<ArgRange<CharType> Args>
         auto expand(const Args & args) -> std::vector<StringType> {
             return expand(args, [](StringType && str, auto dest) {
