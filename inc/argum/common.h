@@ -121,6 +121,22 @@ namespace Argum {
         return ret;
     }
 
+    template<class It1, class It2, class Joiner, class Projection>
+    auto join(It1 first, It2 last, Joiner joiner, Projection proj) -> decltype(proj(*first) + joiner) {
+        
+        decltype(proj(*first) + joiner) ret;
+
+        if (first == last)
+            return ret;
+        
+        ret += proj(*first);
+        for(++first; first != last; ++first) {
+            ret += joiner;
+            ret += proj(*first);
+        };
+        return ret;
+    }
+
     template<class Char>
     auto matchPrefix(std::basic_string_view<Char> value, std::basic_string_view<Char> prefix) -> bool {
 

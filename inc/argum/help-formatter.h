@@ -18,13 +18,19 @@
 
 namespace Argum {
 
+    template<class Char> class BasicOption;
+    template<class Char> class BasicPositional;
+    template<class Char> class BasicParser;
+
     ARGUM_MOD_EXPORTED
-    template<class Parser>
-    class HelpFormatter {
+    template<class Char>
+    class BasicHelpFormatter {
     public:
-        using CharType = typename Parser::CharType;
+        using CharType = Char;
         using StringViewType = std::basic_string_view<CharType>;
         using StringType = std::basic_string<CharType>;
+        using Option = BasicOption<CharType>;
+        using Positional = BasicPositional<CharType>;
 
         struct Layout {
             unsigned width = 80;
@@ -38,8 +44,16 @@ namespace Argum {
         using Messages = Argum::Messages<CharType>;
 
     public:
-        HelpFormatter(const Parser & parser, StringViewType progName, Layout layout = defaultLayout):
-            m_parser(parser),
+        BasicHelpFormatter(const BasicParser<Char> & parser, StringViewType progName, Layout layout = defaultLayout):
+            BasicHelpFormatter(progName, parser.options(), parser.positionals(), layout) {
+        }
+
+        BasicHelpFormatter(StringViewType progName, 
+                           const std::vector<Option> & options, 
+                           const std::vector<Positional> & positionals,
+                           Layout layout = defaultLayout):
+            m_options(options),
+            m_positionals(positionals),
             m_progName(progName),
             m_layout(layout) {
                 
@@ -50,7 +64,12 @@ namespace Argum {
         }
 
         auto formatUsage() const -> StringType {
-            return wordWrap(StringType(Messages::usageStart()).append(this->formatSyntax()), m_layout.width);
+            constexpr auto space = CharConstants::space;
+            return wordWrap(StringType(Messages::usageStart()).
+                            append(this->m_progName).
+                            append({space}).
+                            append(this->formatSyntax()), 
+                   m_layout.width);
         }
 
         auto formatHelp() const -> StringType {
@@ -63,7 +82,7 @@ namespace Argum {
             if (helpContent.maxNameLen > m_layout.helpNameMaxWidth)
                 helpContent.maxNameLen = m_layout.helpNameMaxWidth;
 
-            if (!this->m_parser.positionals().empty()) {
+            if (!this->m_positionals.empty()) {
                 ret.append(wordWrap(Messages::positionalHeader(), m_layout.width));
                 for(auto & [name, desc]: helpContent.positionalItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
@@ -71,7 +90,7 @@ namespace Argum {
                 ret.append(2, endl);
             }
 
-            if (!this->m_parser.options().empty()) {
+            if (!this->m_options.empty()) {
                 ret.append(wordWrap(Messages::optionsHeader(), m_layout.width));
                 for(auto & [name, desc]: helpContent.optionItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
@@ -85,15 +104,23 @@ namespace Argum {
 
             constexpr auto space = CharConstants::space;
 
-            StringType ret = this->m_progName;
+            auto getSyntax = [](auto & obj) {
+                return obj.formatSyntax();
+            };
 
-            for(auto & opt: this->m_parser.options())
-                ret.append({space}).append(opt.formatSyntax());
+            StringType options = join(this->m_options.begin(), this->m_options.end(), space, getSyntax);
+            StringType positionals = join(this->m_positionals.begin(), this->m_positionals.end(), space, getSyntax);
 
-            for (auto & pos: this->m_parser.positionals())
-                ret.append({space}).append(pos.formatSyntax());
+            if (!options.empty()) {
+                if (!positionals.empty()) {
+                    options += space;
+                    options += positionals;
+                    return options;
+                }
+                return options;
+            } 
             
-            return ret;
+            return positionals;
         }
         
 
@@ -106,13 +133,13 @@ namespace Argum {
             
             HelpContent ret;
 
-            std::for_each(this->m_parser.positionals().begin(), this->m_parser.positionals().end(), [&](auto & pos){
+            std::for_each(this->m_positionals.begin(), this->m_positionals.end(), [&](auto & pos){
                 auto name = pos.formatHelpName();
                 if (name.length() > ret.maxNameLen)
                     ret.maxNameLen = unsigned(name.length());
                 ret.positionalItems.emplace_back(std::move(name), pos.formatHelpDescription());
             });
-            std::for_each(this->m_parser.options().begin(), this->m_parser.options().end(), [&](auto & opt){
+            std::for_each(this->m_options.begin(), this->m_options.end(), [&](auto & opt){
                 auto name = opt.formatHelpName();
                 if (name.length() > ret.maxNameLen)
                     ret.maxNameLen = unsigned(name.length());
@@ -145,10 +172,13 @@ namespace Argum {
             return ret;
         }
     private:
-        const Parser & m_parser;
+        const std::vector<Option> & m_options;
+        const std::vector<Positional> & m_positionals;
         StringType m_progName;
         Layout m_layout;
     };
+
+    ARGUM_DECLARE_FRIENDLY_NAMES(HelpFormatter)
 
 }
 

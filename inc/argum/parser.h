@@ -311,8 +311,9 @@ namespace Argum {
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
-        using Tokenizer = BasicTokenizer<Char>;
-        using ValidationData = BasicValidationData<Char>;
+        using Tokenizer = BasicTokenizer<CharType>;
+        using ValidationData = BasicValidationData<CharType>;
+        using HelpFormatter = BasicHelpFormatter<CharType>;
 
         using ValidatorFunction = std::function<bool (const ValidationData &)>;
 
