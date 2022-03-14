@@ -111,9 +111,9 @@ namespace Argum {
             return !CharConstants<Char>::isSpace(c);
         });
         str.erase(str.begin(), firstNotSpace);
-        auto lastNotSpace = std::find_if(str.begin(), str.end(), [](const auto c) {
-            return CharConstants<Char>::isSpace(c);
-        });
+        auto lastNotSpace = std::find_if(str.rbegin(), str.rend(), [](const auto c) {
+            return !CharConstants<Char>::isSpace(c);
+        }).base();
         str.erase(lastNotSpace, str.end());
         return str;
     }
