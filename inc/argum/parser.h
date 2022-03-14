@@ -386,6 +386,11 @@ namespace Argum {
         }
         
         auto add(Positional positional) {
+            //for expected number of positionals this is faster than maintaining a map
+            for(auto & existing: this->m_positionals) {
+                if (existing.m_name == positional.m_name)
+                    ARGUM_INVALID_ARGUMENT("duplicate positional name");
+            }
             this->m_positionals.emplace_back(std::move(positional));
             ++m_updateCount;
         }

@@ -14,7 +14,12 @@ TEST_CASE( "Positional boundary Cases" , "[parser]") {
     {
         Parser parser;
         parser.add(POSITIONAL("p")); 
-        parser.add(POSITIONAL("p"));  //duplicate names are fine though stupid
+        CHECK_THROWS_AS(parser.add(POSITIONAL("p")), invalid_argument);
+    }
+
+    {
+        Parser parser;
+        parser.add(POSITIONAL("p")); 
         CHECK_THROWS_AS(parser.add(POSITIONAL("p").occurs(Quantifier(6,0))), invalid_argument);
     }
 
