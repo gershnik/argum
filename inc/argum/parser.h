@@ -307,13 +307,14 @@ namespace Argum {
         using Option = BasicOption<Char>;
         using Positional = BasicPositional<Char>;
         using Settings = typename BasicTokenizer<Char>::Settings;
+        using HelpFormatter = BasicHelpFormatter<CharType>;
+        using SubCommandMark = typename HelpFormatter::SubCommandMark;
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
         using Tokenizer = BasicTokenizer<CharType>;
         using ValidationData = BasicValidationData<CharType>;
-        using HelpFormatter = BasicHelpFormatter<CharType>;
 
         using ValidatorFunction = std::function<bool (const ValidationData &)>;
 
@@ -396,6 +397,11 @@ namespace Argum {
             ++m_updateCount;
         }
 
+        auto addSubCommand(Positional positional) {
+            this->add(std::move(positional));
+            this->m_subCommandMark = {this->m_positionals.size() - 1,  this->m_options.size()};
+        }
+
         template<ParserValidator<CharType> Validator>
         auto addValidator(Validator v, StringViewType description) -> void {
             m_validators.emplace_back(std::move(v), description);
@@ -451,15 +457,19 @@ namespace Argum {
             return this->m_positionals;
         }
 
-        auto formatUsage(StringViewType progName) const -> StringType {
-            return HelpFormatter(*this, progName).formatUsage();
+        auto subCommandMark() const -> SubCommandMark {
+            return this->m_subCommandMark;
         }
 
-        auto formatHelp(StringViewType progName) const -> StringType {
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand = std::nullopt) const -> StringType {
+            return HelpFormatter(*this, progName).formatUsage(subCommand);
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand = std::nullopt) const -> StringType {
             HelpFormatter formatter(*this, progName);
-            StringType ret = formatter.formatUsage();
+            StringType ret = formatter.formatUsage(subCommand);
             ret.append(2, CharConstants::endl);
-            ret.append(formatter.formatHelp());
+            ret.append(formatter.formatHelp(subCommand));
             return ret;
         }
 
@@ -738,6 +748,7 @@ namespace Argum {
         Tokenizer m_tokenizer;
         std::vector<std::pair<ValidatorFunction, StringType>> m_validators;
         size_t m_updateCount = 0;
+        SubCommandMark m_subCommandMark;
     };
 
     ARGUM_DECLARE_FRIENDLY_NAMES(Parser)

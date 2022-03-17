@@ -39,22 +39,29 @@ namespace Argum {
             unsigned helpDescriptionGap = 2;
         };
         static constexpr Layout defaultLayout = {};
+
+        struct SubCommandMark {
+            size_t positionalIdx = size_t(-1);
+            size_t optionIdx = size_t(-1);
+        };
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
 
     public:
         BasicHelpFormatter(const BasicParser<Char> & parser, StringViewType progName, Layout layout = defaultLayout):
-            BasicHelpFormatter(progName, parser.options(), parser.positionals(), layout) {
+            BasicHelpFormatter(progName, parser.options(), parser.positionals(), parser.subCommandMark(), layout) {
         }
 
         BasicHelpFormatter(StringViewType progName, 
                            const std::vector<Option> & options, 
                            const std::vector<Positional> & positionals,
+                           SubCommandMark subCommandMark,
                            Layout layout = defaultLayout):
+            m_progName(progName),
             m_options(options),
             m_positionals(positionals),
-            m_progName(progName),
+            m_subCommandMark(subCommandMark),
             m_layout(layout) {
                 
             if (m_layout.helpNameMaxWidth == 0)
@@ -64,25 +71,36 @@ namespace Argum {
         }
 
         auto formatUsage() const -> StringType {
+            return this->formatUsage(std::nullopt);
+        }
+
+        auto formatUsage(const std::optional<StringType> & subCommand) const -> StringType {
             constexpr auto space = CharConstants::space;
             return wordWrap(StringType(Messages::usageStart()).
                             append(this->m_progName).
                             append({space}).
-                            append(this->formatSyntax()), 
+                            append(this->formatSyntax(subCommand)), 
                    m_layout.width);
         }
 
         auto formatHelp() const -> StringType {
+            return this->formatHelp(std::nullopt);
+        }
+
+        auto formatHelp(const std::optional<StringType> & subCommand) const -> StringType {
+
+            if (subCommand && this->m_subCommandMark.positionalIdx == size_t(-1))
+                ARGUM_INVALID_ARGUMENT("subcommand must be defined to use this function with non null subcommand");
 
             constexpr auto endl = CharConstants::endl;
 
             StringType ret;
 
-            auto helpContent = this->calculateHelpContent();
+            auto helpContent = this->calculateHelpContent(bool(subCommand));
             if (helpContent.maxNameLen > m_layout.helpNameMaxWidth)
                 helpContent.maxNameLen = m_layout.helpNameMaxWidth;
 
-            if (!this->m_positionals.empty()) {
+            if (!helpContent.positionalItems.empty()) {
                 ret.append(wordWrap(Messages::positionalHeader(), m_layout.width));
                 for(auto & [name, desc]: helpContent.positionalItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
@@ -90,7 +108,7 @@ namespace Argum {
                 ret.append(2, endl);
             }
 
-            if (!this->m_options.empty()) {
+            if (!helpContent.optionItems.empty()) {
                 ret.append(wordWrap(Messages::optionsHeader(), m_layout.width));
                 for(auto & [name, desc]: helpContent.optionItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
@@ -102,25 +120,33 @@ namespace Argum {
 
         auto formatSyntax() const -> StringType {
 
+            return this->formatSyntax(std::nullopt);
+        }
+
+        auto formatSyntax(const std::optional<StringType> & subCommand) const -> StringType {
+
+            if (subCommand && this->m_subCommandMark.positionalIdx == size_t(-1))
+                ARGUM_INVALID_ARGUMENT("subcommand must be added to use this function with non null subcommand");
+
             constexpr auto space = CharConstants::space;
 
             auto getSyntax = [](auto & obj) {
                 return obj.formatSyntax();
             };
 
-            StringType options = join(this->m_options.begin(), this->m_options.end(), space, getSyntax);
-            StringType positionals = join(this->m_positionals.begin(), this->m_positionals.end(), space, getSyntax);
+            StringType ret = this->appendSyntax(
+                    join(this->optionsBegin(false), this->optionsEnd(false), space, getSyntax),
+                    join(this->positionalsBegin(false), this->positionalsEnd(false), space, getSyntax)
+            );
+            if (subCommand) {
+                ret = this->appendSyntax(std::move(ret), *subCommand); 
+                ret = this->appendSyntax(std::move(ret), join(this->optionsBegin(true), this->optionsEnd(true), space, getSyntax));
+                ret = this->appendSyntax(std::move(ret), join(this->positionalsBegin(true), this->positionalsEnd(true), space, getSyntax));
+            } else if (this->m_subCommandMark.positionalIdx != size_t(-1)) {
+                ret = this->appendSyntax(std::move(ret), getSyntax(this->m_positionals[this->m_subCommandMark.positionalIdx]));
+            }
 
-            if (!options.empty()) {
-                if (!positionals.empty()) {
-                    options += space;
-                    options += positionals;
-                    return options;
-                }
-                return options;
-            } 
-            
-            return positionals;
+            return ret;
         }
         
 
@@ -129,17 +155,25 @@ namespace Argum {
             std::vector<std::pair<StringType, StringType>> optionItems;
             std::vector<std::pair<StringType, StringType>> positionalItems;
         };
-        auto calculateHelpContent() const -> HelpContent {
+        auto calculateHelpContent(bool forSubCommand) const -> HelpContent {
             
             HelpContent ret;
 
-            std::for_each(this->m_positionals.begin(), this->m_positionals.end(), [&](auto & pos){
+            size_t positionalsSize;
+            if (forSubCommand || this->m_subCommandMark.positionalIdx == size_t(-1))
+                positionalsSize = this->m_positionals.size();
+            else 
+                positionalsSize = this->m_subCommandMark.positionalIdx + 1;
+            for(size_t i = 0; i < positionalsSize; ++ i) {
+                if (forSubCommand && i == this->m_subCommandMark.positionalIdx)
+                    continue;
+                auto & pos = this->m_positionals[i];
                 auto name = pos.formatHelpName();
                 if (name.length() > ret.maxNameLen)
                     ret.maxNameLen = unsigned(name.length());
                 ret.positionalItems.emplace_back(std::move(name), pos.formatHelpDescription());
-            });
-            std::for_each(this->m_options.begin(), this->m_options.end(), [&](auto & opt){
+            }
+            std::for_each(this->m_options.begin(), this->optionsEnd(forSubCommand), [&](auto & opt){
                 auto name = opt.formatHelpName();
                 if (name.length() > ret.maxNameLen)
                     ret.maxNameLen = unsigned(name.length());
@@ -154,27 +188,69 @@ namespace Argum {
             constexpr auto space = CharConstants::space;
             constexpr auto endl = CharConstants::endl;
 
-            auto descColumnOffset = m_layout.helpLeadingGap + maxNameLen + m_layout.helpDescriptionGap;
+            auto descColumnOffset = this->m_layout.helpLeadingGap + maxNameLen + this->m_layout.helpDescriptionGap;
 
-            StringType ret = indent(wordWrap(StringType(m_layout.helpLeadingGap, space).append(name), m_layout.width), m_layout.helpLeadingGap);
+            StringType ret = indent(wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width), this->m_layout.helpLeadingGap);
             auto lastEndlPos = ret.rfind(endl);
             auto lastLineLen = ret.size() - (lastEndlPos + 1);
 
-            if (lastLineLen > maxNameLen + m_layout.helpLeadingGap) {
+            if (lastLineLen > maxNameLen + this->m_layout.helpLeadingGap) {
                 ret += endl;
                 ret.append(descColumnOffset, space);
             } else {
                 ret.append(descColumnOffset - lastLineLen, space);
             }
 
-            ret.append(indent(wordWrap(description, m_layout.width - descColumnOffset), descColumnOffset));
+            ret.append(indent(wordWrap(description, this->m_layout.width - descColumnOffset), descColumnOffset));
 
             return ret;
         }
+
+        auto optionsBegin(bool forSubCommand) const {
+            if (!forSubCommand)
+                return  this->m_options.begin();
+            if (this->m_subCommandMark.optionIdx != size_t(-1))
+                return this->m_options.begin() + this->m_subCommandMark.optionIdx;
+            return this->m_options.end();
+        }
+        auto optionsEnd(bool forSubCommand) const {
+            if (forSubCommand || this->m_subCommandMark.optionIdx == size_t(-1))
+                return this->m_options.end();
+            return this->m_options.begin() + this->m_subCommandMark.optionIdx;
+        }
+        auto positionalsBegin(bool forSubCommand) const {
+            if (!forSubCommand)
+                return this->m_positionals.begin();
+            if (this->m_subCommandMark.positionalIdx != size_t(-1))
+                return this->m_positionals.begin() + this->m_subCommandMark.positionalIdx + 1;
+            return this->m_positionals.end();
+        }
+        auto positionalsEnd(bool forSubCommand) const {
+            if (forSubCommand || this->m_subCommandMark.positionalIdx == size_t(-1))
+                return this->m_positionals.end();
+            return this->m_positionals.begin() + this->m_subCommandMark.positionalIdx;
+        }
+
+        static auto appendSyntax(StringType base, StringType addend) -> StringType {
+            
+            constexpr auto space = CharConstants::space;
+
+            if (!base.empty()) {
+                if (!addend.empty()) {
+                    base += space;
+                    base += std::move(addend);
+                    return base;
+                }
+                return base;
+            } 
+            
+            return addend;
+        }
     private:
+        StringType m_progName;
         const std::vector<Option> & m_options;
         const std::vector<Positional> & m_positionals;
-        StringType m_progName;
+        SubCommandMark m_subCommandMark;
         Layout m_layout;
     };
 
