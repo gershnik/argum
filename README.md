@@ -25,6 +25,7 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 
 [releases]: https://github.com/gershnik/argum/releases
 [syntax]: https://github.com/gershnik/argum/wiki/Syntax-Description
+[getsubopt]: https://www.gnu.org/software/libc/manual/html_node/Suboptions.html
 
 ## Features and goals
 
@@ -212,6 +213,8 @@ Note that exceptions are only used for _parsing_ errors. Logic errors such as pa
 ### Why options cannot have more than 1 argument? ArgParse allows that
 
 Having multiple options arguments is a very bad idea. Consider this. Normally with Posix/GNU approach when an option argument itself looks like an option you can always use some syntax to disambiguate. For example if you have option `--foo`, `-f` and argument `-x` you can say: `--foo=-x` and `-f-x` to unambiguously treat `-x` as an argument. With multiple arguments this becomes impossible. People using ArgParse occasionally hit this issue and are surprised. Argum follows standard Unix approach of having at most one argument per option.
+
+If you really, really need more than one argument to an option consider requiring to pass them as comma or semicolon separated list. This is also a de-facto standard Unix approach. See for example [getsubopt].
 
 ### Why isn't it using `std::ranges`?
 
