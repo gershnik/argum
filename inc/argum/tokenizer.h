@@ -157,7 +157,7 @@ namespace Argum {
             }
 
             template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
-            auto addOptionStopSequence(First && first, Rest && ...rest) & -> Settings & {
+            auto addOptionTerminator(First && first, Rest && ...rest) & -> Settings & {
                 std::initializer_list<StringType> values = {makeString(std::forward<First>(first)), makeString(std::forward<Rest>(rest))...};
                 for(auto & value: values) {
                     auto [it, inserted] = m_prefixes.add(std::move(value), m_lastPrefixId);
@@ -169,8 +169,8 @@ namespace Argum {
             }
 
             template<StringConvertibleOf<CharType> First, StringConvertibleOf<CharType>... Rest>
-            auto addOptionStopSequence(First && first, Rest && ...rest) && -> Settings && {
-                return std::move(static_cast<Settings *>(this)->addOptionStopSequence(std::forward<First>(first), std::forward<Rest>(rest)...));
+            auto addOptionTerminator(First && first, Rest && ...rest) && -> Settings && {
+                return std::move(static_cast<Settings *>(this)->addOptionTerminator(std::forward<First>(first), std::forward<Rest>(rest)...));
             }
 
             auto addValueDelimiter(CharType c) & -> Settings & {
@@ -198,7 +198,7 @@ namespace Argum {
                 Settings ret;
                 ret.addLongPrefix(CharConstants::doubleDash)
                    .addShortPrefix(CharConstants::dash)
-                   .addOptionStopSequence(CharConstants::doubleDash)
+                   .addOptionTerminator(CharConstants::doubleDash)
                    .addValueDelimiter(CharConstants::assignment);
                 return ret;
             }
@@ -206,7 +206,7 @@ namespace Argum {
             static auto unixLongOnly() -> Settings {
                 Settings ret;
                 ret.addLongPrefix(CharConstants::doubleDash, CharConstants::dash)
-                   .addOptionStopSequence(CharConstants::doubleDash)
+                   .addOptionTerminator(CharConstants::doubleDash)
                    .addValueDelimiter(CharConstants::assignment);
                 return ret;
             }
@@ -214,7 +214,7 @@ namespace Argum {
             static auto windowsShort() -> Settings {
                 Settings ret;
                 ret.addShortPrefix(CharConstants::slash, CharConstants::dash)
-                   .addOptionStopSequence(CharConstants::doubleDash)
+                   .addOptionTerminator(CharConstants::doubleDash)
                    .addValueDelimiter(CharConstants::colon);
                 return ret;
             }
@@ -222,7 +222,7 @@ namespace Argum {
             static auto windowsLong() -> Settings {
                 Settings ret;
                 ret.addLongPrefix(CharConstants::slash, CharConstants::dash, CharConstants::doubleDash)
-                   .addOptionStopSequence(CharConstants::doubleDash)
+                   .addOptionTerminator(CharConstants::doubleDash)
                    .addValueDelimiter(CharConstants::colon);
                 return ret;
             }

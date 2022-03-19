@@ -407,7 +407,7 @@ TEST_CASE( "Custom prefixes" , "[parser]") {
         .addShortPrefix('+')
         .addShortPrefix('/')
         .addValueDelimiter('|')
-        .addOptionStopSequence("^^")
+        .addOptionTerminator("^^")
     );
     parser.add(OPTION_NO_ARG("+f"));
     parser.add(OPTION_REQ_ARG("::bar"));
@@ -440,7 +440,7 @@ TEST_CASE( "Equivalent custom prefixes" , "[parser]") {
         .addShortPrefix('/', '&')
         .addValueDelimiter('|')
         .addValueDelimiter('*')
-        .addOptionStopSequence("^^", "%%");
+        .addOptionTerminator("^^", "%%");
     Parser parser(std::move(settings));
     parser.add(OPTION_NO_ARG("+f"));
     parser.add(OPTION_REQ_ARG("::bar"));
