@@ -23,15 +23,16 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 
 <!-- /TOC -->
 
-[1]: https://github.com/gershnik/argum/releases
+[releases]: https://github.com/gershnik/argum/releases
+[syntax]: https://github.com/gershnik/argum/wiki/Syntax-Description
 
 ## Features and goals
 
-* Supports the commonly used Unix and Windows command line conventions (Posix, GNU extensions to it, Python's Argparse, Microsoft syntax for its better designed utilities etc.). It should be possible to process complicated command lines like the ones of `git` or `clang` using this library.
+* Supports the commonly used Unix and Windows command line conventions (Posix, GNU extensions to it, Python's Argparse, Microsoft syntax for its better designed utilities etc.). It should be possible to process complicated command lines like the ones of `git` or `clang` using this library. See [Syntax Description][syntax] on wiki for details on accepted syntax and configurability.
 * Sequential processing. The arguments are handled in the order they are specified so you can handle things differently based on order if you want to. 
 * Adaptive processing. You can also modify parser definitions while processing - this way you can _adapt_ the argument handling on the fly rather than have to pre-configure everything at once. 
 * Simple to use. 
-  * This library does not attempt to shove all the arguments into a map like data structure and neither does it attempt to define increasingly convoluted ways to "bind" arguments to variables in your code and convert them to internal types. Instead you provide callback lambdas (or any other function objects of course) that put the data where you need it and convert how you want it. Beyond toy examples this usually results in simpler code and less mental effort to write.
+  * This library does not attempt to shove all the arguments into a map like data structure and neither does it attempt to define increasingly convoluted ways to "bind" arguments to variables in your code and convert them to internal types. Instead you provide callback lambdas (or any other function objects, of course) that put the data where you need it and convert how you want it. Beyond toy examples this usually results in simpler code and less mental effort to write.
   * Simple and extensible way to do rule based syntax validation. There are no rigid "groups" with predefined mutual exclusion only.
 * Configurability beyond just "globally replace `-` with `/`". You can specify what prefixes to use on short options, long options, which prefixes are equivalent, disable short or long options behaviors altogether, what separator to use for arguments instead of `=` and more.
   * The default syntax is the common Unix/GNU one 
@@ -152,12 +153,12 @@ You can integrate Argum into your code in the following ways
 
 ### Single header 
 
-Download `argum.h` from the [Releases][1] page, drop it into your project and `#include` it. This is the simplest way.
+Download `argum.h` from the [Releases][releases] page, drop it into your project and `#include` it. This is the simplest way.
 
 ### Module
   
 If you are lucky (or unlucky?) to have a compiler and build system that support modules you can try to use **experimental** 
-module file. Download `argum-module.ixx` from [Releases][1] page and integrate it into you project. Note, that of the compilers I
+module file. Download `argum-module.ixx` from [Releases][releases] page and integrate it into you project. Note, that of the compilers I
 have access to, only MSVC currently supports modules to any usable extent and, even there, many things appear to be broken. 
 There also appears to be no definite canonical way to write library modules yet (should I `#include` standard library headers or
 `import` them etc. etc.) Use at your own risk.
