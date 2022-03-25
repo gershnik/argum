@@ -436,13 +436,13 @@ namespace Argum {
         }
 
         template<ArgRange<CharType> Args>
-        auto parseUntilUnknown(const Args & args) const {
+        auto parseUntilUnknown(const Args & args) const -> std::vector<StringType> {
             
             return this->parseUntilUnknown(std::begin(args), std::end(args));
         }
 
         template<ArgIterator<CharType> It>
-        auto parseUntilUnknown(It argFirst, It argLast) const -> std::vector<StringType>{
+        auto parseUntilUnknown(It argFirst, It argLast) const -> std::vector<StringType> {
             
             ParsingState parsingState(*this);
 
