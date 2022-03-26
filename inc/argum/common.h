@@ -35,6 +35,15 @@
     #define ARGUM_INVALID_ARGUMENT(message) ARGUM_ALWAYS_ASSERT(!message)
 #endif
 
+#ifndef ARGUM_NO_THROW
+    #define ARGUM_RAISE_EXCEPTION(x) throw x
+#else
+    #ifndef ARGUM_USE_EXPECTED
+        #define ARGUM_USE_EXPECTED 1
+    #endif
+    #define ARGUM_RAISE_EXCEPTION(x) do { fprintf(stderr, "%s\n", (x).what()); std::terminate(); } while(false)
+#endif 
+
 namespace Argum {
 
     template<class Char>

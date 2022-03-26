@@ -1,6 +1,4 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
+#include "test-common.h"
 
 #include <argum/command-line.h>
 
@@ -30,9 +28,15 @@ TEST_CASE( "Narrow response file" , "[command-line]") {
 
     const char * argv[] = {"prog", "first", respArg.c_str(), "last"};
     const auto args = makeArgSpan(int(std::size(argv)), (char**)argv);
-    CHECK_THROWS_WITH(ResponseFileReader({"@"}).expand(args), "error reading response file \"response1.txt\": "s + std::make_error_code(errc::no_such_file_or_directory).message());
+    #ifndef ARGUM_NO_THROW
+        CHECK_THROWS_WITH(ARGUM_EXPECTED_VALUE(ResponseFileReader({"@"}).expand(args)), 
+                        "error reading response file \"response1.txt\": "s + std::make_error_code(errc::no_such_file_or_directory).message());
+    #else
+        CHECK(ResponseFileReader({"@"}).expand(args).error()->message() == 
+              "error reading response file \"response1.txt\": "s + std::make_error_code(errc::no_such_file_or_directory).message());
+    #endif
     
-    auto expanded = ResponseFileReader('@').expand(args, [&](string && line, auto out) {
+    auto expanded = ARGUM_EXPECTED_VALUE(ResponseFileReader('@').expand(args, [&](string && line, auto out) {
         trimInPlace(line);
         if (line.empty())
             return;
@@ -41,7 +45,7 @@ TEST_CASE( "Narrow response file" , "[command-line]") {
         } else {
             *out = std::move(line);
         }
-    });
+    }));
     CHECK(expanded == vector<string>{"first", "foo", "bar", "hello", "world", "baz", "last"});
 }
 
@@ -54,9 +58,16 @@ TEST_CASE( "Wide response file" , "[command-line]") {
 
     const wchar_t * argv[] = {L"prog", L"first", respArg.c_str(), L"last"};
     const auto args = makeArgSpan(int(std::size(argv)), (wchar_t**)argv);
-    CHECK_THROWS_WITH(WResponseFileReader({L"@"}).expand(args), "error reading response file \"response1.txt\": "s +  std::make_error_code(errc::no_such_file_or_directory).message());
+
+    #ifndef ARGUM_NO_THROW
+        CHECK_THROWS_WITH(ARGUM_EXPECTED_VALUE(WResponseFileReader({L"@"}).expand(args)), 
+                        "error reading response file \"response1.txt\": "s +  std::make_error_code(errc::no_such_file_or_directory).message());
+    #else
+        CHECK(toString<char>(WResponseFileReader({L"@"}).expand(args).error()->message()) == 
+              "error reading response file \"response1.txt\": "s +  std::make_error_code(errc::no_such_file_or_directory).message());
+    #endif
     
-    auto expanded = WResponseFileReader(L'@').expand(args, [&](wstring && line, auto out) {
+    auto expanded = ARGUM_EXPECTED_VALUE(WResponseFileReader(L'@').expand(args, [&](wstring && line, auto out) {
         trimInPlace(line);
         if (line.empty())
             return;
@@ -65,7 +76,7 @@ TEST_CASE( "Wide response file" , "[command-line]") {
         } else {
             *out = std::move(line);
         }
-    });
+    }));
     CHECK(expanded == vector<wstring>{L"first", L"foo", L"bar", L"hello", L"world", L"baz", L"last"});
 }
 

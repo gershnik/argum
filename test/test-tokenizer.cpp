@@ -1,6 +1,4 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
+#include "test-common.h"
 
 #include <argum/tokenizer.h>
 
@@ -61,12 +59,14 @@ namespace Argum {
     }
 }
 
+#ifndef ARGUM_NO_THROW
 TEST_CASE( "Settings boundaries" , "[tokenizer]") {
 
     CHECK_THROWS_AS(Tokenizer::Settings().addShortPrefix("-").addLongPrefix("-"), invalid_argument);
     CHECK_THROWS_AS(Tokenizer::Settings().addLongPrefix("-").addShortPrefix("-"), invalid_argument);
     CHECK_THROWS_AS(Tokenizer::Settings().addValueDelimiter('-').addValueDelimiter('-'), invalid_argument);
 }
+#endif
 
 
 TEST_CASE( "Null Command Line" , "[tokenizer]") {
@@ -77,7 +77,7 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
         CHECK(false);
         return Tokenizer::Continue;
     });
-    CHECK(ret == vector<string>{});
+    CHECK(ARGUM_EXPECTED_VALUE(ret) == vector<string>{});
 }
 
 
@@ -97,7 +97,7 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
         return Tokenizer::Continue;\
     });\
     CHECK(current == std::size(expected));\
-    CHECK(res == vector<string>{});\
+    CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});\
 }
 
 
@@ -173,7 +173,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-cdefg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-cdefg"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
@@ -183,7 +183,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-defg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg"});
     }
     SECTION("Middle single char in group"){
         const char * argv[] = {"-cdefg"};
@@ -196,7 +196,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-defg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
@@ -206,7 +206,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-efg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg"});
     }
     SECTION("Last single char in group"){
         const char * argv[] = {"-cdefg"};
@@ -219,7 +219,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-efg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
@@ -229,7 +229,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});
     }
     SECTION("Middle single char in group, other parameters"){
         const char * argv[] = {"abc", "-cdefg", "qqq"};
@@ -242,7 +242,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-defg", "qqq"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg", "qqq"});
         res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
 
             if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
@@ -252,6 +252,6 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-efg", "qqq"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg", "qqq"});
     }
 }

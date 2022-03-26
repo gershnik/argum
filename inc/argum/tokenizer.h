@@ -8,7 +8,7 @@
 #ifndef HEADER_ARGUM_TOKENIZER_H_INCLUDED
 #define HEADER_ARGUM_TOKENIZER_H_INCLUDED
 
-#include "data.h"
+#include "expected.h"
 #include "flat-map.h"
 
 #include <vector>
@@ -272,7 +272,7 @@ namespace Argum {
         }
 
         template<ArgIterator<CharType> It, class Func>
-        auto tokenize(It argFirst, It argLast, Func handler) const -> std::vector<StringType>  {
+        auto tokenize(It argFirst, It argLast, Func handler) const -> ARGUM_EXPECTED(CharType, std::vector<StringType>)  {
 
             bool noMoreOptions = false;
             std::vector<StringType> rest;
@@ -296,22 +296,25 @@ namespace Argum {
                             
                             if ((type & OptionStop) == OptionStop) {
                                 noMoreOptions = true;
-                                result = handler(OptionStopToken{argIdx});
+                                ARGUM_EXPECTED(CharType, TokenResult) handlerRet = handler(OptionStopToken{argIdx});
+                                ARGUM_CHECK_RESULT(result, handlerRet);
                                 if (result == TokenResult::StopAfter)
                                     consumed = unsigned(arg.size());
                             }
                             
                         } else {
                             if ((type & LongPrefix) == LongPrefix) {
-                                result = this->handleLongPrefix(argIdx, arg,
-                                                                prefixFindResult->index, prefixFindResult->size,
-                                                                handler);
+                                auto handlerRet = this->handleLongPrefix(argIdx, arg,
+                                                                         prefixFindResult->index, prefixFindResult->size,
+                                                                         handler);
+                                ARGUM_CHECK_RESULT(result, handlerRet);
                                 if (result == TokenResult::StopAfter)
                                     consumed = unsigned(arg.size());
                             } else if ((type & ShortPrefix) == ShortPrefix) {
-                                result = this->handleShortPrefix(argIdx, arg,
-                                                                 prefixFindResult->index, prefixFindResult->size,
-                                                                 consumed, handler);
+                                auto handlerRet = this->handleShortPrefix(argIdx, arg,
+                                                                          prefixFindResult->index, prefixFindResult->size,
+                                                                          consumed, handler);
+                                ARGUM_CHECK_RESULT(result, handlerRet);
                                 unconsumedPrefixSize = prefixFindResult->size;
                             }
                         }
@@ -319,7 +322,8 @@ namespace Argum {
                 }
                 
                 if (!result) {
-                    result = handler(ArgumentToken{argIdx, arg});
+                    ARGUM_EXPECTED(CharType, TokenResult) handlerRet = handler(ArgumentToken{argIdx, arg});
+                    ARGUM_CHECK_RESULT(result, handlerRet);
                     if (result == TokenResult::StopAfter)
                         consumed = unsigned(arg.size());
                 }
@@ -350,7 +354,7 @@ namespace Argum {
                               StringViewType option, 
                               PrefixId prefixId,
                               unsigned nameStart,
-                              const Func & handler) const -> TokenResult {
+                              const Func & handler) const -> ARGUM_EXPECTED(CharType, TokenResult) {
             
             auto [name, arg] = this->splitDelimitedArgument(option, nameStart);
             if (name.size() == 0)
@@ -398,19 +402,20 @@ namespace Argum {
                                PrefixId prefixId,
                                unsigned nameStart,
                                unsigned & consumed,
-                               const Func & handler) const -> TokenResult {
+                               const Func & handler) const -> ARGUM_EXPECTED(CharType, TokenResult) {
 
             if (auto maybeResult = this->handleShortOption(argIdx, option, prefixId, nameStart, consumed, handler)) {
-                return *maybeResult;
+                return std::move(*maybeResult);
             } 
 
-            TokenResult result;
+            ARGUM_EXPECTED(CharType, TokenResult) handlerResult;
             if (auto maybeToken = this->matchNumber(argIdx, option, nameStart)) {
-                result = handler(*maybeToken);
+                handlerResult = handler(*maybeToken);
             } else {
-                result = handler(UnknownOptionToken{argIdx, StringType(option), std::nullopt});
+                handlerResult = handler(UnknownOptionToken{argIdx, StringType(option), std::nullopt});
             }
 
+            ARGUM_CHECK_RESULT(TokenResult result, handlerResult);
             if (result == TokenResult::StopAfter)
                 consumed = unsigned(option.size());
             return result;
@@ -422,7 +427,7 @@ namespace Argum {
                                PrefixId prefixId,
                                unsigned nameStart, 
                                unsigned & consumed,
-                               const Func & handler) const -> std::optional<TokenResult> {
+                               const Func & handler) const -> std::optional<ARGUM_EXPECTED(CharType, TokenResult)> {
 
             StringViewType chars = option.substr(nameStart);
             assert(!chars.empty());
@@ -439,9 +444,10 @@ namespace Argum {
             if (chars.size() > 1 || !singleLetterNameIdx) {
 
                 if (auto res = this->handleMultiShortOption(argIdx, option, prefixId, nameStart, singleLetterNameIdx.has_value(), handler)) {
-                    if (*res == TokenResult::StopAfter)
+                    ARGUM_CHECK_RESULT(auto result, *res);
+                    if (result == TokenResult::StopAfter)
                         consumed = unsigned(option.size());
-                    return *res;
+                    return result;
                 }
             }
 
@@ -470,11 +476,12 @@ namespace Argum {
                     }
                 }
 
-                auto res = handler(OptionToken{argIdx, currentIdx, std::move(usedName), std::move(arg)});
-                if (res != TokenResult::Continue) {
-                    if (res == TokenResult::StopAfter)
+                ARGUM_EXPECTED(CharType, TokenResult) handlerResult = handler(OptionToken{argIdx, currentIdx, std::move(usedName), std::move(arg)});
+                ARGUM_CHECK_RESULT(auto result, handlerResult);
+                if (result != TokenResult::Continue) {
+                    if (result == TokenResult::StopAfter)
                         consumed += charsConsumed;
-                    return res;
+                    return result;
                 }
 
                 chars.remove_prefix(charsConsumed);
@@ -491,7 +498,7 @@ namespace Argum {
                                     PrefixId prefixId,
                                     unsigned nameStart,
                                     bool mustMatchExact,
-                                    const Func & handler) const -> std::optional<TokenResult> {
+                                    const Func & handler) const -> std::optional<ARGUM_EXPECTED(CharType, TokenResult)> {
 
             auto [name, arg] = this->splitDelimitedArgument(option, nameStart);
             if (name.size() == 0)

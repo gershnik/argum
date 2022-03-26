@@ -120,25 +120,11 @@ TEST_CASE( "Stopping at unknown" , "[parser]") {
     parser.add(POSITIONAL("x"));
     parser.add(OPTION_REQ_ARG("-z"));
 
-    REQUIRE_NOTHROW(remainder = parseUntilUnknown(parser, ARGS("X"), results)); 
-    CHECK(results == RESULTS({"x", {"X"}}));
-    CHECK(remainder == vector<string>{});
-
-    REQUIRE_NOTHROW(remainder = parseUntilUnknown(parser, ARGS("-z", "Z", "X"), results)); 
-    CHECK(results == RESULTS({"x", {"X"}}, {"-z", {"Z"}}));
-    CHECK(remainder == vector<string>{});
-
-    REQUIRE_NOTHROW(remainder = parseUntilUnknown(parser, ARGS("X", "A", "B", "-z", "Z"), results)); 
-    CHECK(results == RESULTS({"x", {"X"}}));
-    CHECK(remainder == vector<string>{"A", "B", "-z", "Z"});
-
-    REQUIRE_NOTHROW(remainder = parseUntilUnknown(parser, ARGS("X", "Y", "--foo"), results)); 
-    CHECK(results == RESULTS({"x", {"X"}}));
-    CHECK(remainder == vector<string>{"Y", "--foo"});
-
-    REQUIRE_NOTHROW(remainder = parseUntilUnknown(parser, ARGS("X", "--foo"), results)); 
-    CHECK(results == RESULTS({"x", {"X"}}));
-    CHECK(remainder == vector<string>{"--foo"});
+    EXPECT_SUCCESS_UNTIL_UNKNOWN(ARGS("X"), RESULTS({"x", {"X"}}), vector<string>{})
+    EXPECT_SUCCESS_UNTIL_UNKNOWN(ARGS("-z", "Z", "X"), RESULTS({"x", {"X"}}, {"-z", {"Z"}}), vector<string>{})
+    EXPECT_SUCCESS_UNTIL_UNKNOWN(ARGS("X", "A", "B", "-z", "Z"), RESULTS({"x", {"X"}}), (vector<string>{"A", "B", "-z", "Z"}))
+    EXPECT_SUCCESS_UNTIL_UNKNOWN(ARGS("X", "Y", "--foo"), RESULTS({"x", {"X"}}), (vector<string>{"Y", "--foo"}))
+    EXPECT_SUCCESS_UNTIL_UNKNOWN(ARGS("X", "--foo"), RESULTS({"x", {"X"}}), (vector<string>{"--foo"}))
 
 }
 //DIFFERENCE FROM ArgParse

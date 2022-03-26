@@ -8,7 +8,7 @@
 #ifndef HEADER_ARGUM_COMMAND_LINE_H_INCLUDED
 #define HEADER_ARGUM_COMMAND_LINE_H_INCLUDED
 
-#include "data.h"
+#include "expected.h"
 #include "messages.h"
 #include "simple-file.h"
 
@@ -38,6 +38,8 @@ namespace Argum {
         using StringViewType = std::basic_string_view<Char>;
 
         struct Exception : public BasicParsingException<CharType> {
+            ARGUM_IMPLEMENT_EXCEPTION(Exception, BasicParsingException<CharType>)
+
             Exception(const std::filesystem::path & filename_, std::error_code error_): 
                 BasicParsingException<CharType>(format(Messages<CharType>::errorReadingResponseFile(), filename_.native(), error_.message())),
                 filename(filename_),
@@ -57,20 +59,17 @@ namespace Argum {
         BasicResponseFileReader(std::initializer_list<StringType> prefixes): m_prefixes(prefixes) {
         }
 
-        //throws ResponseFileReader::Exception on I/O failures
-        auto expand(int argc, CharType ** argv) -> std::vector<StringType> {
+        auto expand(int argc, CharType ** argv) -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             return expand(makeArgSpan(argc, argv));
         }
 
-        //throws ResponseFileReader::Exception on I/O failures
         template<class Splitter>
-        auto expand(int argc, CharType ** argv, Splitter && splitter) -> std::vector<StringType> {
+        auto expand(int argc, CharType ** argv, Splitter && splitter) -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             return expand(makeArgSpan(argc, argv), std::forward<Splitter>(splitter));
         }
 
-        //throws ResponseFileReader::Exception on I/O failures
         template<ArgRange<CharType> Args>
-        auto expand(const Args & args) -> std::vector<StringType> {
+        auto expand(const Args & args) -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             return expand(args, [](StringType && str, auto dest) {
                 trimInPlace(str);
                 if (str.empty())
@@ -79,9 +78,8 @@ namespace Argum {
             });
         }
 
-        //throws ResponseFileReader::Exception on I/O failures
         template<ArgRange<Char> Args, class Splitter>
-        auto expand(const Args & args, Splitter && splitter) -> std::vector<StringType> 
+        auto expand(const Args & args, Splitter && splitter) -> ARGUM_EXPECTED(CharType, std::vector<StringType>)
             requires(std::is_invocable_v<decltype(splitter), StringType &&, std::back_insert_iterator<std::vector<StringType>>>) {
             
             std::vector<StringType> ret;
@@ -89,7 +87,7 @@ namespace Argum {
 
             for(StringViewType arg: args) {
 
-                this->handleArg(arg, ret, stack, splitter);
+                ARGUM_PROPAGATE_ERROR(this->handleArg(arg, ret, stack, splitter));
 
                 while(!stack.empty()) {
 
@@ -98,7 +96,7 @@ namespace Argum {
                         stack.pop();
                         continue;
                     }
-                    this->handleArg(*entry.current, ret, stack, std::forward<Splitter>(splitter));
+                    ARGUM_PROPAGATE_ERROR(this->handleArg(*entry.current, ret, stack, std::forward<Splitter>(splitter)));
                     ++entry.current;
                 }
             }
@@ -111,7 +109,9 @@ namespace Argum {
         };
 
         template<class Splitter>
-        auto handleArg(StringViewType arg, std::vector<StringType> & dest, std::stack<StackEntry> & stack, Splitter && splitter) {
+        auto handleArg(StringViewType arg, std::vector<StringType> & dest, 
+                       std::stack<StackEntry> & stack, 
+                       Splitter && splitter) -> ARGUM_EXPECTED(CharType, void) {
 
             auto foundIt = std::find_if(this->m_prefixes.begin(), this->m_prefixes.end(), [arg](const StringViewType & prefix) {
                 return matchStrictPrefix(arg, prefix);
@@ -120,32 +120,36 @@ namespace Argum {
             if (foundIt != this->m_prefixes.end()) {
                 auto filename = arg.substr(foundIt->size());
                 StackEntry nextEntry;
-                this->readResponseFile(filename, nextEntry.items, std::forward<Splitter>(splitter));
+                ARGUM_PROPAGATE_ERROR(this->readResponseFile(filename, nextEntry.items, std::forward<Splitter>(splitter)));
                 nextEntry.current = nextEntry.items.cbegin();
                 stack.emplace(std::move(nextEntry));
 
             } else {
                 dest.emplace_back(arg);
             }
+            return ARGUM_VOID_SUCCESS;
         }
     
         template<class Splitter>
-        static auto readResponseFile(StringViewType filename, std::vector<StringType> & dest, Splitter && splitter) {
+        static auto readResponseFile(StringViewType filename, std::vector<StringType> & dest, 
+                                     Splitter && splitter) -> ARGUM_EXPECTED(CharType, void){
 
             std::filesystem::path path(filename);
             std::error_code error;
             SimpleFile file(path, "r", error);
             if (!file)
-                throw Exception(path, error);
+                ARGUM_THROW(Exception, path, error);
 
             do {
                 StringType line = file.readLine<CharType>(error);
                 if (error)
-                    throw Exception(path, error);
+                    ARGUM_THROW(Exception, path, error);
                 
                 if (!line.empty())
                     splitter(std::move(line), std::back_inserter(dest));
             } while(!file.eof());
+
+            return ARGUM_VOID_SUCCESS;
         }
     private:
         std::vector<StringType> m_prefixes;

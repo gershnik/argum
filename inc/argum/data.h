@@ -16,6 +16,7 @@
 #include <vector>
 #include <stdexcept>
 #include <limits>
+#include <memory>
 
 namespace Argum {
 
@@ -94,6 +95,11 @@ namespace Argum {
         auto message() const -> std::basic_string_view<Char> {
             return m_message;
         }
+
+        virtual auto clone() const & -> std::unique_ptr<BasicParsingException> = 0;
+        virtual auto clone() & -> std::unique_ptr<BasicParsingException> = 0;
+        virtual auto clone() && -> std::unique_ptr<BasicParsingException> = 0;
+        [[noreturn]] virtual auto raise() const -> void = 0;
         
     protected:
         BasicParsingException(std::basic_string<Char> message) : 
@@ -112,6 +118,12 @@ namespace Argum {
         auto message() const -> std::string_view {
             return what();
         }
+
+        virtual auto clone() const & -> std::unique_ptr<BasicParsingException> = 0;
+        virtual auto clone() & -> std::unique_ptr<BasicParsingException> = 0;
+        virtual auto clone() && -> std::unique_ptr<BasicParsingException> = 0;
+        [[noreturn]] virtual auto raise() const -> void = 0;
+
     protected:
         BasicParsingException(std::string message) : 
             std::runtime_error(message) {
@@ -119,6 +131,18 @@ namespace Argum {
     };
     
     ARGUM_DECLARE_FRIENDLY_NAMES(ParsingException)
+
+    #define ARGUM_IMPLEMENT_EXCEPTION(type, base) \
+        auto clone() const & -> std::unique_ptr<base> override { \
+            return std::unique_ptr<base>(new type(*this)); \
+        } \
+        auto clone() & -> std::unique_ptr<base> override { \
+            return std::unique_ptr<base>(new type(*this)); \
+        } \
+        auto clone() && -> std::unique_ptr<base> override { \
+            return std::unique_ptr<base>(new type(std::move(*this))); \
+        } \
+        [[noreturn]] auto raise() const -> void override { ARGUM_RAISE_EXCEPTION(*this); }
 
 }
 
