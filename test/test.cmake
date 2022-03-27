@@ -78,6 +78,7 @@ configure_test(test)
 target_compile_options(test
     PRIVATE
         $<$<CXX_COMPILER_ID:AppleClang>:-fprofile-instr-generate -fcoverage-mapping>
+        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
 )
 
 target_link_options(test
@@ -93,6 +94,11 @@ target_compile_definitions(test_expected
         ARGUM_USE_EXPECTED 
 )
 
+target_compile_options(test_expected
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+)
+
 add_executable(test_nothrow)
 configure_test(test_nothrow)
 
@@ -105,7 +111,7 @@ target_compile_options(test_nothrow
     PRIVATE
         $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fno-exceptions -fno-rtti>
         $<$<CXX_COMPILER_ID:GNU>:-fno-exceptions -fno-rtti>
-        $<$<CXX_COMPILER_ID:MSVC>:/EHs- /GR- >
+        $<$<CXX_COMPILER_ID:MSVC>:/GR- -D_HAS_EXCEPTIONS=0>
 )
 
 set(TEST_COMMAND "")
