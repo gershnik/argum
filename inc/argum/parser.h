@@ -391,20 +391,21 @@ namespace Argum {
 
     public:
         struct UnrecognizedOption : public ParsingException {
-            ARGUM_IMPLEMENT_EXCEPTION(UnrecognizedOption, ParsingException)
+            ARGUM_IMPLEMENT_EXCEPTION(UnrecognizedOption, ParsingException, Error::UnrecognizedOption)
 
             UnrecognizedOption(StringViewType option_): 
-                ParsingException(format(Messages::unrecognizedOptionError(), option_)),
+                ParsingException(ErrorCode, format(Messages::unrecognizedOptionError(), option_)),
                 option(option_) {
             }
             StringType option;
         };
 
         struct AmbiguousOption : public ParsingException {
-            ARGUM_IMPLEMENT_EXCEPTION(AmbiguousOption, ParsingException)
+            ARGUM_IMPLEMENT_EXCEPTION(AmbiguousOption, ParsingException, Error::AmbiguousOption)
 
             AmbiguousOption(StringViewType option_, std::vector<StringType> possibilities_): 
-                ParsingException(format(Messages::ambiguousOptionError(), option_, 
+                ParsingException(ErrorCode, 
+                                 format(Messages::ambiguousOptionError(), option_, 
                                         join(possibilities_.begin(), possibilities_.end(), Messages::listJoiner()))),
                 option(option_),
                 possibilities(std::move(possibilities_)) {
@@ -414,44 +415,44 @@ namespace Argum {
         };
 
         struct MissingOptionArgument : public ParsingException {
-            ARGUM_IMPLEMENT_EXCEPTION(MissingOptionArgument, ParsingException)
+            ARGUM_IMPLEMENT_EXCEPTION(MissingOptionArgument, ParsingException, Error::MissingOptionArgument)
 
             MissingOptionArgument(StringViewType option_): 
-                ParsingException(format(Messages::missingOptionArgumentError(), option_)),
+                ParsingException(ErrorCode, format(Messages::missingOptionArgumentError(), option_)),
                 option(option_) {
             }
             StringType option;
         };
 
         struct ExtraOptionArgument : public ParsingException {
-            ARGUM_IMPLEMENT_EXCEPTION(ExtraOptionArgument, ParsingException)
+            ARGUM_IMPLEMENT_EXCEPTION(ExtraOptionArgument, ParsingException, Error::ExtraOptionArgument)
 
             ExtraOptionArgument(StringViewType option_): 
-                ParsingException(format(Messages::extraOptionArgumentError(), option_)),
+                ParsingException(ErrorCode, format(Messages::extraOptionArgumentError(), option_)),
                 option(option_) {
             }
             StringType option;
         };
 
         struct ExtraPositional : public ParsingException {
-            ARGUM_IMPLEMENT_EXCEPTION(ExtraPositional, ParsingException)
+            ARGUM_IMPLEMENT_EXCEPTION(ExtraPositional, ParsingException, Error::ExtraPositional)
 
             ExtraPositional(StringViewType value_): 
-                ParsingException(format(Messages::extraPositionalError(), value_)),
+                ParsingException(ErrorCode, format(Messages::extraPositionalError(), value_)),
                 value(value_) {
             }
             StringType value;
         };
         
         struct ValidationError : public ParsingException {
-            ARGUM_IMPLEMENT_EXCEPTION(ValidationError, ParsingException)
+            ARGUM_IMPLEMENT_EXCEPTION(ValidationError, ParsingException, Error::ValidationError)
 
             ValidationError(StringViewType message):
-                ParsingException(format(Messages::validationError(), message)) {
+                ParsingException(ErrorCode, format(Messages::validationError(), message)) {
             }
             template<DescribableParserValidator<CharType> Validator>
             ValidationError(Validator validator):
-                ParsingException(format(Messages::validationError(), describe(validator))) {
+                ParsingException(ErrorCode, format(Messages::validationError(), describe(validator))) {
             }
         };
 

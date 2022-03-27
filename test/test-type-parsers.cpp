@@ -38,9 +38,9 @@ using Catch::Matchers::Message;
 
 #else
     #define EXPECT_INT_FAILURE(type, expr, err) {\
-        auto result = parseIntegral<type>(expr); \
-        REQUIRE(!result); \
-        CHECK(toString<char>(result.error()->message()) == format("invalid arguments: value \"{1}\" {2}", (expr), (err))); \
+        auto error = parseIntegral<type>(expr).error(); \
+        REQUIRE(error); \
+        CHECK(toString<char>(error->message()) == format("invalid arguments: value \"{1}\" {2}", (expr), (err))); \
     }
 
     #define EXPECT_INT_SUCCESS(type, expr, res) {\
@@ -50,9 +50,9 @@ using Catch::Matchers::Message;
     }
 
     #define EXPECT_FLOAT_FAILURE(type, expr, err) {\
-        auto result = parseFloatingPoint<type>(expr); \
-        REQUIRE(!result); \
-        CHECK(toString<char>(result.error()->message()) == format("invalid arguments: value \"{1}\" {2}", (expr), (err))); \
+        auto error = parseFloatingPoint<type>(expr).error(); \
+        REQUIRE(error); \
+        CHECK(toString<char>(error->message()) == format("invalid arguments: value \"{1}\" {2}", (expr), (err))); \
     }
 
     #define EXPECT_FLOAT_SUCCESS(type, expr, res) {\
@@ -62,9 +62,9 @@ using Catch::Matchers::Message;
     }
 
     #define EXPECT_CHOICE_FAILURE(expr, choices) {\
-        auto result = parser.parse(expr); \
-        REQUIRE(!result); \
-        CHECK(toString<char>(result.error()->message()) == \
+        auto error = parser.parse(expr).error(); \
+        REQUIRE(error); \
+        CHECK(toString<char>(error->message()) == \
               format("invalid arguments: value \"{1}\" is not one of the valid choices {{{2}}", (expr), (choices))); \
     }
 

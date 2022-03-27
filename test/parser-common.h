@@ -104,7 +104,7 @@ namespace std {
     }
 #else 
     #define HANDLE_FAILURE(type, h) [](auto * ex) { \
-        auto specific = dynamic_cast<type *>(ex); \
+        auto specific = ex->template as<type>(); \
         REQUIRE(specific); \
         [](const type & ex)h(*specific); \
     }

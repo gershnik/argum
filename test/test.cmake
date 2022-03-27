@@ -103,7 +103,9 @@ target_compile_definitions(test_nothrow
 
 target_compile_options(test_nothrow
     PRIVATE
-        $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fno-exceptions>
+        $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fno-exceptions -fno-rtti>
+        $<$<CXX_COMPILER_ID:GNU>:-fno-exceptions -fno-rtti>
+        $<$<CXX_COMPILER_ID:MSVC>:/EHs- /GR- >
 )
 
 set(TEST_COMMAND "")

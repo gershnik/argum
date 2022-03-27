@@ -38,10 +38,11 @@ namespace Argum {
         using StringViewType = std::basic_string_view<Char>;
 
         struct Exception : public BasicParsingException<CharType> {
-            ARGUM_IMPLEMENT_EXCEPTION(Exception, BasicParsingException<CharType>)
+            ARGUM_IMPLEMENT_EXCEPTION(Exception, BasicParsingException<CharType>, Error::ResponseFileError)
 
             Exception(const std::filesystem::path & filename_, std::error_code error_): 
-                BasicParsingException<CharType>(format(Messages<CharType>::errorReadingResponseFile(), filename_.native(), error_.message())),
+                BasicParsingException<CharType>(ErrorCode,
+                                                format(Messages<CharType>::errorReadingResponseFile(), filename_.native(), error_.message())),
                 filename(filename_),
                 error(error_) {
             }

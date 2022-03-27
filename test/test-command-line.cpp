@@ -32,7 +32,9 @@ TEST_CASE( "Narrow response file" , "[command-line]") {
         CHECK_THROWS_WITH(ARGUM_EXPECTED_VALUE(ResponseFileReader({"@"}).expand(args)), 
                         "error reading response file \"response1.txt\": "s + std::make_error_code(errc::no_such_file_or_directory).message());
     #else
-        CHECK(ResponseFileReader({"@"}).expand(args).error()->message() == 
+        auto err = ResponseFileReader({"@"}).expand(args).error();
+        REQUIRE(err);
+        CHECK(err->message() == 
               "error reading response file \"response1.txt\": "s + std::make_error_code(errc::no_such_file_or_directory).message());
     #endif
     
@@ -63,7 +65,9 @@ TEST_CASE( "Wide response file" , "[command-line]") {
         CHECK_THROWS_WITH(ARGUM_EXPECTED_VALUE(WResponseFileReader({L"@"}).expand(args)), 
                         "error reading response file \"response1.txt\": "s +  std::make_error_code(errc::no_such_file_or_directory).message());
     #else
-        CHECK(toString<char>(WResponseFileReader({L"@"}).expand(args).error()->message()) == 
+        auto err = WResponseFileReader({L"@"}).expand(args).error();
+        REQUIRE(err);
+        CHECK(toString<char>(err->message()) == 
               "error reading response file \"response1.txt\": "s +  std::make_error_code(errc::no_such_file_or_directory).message());
     #endif
     

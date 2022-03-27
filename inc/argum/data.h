@@ -88,59 +88,115 @@ namespace Argum {
     ARGUM_MOD_EXPORTED inline constexpr Quantifier oneOrMoreTimes (1, Quantifier::infinity);
     ARGUM_MOD_EXPORTED inline constexpr Quantifier onceOrMore     = oneOrMoreTimes;
 
+    ARGUM_MOD_EXPORTED enum class Error {
+        UnrecognizedOption = 1,
+        AmbiguousOption,
+        MissingOptionArgument,
+        ExtraOptionArgument,
+        ExtraPositional,
+        ValidationError,
+        ResponseFileError,
+
+        Last = ResponseFileError,
+        UserError = int(Last) + 100
+    };
+
     ARGUM_MOD_EXPORTED
     template<class Char>
     class BasicParsingException : public std::runtime_error {
     public:
-        auto message() const -> std::basic_string_view<Char> {
+        auto message() const noexcept -> std::basic_string_view<Char> {
             return m_message;
         }
 
-        virtual auto clone() const & -> std::unique_ptr<BasicParsingException> = 0;
-        virtual auto clone() & -> std::unique_ptr<BasicParsingException> = 0;
-        virtual auto clone() && -> std::unique_ptr<BasicParsingException> = 0;
+        auto code() const -> Error {
+            return m_code;
+        }
+
+        template<class Derived>
+        requires(std::is_base_of_v<BasicParsingException, Derived>)
+        auto as() const -> const Derived * {
+            if (this->m_code == Derived::ErrorCode)
+                return static_cast<const Derived *>(this);
+            return nullptr;
+        }
+
+        template<class Derived>
+        requires(std::is_base_of_v<BasicParsingException, Derived>)
+        auto as() -> Derived * {
+            return const_cast<Derived *>(const_cast<const BasicParsingException *>(this)->as<Derived>());
+        }
+
+        virtual auto clone() const & -> std::shared_ptr<BasicParsingException> = 0;
+        virtual auto clone() & -> std::shared_ptr<BasicParsingException> = 0;
+        virtual auto clone() && -> std::shared_ptr<BasicParsingException> = 0;
         [[noreturn]] virtual auto raise() const -> void = 0;
         
     protected:
-        BasicParsingException(std::basic_string<Char> message) : 
+        BasicParsingException(Error code, std::basic_string<Char> message) : 
             std::runtime_error(toString<char>(message)),
-            m_message(std::move(message)) {
+            m_message(std::move(message)),
+            m_code(code) {
         }
 
     private:
         std::basic_string<Char> m_message;
+        Error m_code;
     };
 
     ARGUM_MOD_EXPORTED
     template<>
     class BasicParsingException<char> : public std::runtime_error {
     public:
-        auto message() const -> std::string_view {
+        auto message() const noexcept -> std::string_view {
             return what();
         }
 
-        virtual auto clone() const & -> std::unique_ptr<BasicParsingException> = 0;
-        virtual auto clone() & -> std::unique_ptr<BasicParsingException> = 0;
-        virtual auto clone() && -> std::unique_ptr<BasicParsingException> = 0;
+        auto code() const -> Error {
+            return m_code;
+        }
+
+        template<class Derived>
+        requires(std::is_base_of_v<BasicParsingException, Derived>)
+        auto as() const -> const Derived * {
+            if (this->m_code == Derived::ErrorCode)
+                return static_cast<const Derived *>(this);
+            return nullptr;
+        }
+
+        template<class Derived>
+        requires(std::is_base_of_v<BasicParsingException, Derived>)
+        auto as() -> Derived * {
+            return const_cast<Derived *>(const_cast<const BasicParsingException *>(this)->as<Derived>());
+        }
+
+
+        virtual auto clone() const & -> std::shared_ptr<BasicParsingException> = 0;
+        virtual auto clone() & -> std::shared_ptr<BasicParsingException> = 0;
+        virtual auto clone() && -> std::shared_ptr<BasicParsingException> = 0;
         [[noreturn]] virtual auto raise() const -> void = 0;
 
     protected:
-        BasicParsingException(std::string message) : 
-            std::runtime_error(message) {
+        BasicParsingException(Error code, std::string message) : 
+            std::runtime_error(message),
+            m_code(code) {
         }
+    private:
+        Error m_code;
     };
     
     ARGUM_DECLARE_FRIENDLY_NAMES(ParsingException)
 
-    #define ARGUM_IMPLEMENT_EXCEPTION(type, base) \
-        auto clone() const & -> std::unique_ptr<base> override { \
-            return std::unique_ptr<base>(new type(*this)); \
+    #define ARGUM_IMPLEMENT_EXCEPTION(type, base, code) \
+        static constexpr Error ErrorCode = code; \
+        auto clone() const & -> std::shared_ptr<base> override { \
+            return std::make_shared<type>(*this); \
         } \
-        auto clone() & -> std::unique_ptr<base> override { \
-            return std::unique_ptr<base>(new type(*this)); \
+        auto clone() & -> std::shared_ptr<base> override { \
+            return std::make_shared<type>(*this); \
         } \
-        auto clone() && -> std::unique_ptr<base> override { \
-            return std::unique_ptr<base>(new type(std::move(*this))); \
+        auto clone() && -> std::shared_ptr<base> override { \
+            return std::make_shared<type>(std::move(*this)); \
         } \
         [[noreturn]] auto raise() const -> void override { ARGUM_RAISE_EXCEPTION(*this); }
 
