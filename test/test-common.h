@@ -8,11 +8,13 @@
 #ifndef ARGUM_NO_THROW
 
     #include <stdexcept>
-    
+
     [[noreturn]] inline void reportInvalidArgument(const char * message) {
         throw std::invalid_argument(message);
     }
 #else
+    #include <exception>
+    
     [[noreturn]] inline void reportInvalidArgument(const char * message) {
         fprintf(stderr, "%s\n", message); 
         std::terminate();
