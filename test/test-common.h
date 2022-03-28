@@ -7,7 +7,7 @@
 
 #ifndef ARGUM_NO_THROW
     [[noreturn]] inline void reportInvalidArgument(const char * message) {
-        throw invalid_argument(message);
+        throw std::invalid_argument(message);
     }
 #else
     [[noreturn]] inline void reportInvalidArgument(const char * message) {
