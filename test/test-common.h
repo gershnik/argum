@@ -6,6 +6,9 @@
 #include <argum/common.h>
 
 #ifndef ARGUM_NO_THROW
+
+    #include <stdexcept>
+    
     [[noreturn]] inline void reportInvalidArgument(const char * message) {
         throw std::invalid_argument(message);
     }
