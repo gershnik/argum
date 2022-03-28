@@ -1,3 +1,6 @@
+#ifndef HEADER_PARSER_COMMON_H_INCLUDED
+#define HEADER_PARSER_COMMON_H_INCLUDED
+
 #include "test-common.h"
 
 #include <argum/help-formatter.h>
@@ -30,12 +33,6 @@ using BasicValue = optional<basic_string<Char>>;
 using Value = BasicValue<char>;
 using WValue = BasicValue<wchar_t>;
 
-
-#ifndef ARGUM_NO_THROW
-inline void reportInvalidArgument(const char * message) {
-    throw invalid_argument(message);
-}
-#endif
 
 template<class Char>
 inline auto parse(const BasicParser<Char> & parser, initializer_list<const Char *> args, 
@@ -178,3 +175,5 @@ namespace std {
 #define WPOSITIONAL(n) WPositional(n).handler([&](wstring_view value){ \
         results[n].push_back(wstring(value)); \
     })
+
+#endif

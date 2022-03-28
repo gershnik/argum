@@ -104,7 +104,7 @@ configure_test(test_nothrow)
 
 target_compile_definitions(test_nothrow 
     PRIVATE 
-        ARGUM_NO_THROW 
+        $<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang,GNU,MSVC>>:ARGUM_NO_THROW>
 )
 
 target_compile_options(test_nothrow

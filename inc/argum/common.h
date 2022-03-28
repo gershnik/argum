@@ -35,6 +35,16 @@
     #define ARGUM_INVALID_ARGUMENT(message) ARGUM_ALWAYS_ASSERT(!message)
 #endif
 
+#if defined(__GNUC__)
+    #ifndef __EXCEPTIONS
+        #define ARGUM_NO_THROW
+    #endif
+#elif defined(_MSC_VER)
+    #if !defined(_CPPUNWIND) || _HAS_EXCEPTIONS == 0
+        #define ARGUM_NO_THROW
+    #endif
+#endif
+
 #ifndef ARGUM_NO_THROW
     #define ARGUM_RAISE_EXCEPTION(x) throw x
 #else
