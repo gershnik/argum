@@ -17,6 +17,7 @@
 #include <exception>
 #include <limits>
 #include <memory>
+#include <tuple>
 
 namespace Argum {
 
@@ -104,9 +105,13 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<class Char>
     class BasicParsingException : public std::exception {
+    private:
+        using StringsType = std::conditional_t<std::is_same_v<Char, char>, 
+                                    std::tuple<std::string>,
+                                    std::tuple<std::string, std::basic_string<Char>>>;
     public:
         auto message() const noexcept -> std::basic_string_view<Char> {
-            return m_message;
+            return std::get<std::tuple_size_v<StringsType> - 1>(this->m_strings);
         }
 
         auto code() const noexcept -> Error {
@@ -128,7 +133,7 @@ namespace Argum {
         }
 
         auto what() const noexcept -> const char * override {
-            return this->m_what.c_str();
+            return std::get<0>(this->m_strings).c_str();
         }
 
         virtual auto clone() const & -> std::shared_ptr<BasicParsingException> = 0;
@@ -138,59 +143,19 @@ namespace Argum {
         
     protected:
         BasicParsingException(Error code, std::basic_string<Char> message) : 
-            m_what(toString<char>(message)),
-            m_message(std::move(message)),
-            m_code(code) {
-        }
-
-    private:
-        std::string m_what;
-        std::basic_string<Char> m_message;
-        Error m_code;
-    };
-
-    ARGUM_MOD_EXPORTED
-    template<>
-    class BasicParsingException<char> : public std::exception {
-    public:
-        auto message() const noexcept -> std::string_view {
-            return m_what;
-        }
-
-        auto code() const noexcept -> Error {
-            return m_code;
-        }
-
-        template<class Derived>
-        requires(std::is_base_of_v<BasicParsingException, Derived>)
-        auto as() const noexcept -> const Derived * {
-            if (this->m_code == Derived::ErrorCode)
-                return static_cast<const Derived *>(this);
-            return nullptr;
-        }
-
-        template<class Derived>
-        requires(std::is_base_of_v<BasicParsingException, Derived>)
-        auto as() noexcept -> Derived * {
-            return const_cast<Derived *>(const_cast<const BasicParsingException *>(this)->as<Derived>());
-        }
-
-        auto what() const noexcept -> const char * override {
-            return this->m_what.c_str();
-        }
-
-        virtual auto clone() const & -> std::shared_ptr<BasicParsingException> = 0;
-        virtual auto clone() & -> std::shared_ptr<BasicParsingException> = 0;
-        virtual auto clone() && -> std::shared_ptr<BasicParsingException> = 0;
-        [[noreturn]] virtual auto raise() const -> void = 0;
-
-    protected:
-        BasicParsingException(Error code, std::string message) : 
-            m_what(std::move(message)),
+            m_strings(BasicParsingException::initStrings(std::move(message))),
             m_code(code) {
         }
     private:
-        std::string m_what;
+        static auto initStrings(std::basic_string<Char> && message) -> StringsType {
+            if constexpr (std::is_same_v<Char, char>) {
+                return StringsType(std::move(message));
+            } else {
+                return StringsType(toString<char>(message), std::move(message));
+            }
+        }
+    private:
+        StringsType m_strings;
         Error m_code;
     };
     
