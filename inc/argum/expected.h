@@ -19,14 +19,21 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<class Char, class T>
     class [[nodiscard]] BasicExpected {
+    private:
+        using ValueType = std::conditional_t<std::is_same_v<T, void>, std::monostate, T>;
     public:
         using ParsingException = BasicParsingException<Char>;
         using ParsingExceptionPtr = std::shared_ptr<ParsingException>;
 
+        using ConstLValueReference = std::add_lvalue_reference_t<const T>;
+        using LValueReference = std::add_lvalue_reference_t<T>;
+        using RValueReference = std::add_rvalue_reference_t<T>;
     public:
         BasicExpected() = default;
 
-        BasicExpected(T value): m_impl(value) {
+        template<class Arg>
+        requires(std::is_convertible_v<Arg &&, T> && !std::is_same_v<T, void>)
+        BasicExpected(Arg && value): m_impl(std::in_place_type_t<T>(), std::forward<Arg>(value)) {
         }
         BasicExpected(ParsingExceptionPtr err): m_impl(BasicExpected::validate(err)) {
         }
@@ -41,45 +48,56 @@ namespace Argum {
             m_impl(std::make_shared<Stored>(std::forward<Args>(args)...)) {
         }
 
-        auto operator*() const & -> const T & {
-            return *std::get_if<T>(&this->m_impl);
+        auto operator*() const & -> ConstLValueReference {
+            if constexpr (!std::is_same_v<T, void>)
+                return *std::get_if<T>(&this->m_impl);
         }
-        auto operator*() & -> T & {
-            return *std::get_if<T>(&this->m_impl);
+        auto operator*() & -> LValueReference {
+            if constexpr (!std::is_same_v<T, void>)
+                return *std::get_if<T>(&this->m_impl);
         }
-        auto operator*() && -> T && {
-            return std::move(*std::get_if<T>(&this->m_impl));
+        auto operator*() && -> RValueReference {
+            if constexpr (!std::is_same_v<T, void>)
+                return std::move(*std::get_if<T>(&this->m_impl));
         }
-        auto value() const & -> const T & {
-            return std::visit([](const auto & val) -> const T & {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, T>) {
-                    return val;
+        auto value() const & -> ConstLValueReference {
+            return std::visit([](const auto & val) -> ConstLValueReference {
+                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ValueType>) {
+                    if constexpr (!std::is_same_v<T, void>)
+                        return val;
                 } else {
                     BasicExpected::raise(val);
                 }
             }, this->m_impl);
         }
-        auto value() & -> T & {
-            return std::visit([](auto & val) -> T & {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, T>) {
-                    return val;
+        auto value() & -> LValueReference {
+            return std::visit([](auto & val) -> LValueReference {
+                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ValueType>) {
+                    if constexpr (!std::is_same_v<T, void>)
+                        return val;
                 } else {
                     BasicExpected::raise(val);
                 }
             }, this->m_impl);
         }
-        auto value() && -> T && {
-            return std::visit([](auto && val) -> T && {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, T>) {
-                    return std::move(val);
+        auto value() && -> RValueReference {
+            return std::visit([](auto && val) -> RValueReference {
+                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ValueType>) {
+                    if constexpr (!std::is_same_v<T, void>)
+                        return std::move(val);
                 } else {
                     BasicExpected::raise(val);
                 }
             }, std::move(this->m_impl));
         }
+
+        template<class X = T>
+        requires(!std::is_same_v<X, void>)
         auto operator->() const -> const T * {
             return std::get_if<T>(&this->m_impl);
         }
+        template<class X = T>
+        requires(!std::is_same_v<X, void>)
         auto operator->() -> T * {
             return std::get_if<T>(&this->m_impl);
         }
@@ -95,7 +113,7 @@ namespace Argum {
         }
 
         explicit operator bool() const {
-            return std::holds_alternative<T>(this->m_impl);
+            return std::holds_alternative<ValueType>(this->m_impl);
         }
         auto operator!() const -> bool {
             return !bool(*this);
@@ -112,57 +130,7 @@ namespace Argum {
             std::terminate();
         }
     private:
-        std::variant<T, ParsingExceptionPtr> m_impl;
-    };
-
-    ARGUM_MOD_EXPORTED
-    template<class Char>
-    class [[nodiscard]] BasicExpected<Char, void> {
-    public:
-        using ParsingException = BasicParsingException<Char>;
-        using ParsingExceptionPtr = std::shared_ptr<ParsingException>;
-
-    public:
-        BasicExpected() = default;
-        BasicExpected(ParsingExceptionPtr err): m_impl(BasicExpected::validate(err)) {
-        }
-
-        template<class Stored, class... Args>
-        requires(std::is_base_of_v<ParsingException, Stored>)
-        BasicExpected(std::in_place_type_t<Stored>, Args && ...args): 
-            m_impl(std::make_shared<Stored>(std::forward<Args>(args)...)) {
-        }
-
-        auto operator*() const -> void {
-        }
-        auto value() const -> void {
-            if (this->m_impl.has_value())
-                BasicExpected::raise(*this->m_impl);
-        }
-
-        auto error() const -> ParsingExceptionPtr {
-            return this->m_impl.has_value() ? *this->m_impl : ParsingExceptionPtr();
-        }
-
-        explicit operator bool() const {
-            return !this->m_impl.has_value();
-        }
-        auto operator!() const -> bool {
-            return !bool(*this);
-        }
-    private:
-        static auto validate(ParsingExceptionPtr & ptr) -> ParsingExceptionPtr && {
-            if (!ptr)
-                ARGUM_INVALID_ARGUMENT("error must be non-null");
-            return std::move(ptr);
-        }
-        [[noreturn]] static auto raise(const ParsingExceptionPtr & ptr) {
-            if (ptr)
-                ptr->raise();
-            std::terminate();
-        }
-    private:
-        std::optional<ParsingExceptionPtr> m_impl;
+        std::variant<ValueType, ParsingExceptionPtr> m_impl;
     };
 
     ARGUM_MOD_EXPORTED template<class T> using Expected = BasicExpected<char, T>;
