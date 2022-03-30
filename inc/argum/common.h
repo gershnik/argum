@@ -12,8 +12,10 @@
 #include <string_view>
 #include <string>
 #include <concepts>
+#include <exception>
 
 #include <assert.h>
+#include <stdio.h>
 
 #ifndef ARGUM_MOD_EXPORTED
     #define ARGUM_MOD_EXPORTED
@@ -28,12 +30,10 @@
 #ifndef NDEBUG
     #define ARGUM_ALWAYS_ASSERT(x) assert(x)
 #else
-    #define ARGUM_ALWAYS_ASSERT(x)  ((void) ((x) ? ((void)0) : std::terminate()))
+    #define ARGUM_ALWAYS_ASSERT(x)  ((void) ((x) ? ((void)0) : ::Argum::terminateApplication("failed assertion `" #x "'")))
 #endif
 
-#ifndef ARGUM_INVALID_ARGUMENT
-    #define ARGUM_INVALID_ARGUMENT(message) ARGUM_ALWAYS_ASSERT(!message)
-#endif
+#define ARGUM_INVALID_ARGUMENT(message) ::Argum::terminateApplication(message)
 
 #if defined(__GNUC__)
     #ifndef __EXCEPTIONS
@@ -51,10 +51,24 @@
     #ifndef ARGUM_USE_EXPECTED
         #define ARGUM_USE_EXPECTED 1
     #endif
-    #define ARGUM_RAISE_EXCEPTION(x) do { fprintf(stderr, "%s\n", (x).what()); std::terminate(); } while(false)
+    #define ARGUM_RAISE_EXCEPTION(x) ::Argum::terminateApplication((x).what())
 #endif 
 
 namespace Argum {
+
+    [[noreturn]] auto terminateApplication(const char * message) -> void; 
+
+    #ifndef ARGUM_CUSTOM_TERMINATE
+        [[noreturn]] inline auto terminateApplication(const char * message) -> void { 
+            #ifndef NDEBUG
+                assert(message && false);
+            #else
+                fprintf(stderr, "%s\n", message); 
+                fflush(stderr); 
+                std::terminate(); 
+            #endif
+        }
+    #endif
 
     template<class Char>
     concept Character = std::is_same_v<Char, char> || 

@@ -1,7 +1,7 @@
 #ifndef HEADER_TEST_COMMON_H_INCLUDED
 #define HEADER_TEST_COMMON_H_INCLUDED
 
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message) 
+#define ARGUM_CUSTOM_TERMINATE
 
 #include <argum/common.h>
 
@@ -9,15 +9,19 @@
 
     #include <stdexcept>
 
-    [[noreturn]] inline void reportInvalidArgument(const char * message) {
+    [[noreturn]] inline void Argum::terminateApplication(const char * message) {
         throw std::invalid_argument(message);
     }
 #else
-    #include <exception>
     
-    [[noreturn]] inline void reportInvalidArgument(const char * message) {
-        fprintf(stderr, "%s\n", message); 
-        std::terminate();
+    [[noreturn]] inline void Argum::terminateApplication(const char * message) {
+        #ifndef NDEBUG
+            assert(message && false);
+        #else
+            fprintf(stderr, "%s\n", message); 
+            fflush(stderr); 
+            std::terminate(); 
+        #endif
     }
 #endif
 

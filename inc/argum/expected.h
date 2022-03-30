@@ -127,7 +127,7 @@ namespace Argum {
         [[noreturn]] static auto raise(const ParsingExceptionPtr & ptr) {
             if (ptr)
                 ptr->raise();
-            std::terminate();
+            ARGUM_ALWAYS_ASSERT(!"accessing value of moved-out BasicExpected");
         }
     private:
         std::variant<ValueType, ParsingExceptionPtr> m_impl;
