@@ -103,7 +103,7 @@ namespace Argum {
             return std::visit([](auto && val) -> RValueReference {
                 if constexpr (std::is_same_v<std::remove_cvref_t<decltype(val)>, ValueType>) {
                     if constexpr (!std::is_same_v<T, void>)
-                        return std::move(val);
+                        return std::forward<std::remove_cvref_t<decltype(val)>>(val);
                 } else {
                     BasicExpected::raise(val);
                 }
