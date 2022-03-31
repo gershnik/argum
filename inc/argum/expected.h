@@ -16,9 +16,14 @@
 
 namespace Argum {
 
+    ARGUM_MOD_EXPORTED template<class T> using FailureType = std::in_place_type_t<T>;
+
+    ARGUM_MOD_EXPORTED template<class T> inline constexpr FailureType<T> Failure{};
+
     ARGUM_MOD_EXPORTED
     template<class Char, class T>
     class [[nodiscard]] BasicExpected {
+        template<class OtherChar, class Other> friend class BasicExpected;
     private:
         using ValueType = std::conditional_t<std::is_same_v<T, void>, std::monostate, T>;
     public:
@@ -28,24 +33,38 @@ namespace Argum {
         using ConstLValueReference = std::add_lvalue_reference_t<const T>;
         using LValueReference = std::add_lvalue_reference_t<T>;
         using RValueReference = std::add_rvalue_reference_t<T>;
+    private:
+        using ImplType = std::variant<ValueType, ParsingExceptionPtr>;
     public:
         BasicExpected() = default;
 
-        template<class Arg>
-        requires(std::is_convertible_v<Arg &&, T> && !std::is_same_v<T, void>)
-        BasicExpected(Arg && value): m_impl(std::in_place_type_t<T>(), std::forward<Arg>(value)) {
+        template<class... Args>
+        requires(std::is_constructible_v<T, Args &&...> && !std::is_same_v<T, void>)
+        BasicExpected(Args && ...args): 
+            m_impl(std::in_place_type_t<T>(), std::forward<Args>(args)...) {
         }
+
         BasicExpected(ParsingExceptionPtr err): m_impl(BasicExpected::validate(err)) {
         }
-        template<class Stored, class... Args>
-        requires(std::is_same_v<Stored, T>)
-        BasicExpected(std::in_place_type_t<Stored> inPlace, Args && ...args): 
-            m_impl(inPlace, std::forward<Args>(args)...) {
+
+        template<class Exception, class... Args>
+        requires(std::is_base_of_v<ParsingException, Exception>)
+        BasicExpected(FailureType<Exception>, Args && ...args): 
+            m_impl(std::make_shared<Exception>(std::forward<Args>(args)...)) {
         }
-        template<class Stored, class... Args>
-        requires(std::is_base_of_v<ParsingException, Stored>)
-        BasicExpected(std::in_place_type_t<Stored>, Args && ...args): 
-            m_impl(std::make_shared<Stored>(std::forward<Args>(args)...)) {
+
+        template<class OtherT>
+        requires(std::is_constructible_v<T, OtherT> || std::is_same_v<T, void>)
+        BasicExpected(const BasicExpected<Char, OtherT> & other): 
+            m_impl(std::visit([&](const auto & val) {
+                    if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ParsingExceptionPtr>) {
+                        return ImplType(val); 
+                    } else if constexpr (!std::is_same_v<T, void>) {
+                        return ImplType(val); 
+                    } else {
+                        return ImplType();
+                    }
+                }, other.m_impl)) {
         }
 
         auto operator*() const & -> ConstLValueReference {
@@ -130,7 +149,7 @@ namespace Argum {
             ARGUM_ALWAYS_ASSERT(!"accessing value of moved-out BasicExpected");
         }
     private:
-        std::variant<ValueType, ParsingExceptionPtr> m_impl;
+        ImplType m_impl;
     };
 
     ARGUM_MOD_EXPORTED template<class T> using Expected = BasicExpected<char, T>;
@@ -139,13 +158,14 @@ namespace Argum {
     #ifdef ARGUM_USE_EXPECTED
         #define ARGUM_EXPECTED(c, type) BasicExpected<c, type>
         #define ARGUM_PROPAGATE_ERROR(expr) if (auto err = (expr).error()) { return err; }
-        #define ARGUM_CHECK_RESULT(var, result)  if (auto err = (result).error()) { return err; }; var = *(result)
-        #define ARGUM_THROW(type, ...) return {std::in_place_type<type> __VA_OPT__(,) __VA_ARGS__}
+        #define ARGUM_CHECK_RESULT_IMPL(temp, var, expr) decltype(auto) temp = (expr); ARGUM_PROPAGATE_ERROR(temp); var = *temp
+        #define ARGUM_CHECK_RESULT(var, expr)  ARGUM_CHECK_RESULT_IMPL(ARGUM_UNIQUE_NAME(argum_check_result), var, expr)
+        #define ARGUM_THROW(type, ...) return {Failure<type> __VA_OPT__(,) __VA_ARGS__}
         #define ARGUM_VOID_SUCCESS {}
     #else
         #define ARGUM_EXPECTED(c, x) x
         #define ARGUM_PROPAGATE_ERROR(expr) do { expr; } while(false)
-        #define ARGUM_CHECK_RESULT(var, result)  var = result
+        #define ARGUM_CHECK_RESULT(var, expr)  var = expr
         #define ARGUM_THROW(type, ...) throw type(__VA_ARGS__)
         #define ARGUM_VOID_SUCCESS
     #endif

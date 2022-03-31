@@ -27,6 +27,15 @@
     ARGUM_DECLARE_FRIENDLY_NAME(stem, char, ) \
     ARGUM_DECLARE_FRIENDLY_NAME(stem, wchar_t, W)
 
+#define ARGUM_CONCAT1(a, b) a ## b
+#define ARGUM_CONCAT(a, b) ARGUM_CONCAT1(a, b)
+
+#ifdef __COUNTER__
+    #define ARGUM_UNIQUE_NAME(stem) ARGUM_CONCAT(stem, __COUNTER__)
+#else
+    #define ARGUM_UNIQUE_NAME(stem) ARGUM_CONCAT(stem, __LINE__)
+#endif
+
 #ifndef NDEBUG
     #define ARGUM_ALWAYS_ASSERT(x) assert(x)
 #else

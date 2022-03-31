@@ -229,8 +229,7 @@ namespace Argum {
         }
 
         auto parse(std::basic_string_view<Char> value) const -> ARGUM_EXPECTED(Char, bool) {
-            auto res = this->m_impl.parse(value);
-            ARGUM_CHECK_RESULT(auto ret, res);
+            ARGUM_CHECK_RESULT(auto ret, this->m_impl.parse(value));
             return bool(ret);
         }
     private:

@@ -498,24 +498,22 @@ namespace Argum {
         }
 
         auto parse(int argc, CharType ** argv) const -> ARGUM_EXPECTED(CharType, void) {
-            ARGUM_PROPAGATE_ERROR(this->parse(makeArgSpan<CharType>(argc, argv)));
-            return ARGUM_VOID_SUCCESS;
+            return this->parse(makeArgSpan<CharType>(argc, argv));
         }
 
         template<ArgRange<CharType> Args>
         auto parse(const Args & args) const -> ARGUM_EXPECTED(CharType, void) {
             
-            ARGUM_PROPAGATE_ERROR(this->parse(std::begin(args), std::end(args)));
-            return ARGUM_VOID_SUCCESS;
+            return this->parse(std::begin(args), std::end(args));
         }
 
         template<ArgIterator<CharType> It>
         auto parse(It argFirst, It argLast) const -> ARGUM_EXPECTED(CharType, void) {
             
+            using ReturnType = ARGUM_EXPECTED(CharType, void);
             ParsingState parsingState(*this);
 
-            ARGUM_PROPAGATE_ERROR(parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/false));
-            return ARGUM_VOID_SUCCESS;
+            return ReturnType(parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/false));
         }
 
         auto parseUntilUnknown(int argc, CharType ** argv) const -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
@@ -571,7 +569,7 @@ namespace Argum {
             template<ArgIterator<CharType> It>
             auto parse(It argFirst, It argLast, bool stopOnUnknown) -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             
-                auto tokenizeResult = m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> ARGUM_EXPECTED(CharType, typename Tokenizer::TokenResult) {
+                ARGUM_CHECK_RESULT(auto ret, m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> ARGUM_EXPECTED(CharType, typename Tokenizer::TokenResult) {
 
                     using TokenType = std::decay_t<decltype(token)>;
 
@@ -587,8 +585,7 @@ namespace Argum {
 
                     } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::ArgumentToken>) {
 
-                        auto handleResult = handlePositional(token.value, argFirst + token.argIdx, argLast);
-                        ARGUM_CHECK_RESULT(auto result, handleResult);
+                        ARGUM_CHECK_RESULT(auto result, handlePositional(token.value, argFirst + token.argIdx, argLast));
                         if (!result) {
                             if (stopOnUnknown)
                                 return Tokenizer::StopBefore;
@@ -608,8 +605,7 @@ namespace Argum {
                         ARGUM_PROPAGATE_ERROR(completeOption());
                         ARGUM_THROW(AmbiguousOption, token.name, std::move(token.possibilities));
                     } 
-                });
-                ARGUM_CHECK_RESULT(auto ret, tokenizeResult);
+                }));
                 ARGUM_PROPAGATE_ERROR(completeOption());
                 ARGUM_PROPAGATE_ERROR(validate());
                 return ret;
@@ -658,7 +654,7 @@ namespace Argum {
 
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
                 ARGUM_PROPAGATE_ERROR(validateOptionMax(option));
-                auto result = std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, bool) {
+                ARGUM_CHECK_RESULT(auto ret, std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, bool) {
                         using HandlerType = std::decay_t<decltype(handler)>;
                         constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
                         if constexpr (argumentKind == OptionArgumentKind::None) {
@@ -675,11 +671,10 @@ namespace Argum {
                                 return true;
                             }
                         }
-                    }, option.m_handler);
-                ARGUM_CHECK_RESULT(auto res, result);
+                    }, option.m_handler));
                 m_optionIndex = -1;
                 m_optionArgument.reset();
-                return res;
+                return ret;
             }
 
             auto validateOptionMax(const Option & option) -> ARGUM_EXPECTED(CharType, void) {
@@ -694,8 +689,7 @@ namespace Argum {
 
             template<ArgIterator<CharType> It>
             auto handlePositional(StringViewType value, It remainingArgFirst, It argLast) -> ARGUM_EXPECTED(CharType, bool) {
-                auto completeRes = completeOptionUsingArgument(value);
-                ARGUM_CHECK_RESULT(auto completed, completeRes);
+                ARGUM_CHECK_RESULT(auto completed, completeOptionUsingArgument(value));
                 if (completed)
                     return true;
 

@@ -50,6 +50,7 @@ function(configure_test name)
             test/catch.hpp
             test/test.cpp
             test/test-common.h
+            test/test-expected.cpp
             test/test-formatting.cpp
             test/test-validators.cpp
             test/test-partitioner.cpp
