@@ -151,10 +151,11 @@ int main(int argc, char * argv[]) {
     }
 
     if (encoding)
-        encode(*encoding, sources.begin(), sources.end(), destination);
+        cout << "need to encode with encoding: " << *encoding <<'\n';
     else 
-        compress(*compression, compressionLevel, sources.begin(), sources.end(), destination);
-
+        cout << "need to compress with algorithm: " << *compression << " at level: " << compressionLevel <<'\n';
+    cout << "sources: {" << join(sources.begin(), sources.end(), ", ") << "}\n";
+    cout << "into: " << destination <<'\n';
 }
 ```
 </details>
@@ -256,10 +257,11 @@ int main(int argc, char * argv[]) {
     }
 
     if (encoding)
-        encode(*encoding, sources.begin(), sources.end(), destination);
+        cout << "need to encode with encoding: " << *encoding <<'\n';
     else 
-        compress(*compression, compressionLevel, sources.begin(), sources.end(), destination);
-
+        cout << "need to compress with algorithm: " << *compression << " at level: " << compressionLevel <<'\n';
+    cout << "sources: {" << join(sources.begin(), sources.end(), ", ") << "}\n";
+    cout << "into: " << destination <<'\n';
 }
 ```
 </details>
