@@ -17,21 +17,21 @@ using Catch::Matchers::Message;
 #ifndef ARGUM_NO_THROW
     #define EXPECT_INT_FAILURE(type, expr, err) \
         CHECK_THROWS_MATCHES(ARGUM_EXPECTED_VALUE(parseIntegral<type>(expr)), \
-                            BasicParser<decay_t<decltype(expr[0])>>::ValidationError, \
+                            BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError, \
                             Message(format("invalid arguments: value \"{1}\" {2}", (expr), (err))))
     
     #define EXPECT_INT_SUCCESS(type, expr, res) CHECK(ARGUM_EXPECTED_VALUE(parseIntegral<type>(expr)) == res)
 
     #define EXPECT_FLOAT_FAILURE(type, expr, err) \
         CHECK_THROWS_MATCHES(ARGUM_EXPECTED_VALUE(parseFloatingPoint<type>(expr)), \
-                            BasicParser<decay_t<decltype(expr[0])>>::ValidationError, \
+                            BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError, \
                             Message(format("invalid arguments: value \"{1}\" {2}", (expr), (err))))
 
     #define EXPECT_FLOAT_SUCCESS(type, expr, res) CHECK(ARGUM_EXPECTED_VALUE(parseFloatingPoint<type>(expr)) == res)
 
     #define EXPECT_CHOICE_FAILURE(expr, choices) \
         CHECK_THROWS_MATCHES(ARGUM_EXPECTED_VALUE(parser.parse(expr)), \
-                            BasicParser<decay_t<decltype(expr[0])>>::ValidationError, \
+                            BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError, \
                             Message(format("invalid arguments: value \"{1}\" is not one of the valid choices {{{2}}", (expr), (choices))))
     #define EXPECT_CHOICE_SUCCESS(expr, expected) \
         CHECK(ARGUM_EXPECTED_VALUE(parser.parse(expr)) == expected)

@@ -98,7 +98,7 @@ TEST_CASE( "Partitioner {0,2}*{0,2}", "[partitioner") {
     Partitioner<unsigned> p;
 
     p.addRange(0, 2);
-    p.addRange(0, std::numeric_limits<unsigned>::max());
+    p.addRange(0, numeric_limits<unsigned>::max());
     p.addRange(0, 2);
     CHECK(p.paritionsCount() == 4);
     CHECK(p.minimumSequenceSize() == 0);

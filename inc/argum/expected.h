@@ -57,7 +57,7 @@ namespace Argum {
         requires(std::is_constructible_v<T, OtherT> || std::is_same_v<T, void>)
         BasicExpected(const BasicExpected<Char, OtherT> & other): 
             m_impl(std::visit([&](const auto & val) {
-                    if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ParsingExceptionPtr>) {
+                    if constexpr (std::is_same_v<std::remove_cvref_t<decltype(val)>, ParsingExceptionPtr>) {
                         return ImplType(val); 
                     } else if constexpr (!std::is_same_v<T, void>) {
                         return ImplType(val); 
@@ -81,7 +81,7 @@ namespace Argum {
         }
         auto value() const & -> ConstLValueReference {
             return std::visit([](const auto & val) -> ConstLValueReference {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ValueType>) {
+                if constexpr (std::is_same_v<std::remove_cvref_t<decltype(val)>, ValueType>) {
                     if constexpr (!std::is_same_v<T, void>)
                         return val;
                 } else {
@@ -91,7 +91,7 @@ namespace Argum {
         }
         auto value() & -> LValueReference {
             return std::visit([](auto & val) -> LValueReference {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ValueType>) {
+                if constexpr (std::is_same_v<std::remove_cvref_t<decltype(val)>, ValueType>) {
                     if constexpr (!std::is_same_v<T, void>)
                         return val;
                 } else {
@@ -101,7 +101,7 @@ namespace Argum {
         }
         auto value() && -> RValueReference {
             return std::visit([](auto && val) -> RValueReference {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ValueType>) {
+                if constexpr (std::is_same_v<std::remove_cvref_t<decltype(val)>, ValueType>) {
                     if constexpr (!std::is_same_v<T, void>)
                         return std::move(val);
                 } else {
@@ -123,7 +123,7 @@ namespace Argum {
 
         auto error() const -> ParsingExceptionPtr {
             return std::visit([](const auto & val) -> ParsingExceptionPtr {
-                if constexpr (std::is_same_v<std::decay_t<decltype(val)>, ParsingExceptionPtr>) {
+                if constexpr (std::is_same_v<std::remove_cvref_t<decltype(val)>, ParsingExceptionPtr>) {
                     return val;
                 } else {
                     return ParsingExceptionPtr();

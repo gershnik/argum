@@ -32,15 +32,15 @@ namespace Argum {
     template<class Char> class BasicParser;
 
     template<class T, class Char, class... Args>
-    concept IsHandler = std::is_invocable_v<std::decay_t<T>, Args...> && (
-                            std::is_same_v<void, decltype(std::declval<std::decay_t<T>>()(std::declval<Args>()...))> ||
-                            std::is_same_v<BasicExpected<Char, void>, decltype(std::declval<std::decay_t<T>>()(std::declval<Args>()...))>);
+    concept IsHandler = std::is_invocable_v<std::remove_cvref_t<T>, Args...> && (
+                            std::is_same_v<void, decltype(std::declval<std::remove_cvref_t<T>>()(std::declval<Args>()...))> ||
+                            std::is_same_v<BasicExpected<Char, void>, decltype(std::declval<std::remove_cvref_t<T>>()(std::declval<Args>()...))>);
 
     template<class Char, class H, class FuncType, class... Args>
     decltype(auto) adaptHandler(H && h) 
     requires(IsHandler<decltype(h), Char, Args...>) {
 
-        using InHandlerType = std::decay_t<decltype(h)>;
+        using InHandlerType = std::remove_cvref_t<decltype(h)>;
 
         #ifdef ARGUM_USE_EXPECTED
 
@@ -155,7 +155,7 @@ namespace Argum {
                  IsHandler<decltype(h), CharType, std::optional<StringViewType>> ||
                  IsHandler<decltype(h), CharType, StringViewType>) {
 
-            using InHandlerType = std::decay_t<decltype(h)>;
+            using InHandlerType = std::remove_cvref_t<decltype(h)>;
 
             if constexpr (std::is_invocable_v<InHandlerType>) {
                 this->m_handler.template emplace<NoArgHandler>(adaptHandler<CharType, H, NoArgHandler>(std::forward<H>(h)));
@@ -235,7 +235,7 @@ namespace Argum {
 
             StringType ret;
             std::visit([&](const auto & handler) {
-                using HandlerType = std::decay_t<decltype(handler)>;
+                using HandlerType = std::remove_cvref_t<decltype(handler)>;
                 constexpr auto argumentKind = BasicOption::template argumentKindOf<HandlerType>();
                 if constexpr (argumentKind == ArgumentKind::Optional) {
                     ret.append({space, brop}).append(this->m_argName).append({brcl});
@@ -571,7 +571,7 @@ namespace Argum {
             
                 ARGUM_CHECK_RESULT(auto ret, m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> ARGUM_EXPECTED(CharType, typename Tokenizer::TokenResult) {
 
-                    using TokenType = std::decay_t<decltype(token)>;
+                    using TokenType = std::remove_cvref_t<decltype(token)>;
 
                     if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 
@@ -627,7 +627,7 @@ namespace Argum {
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
                 ARGUM_PROPAGATE_ERROR(validateOptionMax(option));
                 ARGUM_PROPAGATE_ERROR(std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, void) {
-                    using HandlerType = std::decay_t<decltype(handler)>;
+                    using HandlerType = std::remove_cvref_t<decltype(handler)>;
                     constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
                     if constexpr (argumentKind == OptionArgumentKind::None) {
                         if (m_optionArgument)
@@ -655,7 +655,7 @@ namespace Argum {
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
                 ARGUM_PROPAGATE_ERROR(validateOptionMax(option));
                 ARGUM_CHECK_RESULT(auto ret, std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, bool) {
-                        using HandlerType = std::decay_t<decltype(handler)>;
+                        using HandlerType = std::remove_cvref_t<decltype(handler)>;
                         constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
                         if constexpr (argumentKind == OptionArgumentKind::None) {
                             if (m_optionArgument)
@@ -767,7 +767,7 @@ namespace Argum {
                 unsigned remainingPositionalCount = 0;
                 bool currentOptionExpectsArgument = false;
                 (void)m_owner.m_tokenizer.tokenize(remainingArgFirst, argLast, [&](const auto & token) noexcept {
-                    using TokenType = std::decay_t<decltype(token)>;
+                    using TokenType = std::remove_cvref_t<decltype(token)>;
 
                     if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 

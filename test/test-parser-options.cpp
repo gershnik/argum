@@ -441,7 +441,7 @@ TEST_CASE( "Equivalent custom prefixes" , "[parser]") {
         .addValueDelimiter('|')
         .addValueDelimiter('*')
         .addOptionTerminator("^^", "%%");
-    Parser parser(std::move(settings));
+    Parser parser(move(settings));
     parser.add(OPTION_NO_ARG("+f"));
     parser.add(OPTION_REQ_ARG("::bar"));
     parser.add(OPTION_NO_ARG("/baz"));

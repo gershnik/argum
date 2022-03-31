@@ -47,8 +47,8 @@ TEST_CASE( "narrow formatting" , "[formatting]") {
     CHECK(format("{1}", L"abc"sv) == "abc");
     CHECK(format("{1}", L"abc"s) == "abc");
     CHECK(format("{1}", L"abc") == "abc");
-    CHECK(format("{1}", true) == std::to_string(true));
-    CHECK(format("{1}", 1.2) == std::to_string(1.2));
+    CHECK(format("{1}", true) == to_string(true));
+    CHECK(format("{1}", 1.2) == to_string(1.2));
 }
 
 TEST_CASE( "wide formatting" , "[formatting]") {
@@ -89,8 +89,8 @@ TEST_CASE( "wide formatting" , "[formatting]") {
     CHECK(format(L"{1}", L"abc"sv) == L"abc");
     CHECK(format(L"{1}", L"abc"s) == L"abc");
     CHECK(format(L"{1}", L"abc") == L"abc");
-    CHECK(format(L"{1}", true) == std::to_wstring(true));
-    CHECK(format(L"{1}", 1.2) == std::to_wstring(1.2));
+    CHECK(format(L"{1}", true) == to_wstring(true));
+    CHECK(format(L"{1}", 1.2) == to_wstring(1.2));
 }
 
 TEST_CASE( "indent" , "[formatting]") {

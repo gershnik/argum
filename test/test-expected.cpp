@@ -11,9 +11,9 @@ using namespace std::literals;
 
 namespace {
     struct foo {
-        foo(int i):val(std::to_string(i)) { }
+        foo(int i):val(to_string(i)) { }
         foo(string s):val(s) {}
-        foo(int i, char c):val(std::to_string(i) + c) {}
+        foo(int i, char c):val(to_string(i) + c) {}
 
         string val;
     };
@@ -29,27 +29,27 @@ namespace {
 }
 
 TEST_CASE( "expected properties" , "[expected]") {
-    STATIC_REQUIRE(!std::is_default_constructible_v<Expected<foo>>);
-    STATIC_REQUIRE(std::is_copy_constructible_v<Expected<foo>>);
-    STATIC_REQUIRE(std::is_nothrow_move_constructible_v<Expected<foo>>);
-    STATIC_REQUIRE(std::is_copy_assignable_v<Expected<foo>>);
-    STATIC_REQUIRE(std::is_nothrow_move_assignable_v<Expected<foo>>);
-    STATIC_REQUIRE(std::is_constructible_v<Expected<foo>, foo>);
-    STATIC_REQUIRE(std::is_constructible_v<Expected<foo>, int>);
-    STATIC_REQUIRE(std::is_constructible_v<Expected<foo>, string>);
-    STATIC_REQUIRE(std::is_constructible_v<Expected<foo>, decltype(std::make_shared<Exc>())>);
+    STATIC_REQUIRE(!is_default_constructible_v<Expected<foo>>);
+    STATIC_REQUIRE(is_copy_constructible_v<Expected<foo>>);
+    STATIC_REQUIRE(is_nothrow_move_constructible_v<Expected<foo>>);
+    STATIC_REQUIRE(is_copy_assignable_v<Expected<foo>>);
+    STATIC_REQUIRE(is_nothrow_move_assignable_v<Expected<foo>>);
+    STATIC_REQUIRE(is_constructible_v<Expected<foo>, foo>);
+    STATIC_REQUIRE(is_constructible_v<Expected<foo>, int>);
+    STATIC_REQUIRE(is_constructible_v<Expected<foo>, string>);
+    STATIC_REQUIRE(is_constructible_v<Expected<foo>, decltype(make_shared<Exc>())>);
 
-    STATIC_REQUIRE(std::is_nothrow_default_constructible_v<Expected<void>>);
-    STATIC_REQUIRE(std::is_copy_constructible_v<Expected<void>>);
-    STATIC_REQUIRE(std::is_nothrow_move_constructible_v<Expected<void>>);
-    STATIC_REQUIRE(std::is_copy_assignable_v<Expected<void>>);
-    STATIC_REQUIRE(std::is_nothrow_move_assignable_v<Expected<void>>);
-    STATIC_REQUIRE(!std::is_constructible_v<Expected<void>, int>);
-    STATIC_REQUIRE(!std::is_constructible_v<Expected<void>, monostate>);
-    STATIC_REQUIRE(std::is_constructible_v<Expected<void>, decltype(std::make_shared<Exc>())>);
+    STATIC_REQUIRE(is_nothrow_default_constructible_v<Expected<void>>);
+    STATIC_REQUIRE(is_copy_constructible_v<Expected<void>>);
+    STATIC_REQUIRE(is_nothrow_move_constructible_v<Expected<void>>);
+    STATIC_REQUIRE(is_copy_assignable_v<Expected<void>>);
+    STATIC_REQUIRE(is_nothrow_move_assignable_v<Expected<void>>);
+    STATIC_REQUIRE(!is_constructible_v<Expected<void>, int>);
+    STATIC_REQUIRE(!is_constructible_v<Expected<void>, monostate>);
+    STATIC_REQUIRE(is_constructible_v<Expected<void>, decltype(make_shared<Exc>())>);
 
-    STATIC_REQUIRE(std::is_constructible_v<Expected<void>, Expected<foo>>);
-    STATIC_REQUIRE(std::is_constructible_v<Expected<int>, Expected<short>>);
+    STATIC_REQUIRE(is_constructible_v<Expected<void>, Expected<foo>>);
+    STATIC_REQUIRE(is_constructible_v<Expected<int>, Expected<short>>);
 }
 
 TEST_CASE( "expected value" , "[expected]") {
@@ -87,21 +87,21 @@ TEST_CASE( "expected void value" , "[expected]") {
         Expected<void> exp;
         REQUIRE(exp);
         CHECK(!!exp);
-        STATIC_REQUIRE(std::is_void_v<decltype(exp.value())>);
-        STATIC_REQUIRE(std::is_void_v<decltype(*exp)>);
+        STATIC_REQUIRE(is_void_v<decltype(exp.value())>);
+        STATIC_REQUIRE(is_void_v<decltype(*exp)>);
     }
     {
         REQUIRE(Expected<void>());
         CHECK(!!Expected<void>());
-        STATIC_REQUIRE(std::is_void_v<decltype(Expected<void>().value())>);
-        STATIC_REQUIRE(std::is_void_v<decltype(*Expected<void>())>);
+        STATIC_REQUIRE(is_void_v<decltype(Expected<void>().value())>);
+        STATIC_REQUIRE(is_void_v<decltype(*Expected<void>())>);
     }    
     {    
         const Expected<void> exp;
         REQUIRE(exp);
         CHECK(!!exp);
-        STATIC_REQUIRE(std::is_void_v<decltype(exp.value())>);
-        STATIC_REQUIRE(std::is_void_v<decltype(*exp)>);
+        STATIC_REQUIRE(is_void_v<decltype(exp.value())>);
+        STATIC_REQUIRE(is_void_v<decltype(*exp)>);
     }
 }
 
@@ -133,7 +133,7 @@ TEST_CASE( "expected error" , "[expected]") {
     }
 
     {
-        auto ex = std::make_shared<Exc>();
+        auto ex = make_shared<Exc>();
         Expected<foo> exp(ex);
         REQUIRE(!bool(exp));
         CHECK(!exp);
@@ -172,7 +172,7 @@ TEST_CASE( "expected error in void" , "[expected]") {
     }
 
     {
-        auto ex = std::make_shared<Exc>();
+        auto ex = make_shared<Exc>();
         Expected<void> exp(ex);
         REQUIRE(!bool(exp));
         CHECK(!exp);
@@ -184,7 +184,7 @@ TEST_CASE( "expected error in void" , "[expected]") {
 
 TEST_CASE( "converting expecteds" , "[expected]") {
 
-    CHECK(Expected<std::string>(Expected<const char *>("hello")).value() == "hello");
+    CHECK(Expected<string>(Expected<const char *>("hello")).value() == "hello");
     CHECK(Expected<foo>(Expected<int>(5)).value().val == "5");
     CHECK(Expected<void>(Expected<int>(5)));
 }

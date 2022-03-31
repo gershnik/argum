@@ -85,11 +85,11 @@ namespace Argum {
 
     template<class X>
     concept StringLike = requires(X name) {
-        Character<std::decay_t<decltype(name[0])>>;
-        std::is_convertible_v<X, std::basic_string_view<std::decay_t<decltype(name[0])>>>;
+        Character<std::remove_cvref_t<decltype(name[0])>>;
+        std::is_convertible_v<X, std::basic_string_view<std::remove_cvref_t<decltype(name[0])>>>;
     };
 
-    template<StringLike S> using CharTypeOf = std::decay_t<decltype(std::declval<S>()[0])>;
+    template<StringLike S> using CharTypeOf = std::remove_cvref_t<decltype(std::declval<S>()[0])>;
 
     template<class X, class Char>
     concept StringLikeOf = Character<Char> && std::is_convertible_v<X, std::basic_string_view<Char>>;
