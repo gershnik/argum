@@ -31,73 +31,6 @@ namespace Argum {
 
     template<class Char> class BasicParser;
 
-    template<class T, class Char, class... Args>
-    concept IsHandler = std::is_invocable_v<std::remove_cvref_t<T>, Args...> && (
-                            std::is_same_v<void, decltype(std::declval<std::remove_cvref_t<T>>()(std::declval<Args>()...))> ||
-                            std::is_same_v<BasicExpected<Char, void>, decltype(std::declval<std::remove_cvref_t<T>>()(std::declval<Args>()...))>);
-
-    template<class Char, class H, class FuncType, class... Args>
-    decltype(auto) adaptHandler(H && h) 
-    requires(IsHandler<decltype(h), Char, Args...>) {
-
-        using InHandlerType = std::remove_cvref_t<decltype(h)>;
-
-        #ifdef ARGUM_USE_EXPECTED
-
-            if constexpr (std::is_invocable_r_v<BasicExpected<Char, void>, InHandlerType, Args...>) {
-
-                return std::forward<H>(h);
-
-            } else {
-
-                InHandlerType handler(std::forward<H>(h));
-
-                #ifdef ARGUM_NO_THROW
-
-                    return [=](Args ...args) -> BasicExpected<Char, void> {
-                        handler(args...);
-                        return {};
-                    };
-
-                #else
-
-                    if constexpr (!std::is_nothrow_invocable_v<InHandlerType, Args...>) {
-
-                        return [=](Args ...args) -> BasicExpected<Char, void> {
-                            try {
-                                handler(args...);
-                            } catch(BasicParsingException<Char> & ex) {
-                                return std::move(ex).clone();
-                            }
-                            return {};
-                        };
-
-                    } else {
-
-                        return [=](Args ...args) -> BasicExpected<Char, void> {
-                            handler(args...);
-                            return {};
-                        };
-                    }
-                    
-                #endif
-            }
-
-        #else
-            if constexpr (std::is_invocable_r_v<void, InHandlerType, Args...>) {
-
-                return std::forward<H>(h);
-
-            } else {
-
-                InHandlerType handler(std::forward<H>(h));
-                return [=](Args ...args) -> void {
-                    handler(args...).value();
-                };
-            }
-        #endif
-    }
-
     template<class Char>
     class BasicOption {
         friend class BasicParser<Char>;
@@ -151,27 +84,27 @@ namespace Argum {
 
         template<class H>
         auto handler(H && h) & -> BasicOption &
-        requires(IsHandler<decltype(h), CharType> || 
-                 IsHandler<decltype(h), CharType, std::optional<StringViewType>> ||
-                 IsHandler<decltype(h), CharType, StringViewType>) {
+        requires(IsHandler<decltype(h), CharType, void> || 
+                 IsHandler<decltype(h), CharType, void, std::optional<StringViewType>> ||
+                 IsHandler<decltype(h), CharType, void, StringViewType>) {
 
             using InHandlerType = std::remove_cvref_t<decltype(h)>;
 
             if constexpr (std::is_invocable_v<InHandlerType>) {
-                this->m_handler.template emplace<NoArgHandler>(adaptHandler<CharType, H, NoArgHandler>(std::forward<H>(h)));
+                this->m_handler.template emplace<NoArgHandler>(adaptHandler<CharType, H, void>(std::forward<H>(h)));
             } else if constexpr (std::is_invocable_v<InHandlerType, std::optional<StringViewType>>)
-                this->m_handler.template emplace<OptArgHandler>(adaptHandler<CharType, H, OptArgHandler, std::optional<StringViewType>>(std::forward<H>(h)));
+                this->m_handler.template emplace<OptArgHandler>(adaptHandler<CharType, H, void, std::optional<StringViewType>>(std::forward<H>(h)));
             else {
-                this->m_handler.template emplace<ReqArgHandler>(adaptHandler<CharType, H, ReqArgHandler, StringViewType>(std::forward<H>(h)));
+                this->m_handler.template emplace<ReqArgHandler>(adaptHandler<CharType, H, void, StringViewType>(std::forward<H>(h)));
             }
             return *this;
         }
 
         template<class H>
         auto handler(H && h) && -> BasicOption &&
-        requires(IsHandler<decltype(h), CharType> || 
-                 IsHandler<decltype(h), CharType, std::optional<StringViewType>> ||
-                 IsHandler<decltype(h), CharType, StringViewType>) {
+        requires(IsHandler<decltype(h), CharType, void> || 
+                 IsHandler<decltype(h), CharType, void, std::optional<StringViewType>> ||
+                 IsHandler<decltype(h), CharType, void, StringViewType>) {
             return std::move(static_cast<BasicOption *>(this)->handler(std::forward<H>(h)));
         }
 
@@ -293,13 +226,13 @@ namespace Argum {
 
         template<class H>
         auto handler(H && h) & -> BasicPositional & 
-        requires(IsHandler<decltype(h), CharType, StringViewType>) {
-            this->m_handler = adaptHandler<CharType, H, Handler, StringViewType>(std::forward<H>(h));
+        requires(IsHandler<decltype(h), CharType, void, StringViewType>) {
+            this->m_handler = adaptHandler<CharType, H, void, StringViewType>(std::forward<H>(h));
             return *this;
         }
         template<class H>
         auto handler(H && h) && -> BasicPositional && 
-        requires(IsHandler<decltype(h), CharType, StringViewType>) {
+        requires(IsHandler<decltype(h), CharType, void, StringViewType>) {
             return std::move(static_cast<BasicPositional *>(this)->handler(std::forward<H>(h)));
         }
 

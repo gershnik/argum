@@ -155,6 +155,52 @@ namespace Argum {
     ARGUM_MOD_EXPORTED template<class T> using Expected = BasicExpected<char, T>;
     ARGUM_MOD_EXPORTED template<class T> using WExpected = BasicExpected<wchar_t, T>;
 
+    template<class T, class Char, class Ret, class... Args>
+    concept IsHandler = std::is_invocable_v<std::remove_cvref_t<T>, Args...> && (
+                            std::is_same_v<Ret, decltype(std::declval<std::remove_cvref_t<T>>()(std::declval<Args>()...))> ||
+                            std::is_same_v<BasicExpected<Char, Ret>, decltype(std::declval<std::remove_cvref_t<T>>()(std::declval<Args>()...))>);
+
+    template<class Char, class H, class Ret, class... Args>
+    decltype(auto) adaptHandler(H && h) 
+    requires(IsHandler<decltype(h), Char, Ret, Args...>) {
+
+        using InHandlerType = std::remove_cvref_t<decltype(h)>;
+
+        #ifdef ARGUM_USE_EXPECTED
+
+            if constexpr (std::is_invocable_r_v<BasicExpected<Char, Ret>, InHandlerType, Args...>) {
+
+                return std::forward<H>(h);
+
+            } else {
+
+                InHandlerType handler(std::forward<H>(h));
+
+                return [=](Args ...args) -> BasicExpected<Char, Ret> {
+                    if constexpr (std::is_same_v<Ret, void>) {
+                        handler(args...);
+                        return {};
+                    } else {
+                        return handler(args...);
+                    }
+                };
+            }
+
+        #else
+            if constexpr (std::is_invocable_r_v<Ret, InHandlerType, Args...>) {
+
+                return std::forward<H>(h);
+
+            } else {
+
+                InHandlerType handler(std::forward<H>(h));
+                return [=](Args ...args) -> Ret {
+                    return handler(args...).value();
+                };
+            }
+        #endif
+    }
+
     #ifdef ARGUM_USE_EXPECTED
         #define ARGUM_EXPECTED(c, type) BasicExpected<c, type>
         #define ARGUM_PROPAGATE_ERROR(expr) if (auto err = (expr).error()) { return err; }
