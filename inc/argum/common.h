@@ -12,8 +12,10 @@
 #include <string_view>
 #include <string>
 #include <concepts>
+#include <exception>
 
 #include <assert.h>
+#include <stdio.h>
 
 #ifndef ARGUM_MOD_EXPORTED
     #define ARGUM_MOD_EXPORTED
@@ -25,17 +27,57 @@
     ARGUM_DECLARE_FRIENDLY_NAME(stem, char, ) \
     ARGUM_DECLARE_FRIENDLY_NAME(stem, wchar_t, W)
 
+#define ARGUM_CONCAT1(a, b) a ## b
+#define ARGUM_CONCAT(a, b) ARGUM_CONCAT1(a, b)
+
+#ifdef __COUNTER__
+    #define ARGUM_UNIQUE_NAME(stem) ARGUM_CONCAT(stem, __COUNTER__)
+#else
+    #define ARGUM_UNIQUE_NAME(stem) ARGUM_CONCAT(stem, __LINE__)
+#endif
+
 #ifndef NDEBUG
     #define ARGUM_ALWAYS_ASSERT(x) assert(x)
 #else
-    #define ARGUM_ALWAYS_ASSERT(x)  ((void) ((x) ? ((void)0) : std::terminate()))
+    #define ARGUM_ALWAYS_ASSERT(x)  ((void) ((x) ? ((void)0) : ::Argum::terminateApplication("failed assertion `" #x "'")))
 #endif
 
-#ifndef ARGUM_INVALID_ARGUMENT
-    #define ARGUM_INVALID_ARGUMENT(message) ARGUM_ALWAYS_ASSERT(!message)
+#define ARGUM_INVALID_ARGUMENT(message) ::Argum::terminateApplication(message)
+
+#if defined(__GNUC__)
+    #ifndef __EXCEPTIONS
+        #define ARGUM_NO_THROW
+    #endif
+#elif defined(_MSC_VER)
+    #if !defined(_CPPUNWIND) || _HAS_EXCEPTIONS == 0
+        #define ARGUM_NO_THROW
+    #endif
 #endif
+
+#ifndef ARGUM_NO_THROW
+    #define ARGUM_RAISE_EXCEPTION(x) throw x
+#else
+    #ifndef ARGUM_USE_EXPECTED
+        #define ARGUM_USE_EXPECTED 1
+    #endif
+    #define ARGUM_RAISE_EXCEPTION(x) ::Argum::terminateApplication((x).what())
+#endif 
 
 namespace Argum {
+
+    [[noreturn]] auto terminateApplication(const char * message) -> void; 
+
+    #ifndef ARGUM_CUSTOM_TERMINATE
+        [[noreturn]] inline auto terminateApplication(const char * message) -> void { 
+            #ifndef NDEBUG
+                assert(message && false);
+            #else
+                fprintf(stderr, "%s\n", message); 
+                fflush(stderr); 
+                std::terminate(); 
+            #endif
+        }
+    #endif
 
     template<class Char>
     concept Character = std::is_same_v<Char, char> || 
@@ -43,11 +85,11 @@ namespace Argum {
 
     template<class X>
     concept StringLike = requires(X name) {
-        Character<std::decay_t<decltype(name[0])>>;
-        std::is_convertible_v<X, std::basic_string_view<std::decay_t<decltype(name[0])>>>;
+        Character<std::remove_cvref_t<decltype(name[0])>>;
+        std::is_convertible_v<X, std::basic_string_view<std::remove_cvref_t<decltype(name[0])>>>;
     };
 
-    template<StringLike S> using CharTypeOf = std::decay_t<decltype(std::declval<S>()[0])>;
+    template<StringLike S> using CharTypeOf = std::remove_cvref_t<decltype(std::declval<S>()[0])>;
 
     template<class X, class Char>
     concept StringLikeOf = Character<Char> && std::is_convertible_v<X, std::basic_string_view<Char>>;

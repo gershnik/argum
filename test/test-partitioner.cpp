@@ -1,6 +1,4 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
+#include "test-common.h"
 
 #include <argum/partitioner.h>
 
@@ -100,7 +98,7 @@ TEST_CASE( "Partitioner {0,2}*{0,2}", "[partitioner") {
     Partitioner<unsigned> p;
 
     p.addRange(0, 2);
-    p.addRange(0, std::numeric_limits<unsigned>::max());
+    p.addRange(0, numeric_limits<unsigned>::max());
     p.addRange(0, 2);
     CHECK(p.paritionsCount() == 4);
     CHECK(p.minimumSequenceSize() == 0);

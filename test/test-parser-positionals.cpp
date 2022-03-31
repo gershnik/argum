@@ -10,7 +10,7 @@ TEST_CASE( "Positional boundary Cases" , "[parser]") {
         
         EXPECT_SUCCESS(ARGS("x"), RESULTS())
     }
-
+#ifndef ARGUM_NO_THROW
     {
         Parser parser;
         parser.add(POSITIONAL("p")); 
@@ -22,7 +22,7 @@ TEST_CASE( "Positional boundary Cases" , "[parser]") {
         parser.add(POSITIONAL("p")); 
         CHECK_THROWS_AS(parser.add(POSITIONAL("p").occurs(Quantifier(6,0))), invalid_argument);
     }
-
+#endif
 }
 
 TEST_CASE( "Simple positional" , "[parser]") {
