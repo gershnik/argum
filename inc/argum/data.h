@@ -14,8 +14,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <stdexcept>
+#include <exception>
 #include <limits>
+#include <memory>
+#include <tuple>
 
 namespace Argum {
 
@@ -87,38 +89,90 @@ namespace Argum {
     ARGUM_MOD_EXPORTED inline constexpr Quantifier oneOrMoreTimes (1, Quantifier::infinity);
     ARGUM_MOD_EXPORTED inline constexpr Quantifier onceOrMore     = oneOrMoreTimes;
 
-    ARGUM_MOD_EXPORTED
-    template<class Char>
-    class BasicParsingException : public std::runtime_error {
-    public:
-        auto message() const -> std::basic_string_view<Char> {
-            return m_message;
-        }
-        
-    protected:
-        BasicParsingException(std::basic_string<Char> message) : 
-            std::runtime_error(toString<char>(message)),
-            m_message(std::move(message)) {
-        }
+    ARGUM_MOD_EXPORTED enum class Error {
+        UnrecognizedOption = 1,
+        AmbiguousOption,
+        MissingOptionArgument,
+        ExtraOptionArgument,
+        ExtraPositional,
+        ValidationError,
+        ResponseFileError,
 
-    private:
-        std::basic_string<Char> m_message;
+        Last = ResponseFileError,
+        UserError = int(Last) + 100
     };
 
     ARGUM_MOD_EXPORTED
-    template<>
-    class BasicParsingException<char> : public std::runtime_error {
+    template<class Char>
+    class BasicParsingException : public std::exception {
+    private:
+        using StringsType = std::conditional_t<std::is_same_v<Char, char>, 
+                                    std::tuple<std::string>,
+                                    std::tuple<std::string, std::basic_string<Char>>>;
     public:
-        auto message() const -> std::string_view {
-            return what();
+        auto message() const noexcept -> std::basic_string_view<Char> {
+            return std::get<std::tuple_size_v<StringsType> - 1>(this->m_strings);
         }
+
+        auto code() const noexcept -> Error {
+            return m_code;
+        }
+
+        template<class Derived>
+        requires(std::is_base_of_v<BasicParsingException, Derived>)
+        auto as() const noexcept -> const Derived * {
+            if (this->m_code == Derived::ErrorCode)
+                return static_cast<const Derived *>(this);
+            return nullptr;
+        }
+
+        template<class Derived>
+        requires(std::is_base_of_v<BasicParsingException, Derived>)
+        auto as() noexcept -> Derived * {
+            return const_cast<Derived *>(const_cast<const BasicParsingException *>(this)->as<Derived>());
+        }
+
+        auto what() const noexcept -> const char * override {
+            return std::get<0>(this->m_strings).c_str();
+        }
+
+        virtual auto clone() const & -> std::shared_ptr<BasicParsingException> = 0;
+        virtual auto clone() & -> std::shared_ptr<BasicParsingException> = 0;
+        virtual auto clone() && -> std::shared_ptr<BasicParsingException> = 0;
+        [[noreturn]] virtual auto raise() const -> void = 0;
+        
     protected:
-        BasicParsingException(std::string message) : 
-            std::runtime_error(message) {
+        BasicParsingException(Error code, std::basic_string<Char> message) : 
+            m_strings(BasicParsingException::initStrings(std::move(message))),
+            m_code(code) {
         }
+    private:
+        static auto initStrings(std::basic_string<Char> && message) -> StringsType {
+            if constexpr (std::is_same_v<Char, char>) {
+                return StringsType(std::move(message));
+            } else {
+                return StringsType(toString<char>(message), std::move(message));
+            }
+        }
+    private:
+        StringsType m_strings;
+        Error m_code;
     };
     
     ARGUM_DECLARE_FRIENDLY_NAMES(ParsingException)
+
+    #define ARGUM_IMPLEMENT_EXCEPTION(type, base, code) \
+        static constexpr Error ErrorCode = code; \
+        auto clone() const & -> std::shared_ptr<base> override { \
+            return std::make_shared<type>(*this); \
+        } \
+        auto clone() & -> std::shared_ptr<base> override { \
+            return std::make_shared<type>(*this); \
+        } \
+        auto clone() && -> std::shared_ptr<base> override { \
+            return std::make_shared<type>(std::move(*this)); \
+        } \
+        [[noreturn]] auto raise() const -> void override { ARGUM_RAISE_EXCEPTION(*this); }
 
 }
 

@@ -1,6 +1,7 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message) 
+#ifndef HEADER_PARSER_COMMON_H_INCLUDED
+#define HEADER_PARSER_COMMON_H_INCLUDED
+
+#include "test-common.h"
 
 #include <argum/help-formatter.h>
 #include <argum/parser.h>
@@ -33,22 +34,26 @@ using Value = BasicValue<char>;
 using WValue = BasicValue<wchar_t>;
 
 
-inline void reportInvalidArgument(const char * message) {
-    throw invalid_argument(message);
-}
-
 template<class Char>
 inline auto parse(const BasicParser<Char> & parser, initializer_list<const Char *> args, 
                   map<basic_string<Char>, vector<BasicValue<Char>>> & results) {
     results.clear();
-    parser.parse(args.begin(), args.end());
+    #ifndef ARGUM_NO_THROW
+        ARGUM_EXPECTED_VALUE(parser.parse(args.begin(), args.end()));
+    #else 
+        return parser.parse(args.begin(), args.end());
+    #endif
 }
 
 template<class Char>
 inline auto parseUntilUnknown(const BasicParser<Char> & parser, initializer_list<const Char *> args,
                               map<basic_string<Char>, vector<BasicValue<Char>>> & results) {
     results.clear();
-    return parser.parseUntilUnknown(args.begin(), args.end());
+    #ifndef ARGUM_NO_THROW
+        return ARGUM_EXPECTED_VALUE(parser.parseUntilUnknown(args.begin(), args.end()));
+    #else 
+        return parser.parseUntilUnknown(args.begin(), args.end());
+    #endif
 }
 
 
@@ -77,31 +82,70 @@ namespace std {
     }
 }
 
-#define UNRECOGNIZED_OPTION(x) catch(UnrecognizedOption & ex) { CHECK(ex.option == (x)); }
-#define WUNRECOGNIZED_OPTION(x) catch(WUnrecognizedOption & ex) { CHECK(ex.option == (x)); }
-#define AMBIGUOUS_OPTION(x, ...) catch(AmbiguousOption & ex) { \
+#ifndef ARGUM_NO_THROW
+
+    #define HANDLE_FAILURE(type, h) catch (type & ex) { \
+        h \
+    }
+
+    #define EXPECT_FAILURE(args, failure) \
+        REQUIRE_NOTHROW([&](){ try { parse(parser, args, results); CHECK(false); } failure }());
+    #define EXPECT_SUCCESS(args, expected) { \
+        REQUIRE_NOTHROW(parse(parser, args, results)); \
+        CHECK(results == expected); \
+    }
+    #define EXPECT_SUCCESS_UNTIL_UNKNOWN(args, expected, expectedRemainder) { \
+        REQUIRE_NOTHROW(remainder = parseUntilUnknown(parser, args, results)); \
+        CHECK(results == expected); \
+        CHECK(remainder == expectedRemainder); \
+    }
+#else 
+    #define HANDLE_FAILURE(type, h) [](auto * ex) { \
+        auto specific = ex->template as<type>(); \
+        REQUIRE(specific); \
+        [](const type & ex)h(*specific); \
+    }
+
+    #define EXPECT_FAILURE(args, failure) { \
+        auto res = parse(parser, args, results); \
+        REQUIRE(!res); \
+        failure(res.error().get()); \
+    }
+    #define EXPECT_SUCCESS(args, expected) { \
+        auto res = parse(parser, args, results); \
+        REQUIRE(res); \
+        CHECK(results == expected); \
+    }
+    #define EXPECT_SUCCESS_UNTIL_UNKNOWN(args, expected, expectedRemainder) { \
+        auto res = parseUntilUnknown(parser, args, results); \
+        REQUIRE(res); \
+        remainder = *res; \
+        CHECK(results == expected); \
+        CHECK(remainder == expectedRemainder); \
+    }
+
+#endif
+
+#define UNRECOGNIZED_OPTION(x)      HANDLE_FAILURE(UnrecognizedOption,      { CHECK(ex.option == (x)); })
+#define WUNRECOGNIZED_OPTION(x)     HANDLE_FAILURE(WUnrecognizedOption,     { CHECK(ex.option == (x)); })
+#define AMBIGUOUS_OPTION(x, ...)    HANDLE_FAILURE(AmbiguousOption, { \
     CHECK(ex.option == (x)); \
     CHECK(ex.possibilities == vector<string>{__VA_ARGS__}); \
-}
-#define WAMBIGUOUS_OPTION(x, ...) catch(WAmbiguousOption & ex) { \
+})
+#define WAMBIGUOUS_OPTION(x, ...)   HANDLE_FAILURE(WAmbiguousOption, { \
     CHECK(ex.option == (x)); \
     CHECK(ex.possibilities == vector<wstring>{__VA_ARGS__}); \
-}
-#define EXTRA_POSITIONAL(x) catch(ExtraPositional & ex) { CHECK(ex.value == (x)); }
-#define WEXTRA_POSITIONAL(x) catch(WExtraPositional & ex) { CHECK(ex.value == (x)); }
-#define MISSING_OPTION_ARGUMENT(x) catch(MissingOptionArgument & ex) { CHECK(ex.option == (x)); }
-#define WMISSING_OPTION_ARGUMENT(x) catch(WMissingOptionArgument & ex) { CHECK(ex.option == (x)); }
-#define EXTRA_OPTION_ARGUMENT(x) catch(ExtraOptionArgument & ex) { CHECK(ex.option == (x)); }
-#define WEXTRA_OPTION_ARGUMENT(x) catch(WExtraOptionArgument & ex) { CHECK(ex.option == (x)); }
-#define VALIDATION_ERROR(x) catch(ValidationError & ex) { CHECK(ex.message() == (x)); }
-#define WVALIDATION_ERROR(x) catch(WValidationError & ex) { CHECK(ex.message() == (x)); }
+})
+#define EXTRA_POSITIONAL(x)         HANDLE_FAILURE(ExtraPositional,         { CHECK(ex.value == (x)); })
+#define WEXTRA_POSITIONAL(x)        HANDLE_FAILURE(WExtraPositional,        { CHECK(ex.value == (x)); })
+#define MISSING_OPTION_ARGUMENT(x)  HANDLE_FAILURE(MissingOptionArgument,   { CHECK(ex.option == (x)); })
+#define WMISSING_OPTION_ARGUMENT(x) HANDLE_FAILURE(WMissingOptionArgument,  { CHECK(ex.option == (x)); })
+#define EXTRA_OPTION_ARGUMENT(x)    HANDLE_FAILURE(ExtraOptionArgument,     { CHECK(ex.option == (x)); })
+#define WEXTRA_OPTION_ARGUMENT(x)   HANDLE_FAILURE(WExtraOptionArgument,    { CHECK(ex.option == (x)); })
+#define VALIDATION_ERROR(x)         HANDLE_FAILURE(ValidationError,         { CHECK(ex.message() == (x)); })
+#define WVALIDATION_ERROR(x)        HANDLE_FAILURE(WValidationError,        { CHECK(ex.message() == (x)); })
 
-#define EXPECT_FAILURE(args, failure) \
-    REQUIRE_NOTHROW([&](){ try { parse(parser, args, results); CHECK(false); } failure }());
-#define EXPECT_SUCCESS(args, expected) { \
-    REQUIRE_NOTHROW(parse(parser, args, results)); \
-    CHECK(results == expected); \
-}
+
 #define ARGS(...) (initializer_list<const char *>{__VA_ARGS__})
 #define WARGS(...) (initializer_list<const wchar_t *>{__VA_ARGS__})
 #define RESULTS(...) decltype(results)(initializer_list<pair<const string, vector<Value>>>{__VA_ARGS__})
@@ -131,3 +175,5 @@ namespace std {
 #define WPOSITIONAL(n) WPositional(n).handler([&](wstring_view value){ \
         results[n].push_back(wstring(value)); \
     })
+
+#endif

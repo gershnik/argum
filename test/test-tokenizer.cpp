@@ -1,6 +1,4 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
+#include "test-common.h"
 
 #include <argum/tokenizer.h>
 
@@ -27,46 +25,48 @@ using AmbiguousOptionToken = Tokenizer::AmbiguousOptionToken;
 
 
 namespace Argum {
-    using Token = std::variant<OptionToken, OptionStopToken, ArgumentToken, UnknownOptionToken, AmbiguousOptionToken>;
+    using Token = variant<OptionToken, OptionStopToken, ArgumentToken, UnknownOptionToken, AmbiguousOptionToken>;
     
-    static auto operator<<(std::ostream & str, const OptionToken & token) -> std::ostream & {
+    static auto operator<<(ostream & str, const OptionToken & token) -> ostream & {
         str << "OptionToken: "  << token.idx << ", used as: " << token.usedName;
         if (token.argument)
             str << ", arg: " << *token.argument;
         return str << ", from arg: " << token.argIdx;
     }
-    static auto operator<<(std::ostream & str, const ArgumentToken & token) -> std::ostream & {
+    static auto operator<<(ostream & str, const ArgumentToken & token) -> ostream & {
         return str << "ArgumentToken: " << token.value  << ", from: " << token.argIdx;
     }
-    static auto operator<<(std::ostream & str, const OptionStopToken & token) -> std::ostream & {
+    static auto operator<<(ostream & str, const OptionStopToken & token) -> ostream & {
         return str << "OptionStopToken, from arg: " << token.argIdx;
     }
-    static auto operator<<(std::ostream & str, const UnknownOptionToken & token) -> std::ostream & {
+    static auto operator<<(ostream & str, const UnknownOptionToken & token) -> ostream & {
         str << "UnknownOptionToken: " << token.name;
         if (token.argument)
             str << ", arg: " << *token.argument;
         return str << ", from arg: " << token.argIdx;
     }
-    static auto operator<<(std::ostream & str, const AmbiguousOptionToken & token) -> std::ostream & {
+    static auto operator<<(ostream & str, const AmbiguousOptionToken & token) -> ostream & {
         str << "AmbiguousOptionToken: " << token.name;
         if (token.argument)
             str << ", arg: " << *token.argument;
         str << " (" << token.possibilities[0];
-        std::for_each(token.possibilities.begin() + 1, token.possibilities.end(), [&](const auto & n) { str << ", " << n; });
+        for_each(token.possibilities.begin() + 1, token.possibilities.end(), [&](const auto & n) { str << ", " << n; });
         return str << ", from arg: " << token.argIdx;
     }
     
-    static auto operator<<(std::ostream & str, const Token & token) -> std::ostream & {
-        return std::visit([&str](const auto & value) -> std::ostream & { return str << value; }, token);
+    static auto operator<<(ostream & str, const Token & token) -> ostream & {
+        return visit([&str](const auto & value) -> ostream & { return str << value; }, token);
     }
 }
 
+#ifndef ARGUM_NO_THROW
 TEST_CASE( "Settings boundaries" , "[tokenizer]") {
 
     CHECK_THROWS_AS(Tokenizer::Settings().addShortPrefix("-").addLongPrefix("-"), invalid_argument);
     CHECK_THROWS_AS(Tokenizer::Settings().addLongPrefix("-").addShortPrefix("-"), invalid_argument);
     CHECK_THROWS_AS(Tokenizer::Settings().addValueDelimiter('-').addValueDelimiter('-'), invalid_argument);
 }
+#endif
 
 
 TEST_CASE( "Null Command Line" , "[tokenizer]") {
@@ -77,7 +77,7 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
         CHECK(false);
         return Tokenizer::Continue;
     });
-    CHECK(ret == vector<string>{});
+    CHECK(ARGUM_EXPECTED_VALUE(ret) == vector<string>{});
 }
 
 
@@ -89,15 +89,15 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
     auto argv = vector(args); \
     auto expected = vector(results); \
     size_t current = 0;\
-    auto res = t.tokenize(argv.data(), argv.data() + std::size(argv), [&](const auto & token) {\
-        REQUIRE(current < std::size(expected));\
+    auto res = t.tokenize(argv.data(), argv.data() + size(argv), [&](const auto & token) {\
+        REQUIRE(current < size(expected));\
         INFO("token index: " << current); \
         CHECK(Token(token) == expected[current]);\
         ++current;\
         return Tokenizer::Continue;\
     });\
-    CHECK(current == std::size(expected));\
-    CHECK(res == vector<string>{});\
+    CHECK(current == size(expected));\
+    CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});\
 }
 
 
@@ -109,7 +109,7 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
     TEST_TOKENIZER(t, ARGS(), TOKENS(
     ));
     TEST_TOKENIZER(t, ARGS( "-c" ), TOKENS(
-        UnknownOptionToken{ 0, "-c", std::nullopt }
+        UnknownOptionToken{ 0, "-c", nullopt }
     ));
     TEST_TOKENIZER(t, ARGS( "a", "xyz", "123"), TOKENS(
         ArgumentToken{ 0, "a" },
@@ -117,9 +117,9 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
         ArgumentToken{ 2, "123" }
     ));
     TEST_TOKENIZER(t, ARGS("-a", "xyz", "-b", "--", "c"), TOKENS(
-        UnknownOptionToken{  0, "-a", std::nullopt},
+        UnknownOptionToken{  0, "-a", nullopt},
         ArgumentToken{       1, "xyz" },
-        UnknownOptionToken{  2, "-b", std::nullopt},
+        UnknownOptionToken{  2, "-b", nullopt},
         OptionStopToken{     3 },
         ArgumentToken{       4, "c" }
     ));
@@ -133,23 +133,23 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     t.add(OptionNames("-c"));
 
     TEST_TOKENIZER(t, ARGS("-c"), TOKENS(
-        OptionToken{ 0, 0, "-c", std::nullopt}
+        OptionToken{ 0, 0, "-c", nullopt}
     ));
     TEST_TOKENIZER(t, ARGS("-c", "-c"), TOKENS(
-        OptionToken{ 0, 0, "-c", std::nullopt},
-        OptionToken{ 1, 0, "-c", std::nullopt}
+        OptionToken{ 0, 0, "-c", nullopt},
+        OptionToken{ 1, 0, "-c", nullopt}
     ));
     TEST_TOKENIZER(t, ARGS( "-cc" ), TOKENS(
-        OptionToken{ 0, 0, "-c", std::nullopt},
-        OptionToken{ 0, 0, "-c", std::nullopt}
+        OptionToken{ 0, 0, "-c", nullopt},
+        OptionToken{ 0, 0, "-c", nullopt}
     ));
     TEST_TOKENIZER(t, ARGS("-c", "c", "-c"), TOKENS(
-        OptionToken{   0, 0, "-c", std::nullopt},
+        OptionToken{   0, 0, "-c", nullopt},
         ArgumentToken{ 1, "c" },
-        OptionToken{   2, 0, "-c", std::nullopt}
+        OptionToken{   2, 0, "-c", nullopt}
     ));
     TEST_TOKENIZER(t, ARGS("-c", "--", "-c"), TOKENS(
-        OptionToken{     0, 0, "-c", std::nullopt},
+        OptionToken{     0, 0, "-c", nullopt},
         OptionStopToken{ 1 },
         ArgumentToken{   2, "-c"}
     ));
@@ -164,94 +164,94 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
     t.add(OptionNames("-e"));
     SECTION("First single char in group"){
         const char * argv[] = {"-cdefg"};
-        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-c")
                     return Tokenizer::StopBefore;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-cdefg"});
-        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-cdefg"});
+        res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-c")
                     return Tokenizer::StopAfter;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-defg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg"});
     }
     SECTION("Middle single char in group"){
         const char * argv[] = {"-cdefg"};
-        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
                     return Tokenizer::StopBefore;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-defg"});
-        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg"});
+        res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
                     return Tokenizer::StopAfter;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-efg"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg"});
     }
     SECTION("Last single char in group"){
         const char * argv[] = {"-cdefg"};
-        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-e")
                     return Tokenizer::StopBefore;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-efg"});
-        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg"});
+        res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-e")
                     return Tokenizer::StopAfter;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});
     }
     SECTION("Middle single char in group, other parameters"){
         const char * argv[] = {"abc", "-cdefg", "qqq"};
-        auto res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
                     return Tokenizer::StopBefore;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-defg", "qqq"});
-        res = t.tokenize(std::begin(argv), std::end(argv), [&](const auto & token) {
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg", "qqq"});
+        res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
-            if constexpr (std::is_same_v<std::decay_t<decltype(token)>, OptionToken>) {
+            if constexpr (is_same_v<remove_cvref_t<decltype(token)>, OptionToken>) {
                 if (token.usedName == "-d")
                     return Tokenizer::StopAfter;
             }
 
             return Tokenizer::Continue;
         });
-        CHECK(res == vector<string>{"-efg", "qqq"});
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg", "qqq"});
     }
 }

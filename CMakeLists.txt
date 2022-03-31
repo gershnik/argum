@@ -30,6 +30,7 @@ target_sources(argum
         inc/argum/flat-map.h
         inc/argum/simple-file.h
         inc/argum/data.h
+        inc/argum/expected.h
         inc/argum/command-line.h
         inc/argum/tokenizer.h
         inc/argum/parser.h

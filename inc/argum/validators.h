@@ -98,7 +98,7 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<AnyParserValidator Validator>
     auto operator!(const Validator & val) {
-        return NotValidator<std::decay_t<Validator>>(val);
+        return NotValidator<std::remove_cvref_t<Validator>>(val);
     }
 
     ARGUM_MOD_EXPORTED
@@ -209,44 +209,44 @@ namespace Argum {
     };
 
     template<ValidatorCombination Comb, class V1, class V2>
-    requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<V1>, std::remove_cvref_t<V2>>)
     auto combine(V1 && v1, V2 && v2)  {
-        using R1 = std::decay_t<V1>;
-        using R2 = std::decay_t<V2>;
+        using R1 = std::remove_cvref_t<V1>;
+        using R2 = std::remove_cvref_t<V2>;
         return CombinedValidator<Comb, R1, R2>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
     template<ValidatorCombination Comb, class V1, class... Args2>
-    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<V1>, Args2...>)
     auto combine(V1 && v1, const CombinedValidator<Comb, Args2...> & v2)  {
-        using R1 = std::decay_t<V1>;
+        using R1 = std::remove_cvref_t<V1>;
         return CombinedValidator<Comb, R1, Args2...>(
             std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), v2.items())
         );
     }
     
     template<ValidatorCombination Comb, class V1, class... Args2>
-    requires(AnyCompatibleParserValidators<std::decay_t<V1>, Args2...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<V1>, Args2...>)
     auto combine(V1 && v1, CombinedValidator<Comb, Args2...> && v2)  {
-        using R1 = std::decay_t<V1>;
+        using R1 = std::remove_cvref_t<V1>;
         return CombinedValidator<Comb, R1, Args2...>(
             std::tuple_cat(std::tuple<R1>(std::forward<V1>(v1)), std::move(v2.items()))
         );
     }
 
     template<ValidatorCombination Comb, class V2, class... Args1>
-    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    requires(AnyCompatibleParserValidators<Args1..., std::remove_cvref_t<V2>>)
     auto combine(const CombinedValidator<Comb, Args1...> & v1, V2 && v2)  {
-        using R2 = std::decay_t<V2>;
+        using R2 = std::remove_cvref_t<V2>;
         return CombinedValidator<Comb, Args1..., R2>(
             std::tuple_cat(v1.items(), std::tuple<R2>(std::forward<V2>(v2)))
         );
     }
     
     template<ValidatorCombination Comb, class V2, class... Args1>
-    requires(AnyCompatibleParserValidators<Args1..., std::decay_t<V2>>)
+    requires(AnyCompatibleParserValidators<Args1..., std::remove_cvref_t<V2>>)
     auto combine(CombinedValidator<Comb, Args1...> && v1, V2 && v2)  {
-        using R2 = std::decay_t<V2>;
+        using R2 = std::remove_cvref_t<V2>;
         return CombinedValidator<Comb, Args1..., R2>(
             std::tuple_cat(std::move(v1.items()), std::tuple<R2>(std::forward<V2>(v2)))
         );
@@ -289,14 +289,14 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<class V1, class V2>
-    requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<V1>, std::remove_cvref_t<V2>>)
     auto operator&&(V1 && v1, V2 && v2)  {
         return combine<ValidatorCombination::And>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
-    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>)
     auto allOf(First && first, Rest && ...rest)  {
         return (std::forward<First>(first) &&  ... && std::forward<Rest>(rest));
     }
@@ -305,14 +305,14 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<class V1, class V2>
-    requires(AnyCompatibleParserValidators<std::decay_t<V1>, std::decay_t<V2>>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<V1>, std::remove_cvref_t<V2>>)
     auto operator||(V1 && v1, V2 && v2)  {
         return combine<ValidatorCombination::Or>(std::forward<V1>(v1), std::forward<V2>(v2));
     }
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
-    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>)
     auto anyOf(First && first, Rest && ...rest)  {
         return (std::forward<First>(first) || ... || std::forward<Rest>(rest));
     }
@@ -321,7 +321,7 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
-    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>)
     auto noneOf(First && first, Rest && ...rest)  {
         return allOf(!std::forward<First>(first), !std::forward<Rest>(rest)...);
     }
@@ -330,28 +330,28 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
-    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>)
     auto onlyOneOf(First && first, Rest && ...rest)  {
         
-        return CombinedValidator<ValidatorCombination::OnlyOne, std::decay_t<First>, std::decay_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
+        return CombinedValidator<ValidatorCombination::OnlyOne, std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
 
     //MARK: - OneOrNoneOf
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
-    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>)
     auto oneOrNoneOf(First && first, Rest && ...rest)  {
-        return CombinedValidator<ValidatorCombination::OneOrNone, std::decay_t<First>, std::decay_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
+        return CombinedValidator<ValidatorCombination::OneOrNone, std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
 
     //MARK: - AllOrNoneOf
 
     ARGUM_MOD_EXPORTED
     template<class First, class... Rest>
-    requires(AnyCompatibleParserValidators<std::decay_t<First>, std::decay_t<Rest>...>)
+    requires(AnyCompatibleParserValidators<std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>)
     auto allOrNoneOf(First && first, Rest && ...rest)  {
-        return CombinedValidator<ValidatorCombination::AllOrNone, std::decay_t<First>, std::decay_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
+        return CombinedValidator<ValidatorCombination::AllOrNone, std::remove_cvref_t<First>, std::remove_cvref_t<Rest>...>(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
 
     //MARK: - Occurence Validators

@@ -45,10 +45,11 @@ namespace Argum {
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
+        using HandlerReturnType = ARGUM_EXPECTED(CharType, void);
 
-        using NoArgHandler = std::function<void ()>; 
-        using OptArgHandler = std::function<void (std::optional<StringViewType>)>; 
-        using ReqArgHandler = std::function<void (StringViewType)>; 
+        using NoArgHandler = std::function<HandlerReturnType ()>; 
+        using OptArgHandler = std::function<HandlerReturnType (std::optional<StringViewType>)>; 
+        using ReqArgHandler = std::function<HandlerReturnType (StringViewType)>; 
 
         template<class HandlerType>
         static constexpr auto argumentKindOf() -> ArgumentKind {
@@ -83,25 +84,27 @@ namespace Argum {
 
         template<class H>
         auto handler(H && h) & -> BasicOption &
-        requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
-                    std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
-                    std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
+        requires(IsHandler<decltype(h), CharType, void> || 
+                 IsHandler<decltype(h), CharType, void, std::optional<StringViewType>> ||
+                 IsHandler<decltype(h), CharType, void, StringViewType>) {
 
-            if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>>) {
-                this->m_handler.template emplace<NoArgHandler>(std::forward<H>(h));
-            } else if constexpr (std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>>)
-                this->m_handler.template emplace<OptArgHandler>(std::forward<H>(h));
+            using InHandlerType = std::remove_cvref_t<decltype(h)>;
+
+            if constexpr (std::is_invocable_v<InHandlerType>) {
+                this->m_handler.template emplace<NoArgHandler>(adaptHandler<CharType, H, void>(std::forward<H>(h)));
+            } else if constexpr (std::is_invocable_v<InHandlerType, std::optional<StringViewType>>)
+                this->m_handler.template emplace<OptArgHandler>(adaptHandler<CharType, H, void, std::optional<StringViewType>>(std::forward<H>(h)));
             else {
-                this->m_handler.template emplace<ReqArgHandler>(std::forward<H>(h));
+                this->m_handler.template emplace<ReqArgHandler>(adaptHandler<CharType, H, void, StringViewType>(std::forward<H>(h)));
             }
             return *this;
         }
 
         template<class H>
         auto handler(H && h) && -> BasicOption &&
-        requires(std::is_invocable_v<std::decay_t<decltype(h)>> ||
-                    std::is_invocable_v<std::decay_t<decltype(h)>, std::optional<StringViewType>> ||
-                    std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
+        requires(IsHandler<decltype(h), CharType, void> || 
+                 IsHandler<decltype(h), CharType, void, std::optional<StringViewType>> ||
+                 IsHandler<decltype(h), CharType, void, StringViewType>) {
             return std::move(static_cast<BasicOption *>(this)->handler(std::forward<H>(h)));
         }
 
@@ -165,7 +168,7 @@ namespace Argum {
 
             StringType ret;
             std::visit([&](const auto & handler) {
-                using HandlerType = std::decay_t<decltype(handler)>;
+                using HandlerType = std::remove_cvref_t<decltype(handler)>;
                 constexpr auto argumentKind = BasicOption::template argumentKindOf<HandlerType>();
                 if constexpr (argumentKind == ArgumentKind::Optional) {
                     ret.append({space, brop}).append(this->m_argName).append({brcl});
@@ -193,7 +196,7 @@ namespace Argum {
         }
     private:
         OptionNames m_names;
-        Handler m_handler = []() {};
+        Handler m_handler = []() -> ARGUM_EXPECTED(CharType, void) { return ARGUM_VOID_SUCCESS; };
         Quantifier m_occurs = zeroOrMoreTimes;
 
         StringType m_argName = Messages::defaultArgName();
@@ -210,10 +213,11 @@ namespace Argum {
         using CharType = Char;
         using StringType = std::basic_string<Char>;
         using StringViewType = std::basic_string_view<Char>;
-        using Handler = std::function<void (StringViewType)>;
+        using Handler = std::function<ARGUM_EXPECTED(CharType, void) (StringViewType)>;
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
+        using HandlerReturnType = ARGUM_EXPECTED(CharType, void);
 
     public:
         BasicPositional(StringViewType name) :
@@ -222,13 +226,13 @@ namespace Argum {
 
         template<class H>
         auto handler(H && h) & -> BasicPositional & 
-        requires(std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
-            this->m_handler = std::forward<H>(h);
+        requires(IsHandler<decltype(h), CharType, void, StringViewType>) {
+            this->m_handler = adaptHandler<CharType, H, void, StringViewType>(std::forward<H>(h));
             return *this;
         }
         template<class H>
         auto handler(H && h) && -> BasicPositional && 
-        requires(std::is_invocable_v<std::decay_t<decltype(h)>, StringViewType>) {
+        requires(IsHandler<decltype(h), CharType, void, StringViewType>) {
             return std::move(static_cast<BasicPositional *>(this)->handler(std::forward<H>(h)));
         }
 
@@ -288,7 +292,7 @@ namespace Argum {
         }
     private:
         StringType m_name;
-        Handler m_handler = [](StringViewType) {};
+        Handler m_handler = [](StringViewType) -> ARGUM_EXPECTED(CharType, void) { return ARGUM_VOID_SUCCESS; };
         Quantifier m_occurs = once;
         StringType m_description;
     };
@@ -320,16 +324,21 @@ namespace Argum {
 
     public:
         struct UnrecognizedOption : public ParsingException {
+            ARGUM_IMPLEMENT_EXCEPTION(UnrecognizedOption, ParsingException, Error::UnrecognizedOption)
+
             UnrecognizedOption(StringViewType option_): 
-                ParsingException(format(Messages::unrecognizedOptionError(), option_)),
+                ParsingException(ErrorCode, format(Messages::unrecognizedOptionError(), option_)),
                 option(option_) {
             }
             StringType option;
         };
 
         struct AmbiguousOption : public ParsingException {
+            ARGUM_IMPLEMENT_EXCEPTION(AmbiguousOption, ParsingException, Error::AmbiguousOption)
+
             AmbiguousOption(StringViewType option_, std::vector<StringType> possibilities_): 
-                ParsingException(format(Messages::ambiguousOptionError(), option_, 
+                ParsingException(ErrorCode, 
+                                 format(Messages::ambiguousOptionError(), option_, 
                                         join(possibilities_.begin(), possibilities_.end(), Messages::listJoiner()))),
                 option(option_),
                 possibilities(std::move(possibilities_)) {
@@ -339,36 +348,44 @@ namespace Argum {
         };
 
         struct MissingOptionArgument : public ParsingException {
+            ARGUM_IMPLEMENT_EXCEPTION(MissingOptionArgument, ParsingException, Error::MissingOptionArgument)
+
             MissingOptionArgument(StringViewType option_): 
-                ParsingException(format(Messages::missingOptionArgumentError(), option_)),
+                ParsingException(ErrorCode, format(Messages::missingOptionArgumentError(), option_)),
                 option(option_) {
             }
             StringType option;
         };
 
         struct ExtraOptionArgument : public ParsingException {
+            ARGUM_IMPLEMENT_EXCEPTION(ExtraOptionArgument, ParsingException, Error::ExtraOptionArgument)
+
             ExtraOptionArgument(StringViewType option_): 
-                ParsingException(format(Messages::extraOptionArgumentError(), option_)),
+                ParsingException(ErrorCode, format(Messages::extraOptionArgumentError(), option_)),
                 option(option_) {
             }
             StringType option;
         };
 
         struct ExtraPositional : public ParsingException {
+            ARGUM_IMPLEMENT_EXCEPTION(ExtraPositional, ParsingException, Error::ExtraPositional)
+
             ExtraPositional(StringViewType value_): 
-                ParsingException(format(Messages::extraPositionalError(), value_)),
+                ParsingException(ErrorCode, format(Messages::extraPositionalError(), value_)),
                 value(value_) {
             }
             StringType value;
         };
         
         struct ValidationError : public ParsingException {
+            ARGUM_IMPLEMENT_EXCEPTION(ValidationError, ParsingException, Error::ValidationError)
+
             ValidationError(StringViewType message):
-                ParsingException(format(Messages::validationError(), message)) {
+                ParsingException(ErrorCode, format(Messages::validationError(), message)) {
             }
             template<DescribableParserValidator<CharType> Validator>
             ValidationError(Validator validator):
-                ParsingException(format(Messages::validationError(), describe(validator))) {
+                ParsingException(ErrorCode, format(Messages::validationError(), describe(validator))) {
             }
         };
 
@@ -413,36 +430,37 @@ namespace Argum {
             m_validators.emplace_back(std::move(v), std::move(desc));
         }
 
-        auto parse(int argc, CharType ** argv) const {
-            this->parse(makeArgSpan<CharType>(argc, argv));
+        auto parse(int argc, CharType ** argv) const -> ARGUM_EXPECTED(CharType, void) {
+            return this->parse(makeArgSpan<CharType>(argc, argv));
         }
 
         template<ArgRange<CharType> Args>
-        auto parse(const Args & args) const {
+        auto parse(const Args & args) const -> ARGUM_EXPECTED(CharType, void) {
             
-            this->parse(std::begin(args), std::end(args));
+            return this->parse(std::begin(args), std::end(args));
         }
 
         template<ArgIterator<CharType> It>
-        auto parse(It argFirst, It argLast) const {
+        auto parse(It argFirst, It argLast) const -> ARGUM_EXPECTED(CharType, void) {
             
+            using ReturnType = ARGUM_EXPECTED(CharType, void);
             ParsingState parsingState(*this);
 
-            parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/false);
+            return ReturnType(parsingState.parse(argFirst, argLast, /*stopOnUnknown=*/false));
         }
 
-        auto parseUntilUnknown(int argc, CharType ** argv) const -> std::vector<StringType> {
+        auto parseUntilUnknown(int argc, CharType ** argv) const -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             return this->parseUntilUnknown(makeArgSpan<CharType>(argc, argv));
         }
 
         template<ArgRange<CharType> Args>
-        auto parseUntilUnknown(const Args & args) const {
+        auto parseUntilUnknown(const Args & args) const -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             
             return this->parseUntilUnknown(std::begin(args), std::end(args));
         }
 
         template<ArgIterator<CharType> It>
-        auto parseUntilUnknown(It argFirst, It argLast) const -> std::vector<StringType>{
+        auto parseUntilUnknown(It argFirst, It argLast) const -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             
             ParsingState parsingState(*this);
 
@@ -482,125 +500,130 @@ namespace Argum {
             }
 
             template<ArgIterator<CharType> It>
-            auto parse(It argFirst, It argLast, bool stopOnUnknown) -> std::vector<StringType> {
+            auto parse(It argFirst, It argLast, bool stopOnUnknown) -> ARGUM_EXPECTED(CharType, std::vector<StringType>) {
             
-                auto ret = m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> typename Tokenizer::TokenResult {
+                ARGUM_CHECK_RESULT(auto ret, m_owner.m_tokenizer.tokenize(argFirst, argLast, [&](auto && token) -> ARGUM_EXPECTED(CharType, typename Tokenizer::TokenResult) {
 
-                    using TokenType = std::decay_t<decltype(token)>;
+                    using TokenType = std::remove_cvref_t<decltype(token)>;
 
                     if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 
-                        resetOption(token.idx, token.usedName, token.argument);
+                        ARGUM_PROPAGATE_ERROR(resetOption(token.idx, token.usedName, token.argument));
                         return Tokenizer::Continue;
 
                     } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionStopToken>) {
 
-                        completeOption();
+                        ARGUM_PROPAGATE_ERROR(completeOption());
                         return Tokenizer::Continue;
 
                     } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::ArgumentToken>) {
 
-                        if (!handlePositional(token.value, argFirst + token.argIdx, argLast)) {
+                        ARGUM_CHECK_RESULT(auto result, handlePositional(token.value, argFirst + token.argIdx, argLast));
+                        if (!result) {
                             if (stopOnUnknown)
                                 return Tokenizer::StopBefore;
-                            throw ExtraPositional(token.value);
+                            ARGUM_THROW(ExtraPositional, token.value);
                         }
                         return Tokenizer::Continue;
 
                     } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::UnknownOptionToken>) {
 
-                        completeOption();
+                        ARGUM_PROPAGATE_ERROR(completeOption());
                         if (stopOnUnknown)
                             return Tokenizer::StopBefore;
-                        throw UnrecognizedOption(token.name);
+                        ARGUM_THROW(UnrecognizedOption, token.name);
 
                     } else if constexpr (std::is_same_v<TokenType, typename Tokenizer::AmbiguousOptionToken>) {
 
-                        completeOption();
-                        throw AmbiguousOption(token.name, std::move(token.possibilities));
+                        ARGUM_PROPAGATE_ERROR(completeOption());
+                        ARGUM_THROW(AmbiguousOption, token.name, std::move(token.possibilities));
                     } 
-                });
-
-                completeOption();
-                validate();
+                }));
+                ARGUM_PROPAGATE_ERROR(completeOption());
+                ARGUM_PROPAGATE_ERROR(validate());
                 return ret;
             }
 
         private:
-            auto resetOption(unsigned index, StringViewType name, const std::optional<StringViewType> & argument) {
-                completeOption();
+            auto resetOption(unsigned index, StringViewType name, const std::optional<StringViewType> & argument) -> ARGUM_EXPECTED(CharType, void) {
+                ARGUM_PROPAGATE_ERROR(completeOption());
                 m_optionName = std::move(name);
                 m_optionArgument = argument;
                 m_optionIndex = int(index);
+                return ARGUM_VOID_SUCCESS;
             }
 
-            auto completeOption() {
+            auto completeOption() -> ARGUM_EXPECTED(CharType, void) {
                 if (m_optionIndex < 0)
-                    return;
+                    return ARGUM_VOID_SUCCESS;
 
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
-                validateOptionMax(option);
-                std::visit([&](const auto & handler) {
-                    using HandlerType = std::decay_t<decltype(handler)>;
+                ARGUM_PROPAGATE_ERROR(validateOptionMax(option));
+                ARGUM_PROPAGATE_ERROR(std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, void) {
+                    using HandlerType = std::remove_cvref_t<decltype(handler)>;
                     constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
                     if constexpr (argumentKind == OptionArgumentKind::None) {
                         if (m_optionArgument)
-                            throw ExtraOptionArgument(m_optionName);
-                        handler();
+                            ARGUM_THROW(ExtraOptionArgument, m_optionName);
+                        ARGUM_PROPAGATE_ERROR(handler());
                     } else if constexpr (argumentKind == OptionArgumentKind::Optional) {
-                        handler(m_optionArgument);
+                        ARGUM_PROPAGATE_ERROR(handler(m_optionArgument));
                     } else {
                         if (!m_optionArgument)
-                            throw MissingOptionArgument(m_optionName);
-                        handler(*m_optionArgument);
+                            ARGUM_THROW(MissingOptionArgument, m_optionName);
+                        ARGUM_PROPAGATE_ERROR(handler(*m_optionArgument));
                     }
-                }, option.m_handler);
+                    return ARGUM_VOID_SUCCESS;
+                }, option.m_handler));
                 m_optionIndex = -1;
                 m_optionArgument.reset();
+                return ARGUM_VOID_SUCCESS;
             }
 
-            auto completeOptionUsingArgument(StringViewType argument) -> bool {
+            auto completeOptionUsingArgument(StringViewType argument) -> ARGUM_EXPECTED(CharType, bool) {
 
                 if (m_optionIndex < 0)
                     return false;
 
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
-                validateOptionMax(option);
-                auto ret = std::visit([&](const auto & handler) {
-                        using HandlerType = std::decay_t<decltype(handler)>;
+                ARGUM_PROPAGATE_ERROR(validateOptionMax(option));
+                ARGUM_CHECK_RESULT(auto ret, std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, bool) {
+                        using HandlerType = std::remove_cvref_t<decltype(handler)>;
                         constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
                         if constexpr (argumentKind == OptionArgumentKind::None) {
                             if (m_optionArgument)
-                                throw ExtraOptionArgument(m_optionName);
-                            handler();
+                                ARGUM_THROW(ExtraOptionArgument, m_optionName);
+                            ARGUM_PROPAGATE_ERROR(handler());
                             return false;
                         } else {
                             if (m_optionArgument) {
-                                handler(*m_optionArgument);
+                                ARGUM_PROPAGATE_ERROR(handler(*m_optionArgument));
                                 return false;
                             } else {
-                                handler(argument);
+                                ARGUM_PROPAGATE_ERROR(handler(argument));
                                 return true;
                             }
                         }
-                    }, option.m_handler);
+                    }, option.m_handler));
                 m_optionIndex = -1;
                 m_optionArgument.reset();
                 return ret;
             }
 
-            auto validateOptionMax(const Option & option) {
+            auto validateOptionMax(const Option & option) -> ARGUM_EXPECTED(CharType, void) {
                 auto & name = option.m_names.main();
                 ++m_validationData.optionCount(name);
                 auto validator = optionOccursAtMost(name, option.m_occurs.max());
                 if (!validator(m_validationData)) {
-                    throw ValidationError(validator);
+                    ARGUM_THROW(ValidationError, validator);
                 }
+                return ARGUM_VOID_SUCCESS;
             }
 
             template<ArgIterator<CharType> It>
-            auto handlePositional(StringViewType value, It remainingArgFirst, It argLast) -> bool {
-                if (completeOptionUsingArgument(value))
+            auto handlePositional(StringViewType value, It remainingArgFirst, It argLast) -> ARGUM_EXPECTED(CharType, bool) {
+                ARGUM_CHECK_RESULT(auto completed, completeOptionUsingArgument(value));
+                if (completed)
                     return true;
 
                 calculateRemainingPositionals(remainingArgFirst, argLast);
@@ -627,7 +650,7 @@ namespace Argum {
                 }
                 
                 auto & count = m_validationData.positionalCount(positional->m_name);
-                positional->m_handler(value);
+                ARGUM_PROPAGATE_ERROR(positional->m_handler(value));
                 ++count;
                 return true;
             }
@@ -676,8 +699,8 @@ namespace Argum {
                 
                 unsigned remainingPositionalCount = 0;
                 bool currentOptionExpectsArgument = false;
-                m_owner.m_tokenizer.tokenize(remainingArgFirst, argLast, [&](const auto & token) {
-                    using TokenType = std::decay_t<decltype(token)>;
+                (void)m_owner.m_tokenizer.tokenize(remainingArgFirst, argLast, [&](const auto & token) noexcept {
+                    using TokenType = std::remove_cvref_t<decltype(token)>;
 
                     if constexpr (std::is_same_v<TokenType, typename Tokenizer::OptionToken>) {
 
@@ -709,7 +732,7 @@ namespace Argum {
                 return remainingPositionalCount;
             }
 
-            auto validate() {
+            auto validate() -> ARGUM_EXPECTED(CharType, void) {
 
                 //We could use normal validators for this but it is faster to do it manually
                 for(auto idx = (m_positionalIndex >= 0 ? unsigned(m_positionalIndex) : 0u); 
@@ -719,13 +742,15 @@ namespace Argum {
                     auto & positional = m_owner.m_positionals[unsigned(idx)];
                     auto validator = positionalOccursAtLeast(positional.m_name, positional.m_occurs.min());
                     if (!validator(m_validationData))
-                        throw ValidationError(validator);
+                        ARGUM_THROW(ValidationError, validator);
                 }
                 
                 for(auto & [validator, desc]: m_owner.m_validators) {
                     if (!validator(m_validationData))
-                        throw ValidationError(desc);
+                        ARGUM_THROW(ValidationError, desc);
                 }
+
+                return ARGUM_VOID_SUCCESS;
             }
 
         private:

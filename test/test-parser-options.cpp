@@ -10,7 +10,7 @@ TEST_CASE( "Options boundary Cases" , "[parser]") {
         EXPECT_SUCCESS(ARGS(), RESULTS())
         EXPECT_SUCCESS(ARGS("-c"), RESULTS())
     }
-
+#ifndef ARGUM_NO_THROW
     {
         Parser parser;
         CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("a")), invalid_argument);
@@ -32,7 +32,7 @@ TEST_CASE( "Options boundary Cases" , "[parser]") {
         parser.add(OPTION_NO_ARG("-a"));
         CHECK_THROWS_AS(parser.add(OPTION_NO_ARG("-a")), invalid_argument);
     }
-
+#endif
 }
 
 TEST_CASE( "Option with a single-dash option string" , "[parser]") {
@@ -441,7 +441,7 @@ TEST_CASE( "Equivalent custom prefixes" , "[parser]") {
         .addValueDelimiter('|')
         .addValueDelimiter('*')
         .addOptionTerminator("^^", "%%");
-    Parser parser(std::move(settings));
+    Parser parser(move(settings));
     parser.add(OPTION_NO_ARG("+f"));
     parser.add(OPTION_REQ_ARG("::bar"));
     parser.add(OPTION_NO_ARG("/baz"));

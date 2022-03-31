@@ -1,6 +1,4 @@
-//for testing let it throw exception rather than crash
-[[noreturn]] void reportInvalidArgument(const char * message);
-#define ARGUM_INVALID_ARGUMENT(message) reportInvalidArgument(message)
+#include "test-common.h"
 
 #include <argum/validators.h>
 
@@ -21,7 +19,7 @@ struct TrueValidator {
     operator const wchar_t *() { return L"true"; }
 
     template<class Char>
-    friend auto describe(TrueValidator t) -> std::basic_string<Char> {
+    friend auto describe(TrueValidator t) -> basic_string<Char> {
         return (const Char *)t;
     }
 };
@@ -38,7 +36,7 @@ struct FalseValidator {
     operator const wchar_t *() { return L"false"; }
 
     template<class Char>
-    friend auto describe(FalseValidator f) -> std::basic_string<Char> {
+    friend auto describe(FalseValidator f) -> basic_string<Char> {
         return (const Char *)f;
     }
 };
@@ -60,8 +58,8 @@ TEST_CASE( "Validators: optionPresent and optionAbsent" , "[validators]") {
     auto notPresent = !present;
     auto notAbsent = !absent;
     
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(!notPresent)>, std::decay_t<decltype(present)>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(!notAbsent)>, std::decay_t<decltype(absent)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(!notPresent)>, remove_cvref_t<decltype(present)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(!notAbsent)>, remove_cvref_t<decltype(absent)>>);
 
     CHECK(!present(data));
     CHECK(notPresent(data));
@@ -102,8 +100,8 @@ TEST_CASE( "Validators: optionOccursAtLeast and optionOccursLessThan" , "[valida
     auto notAtLeast = !atLeast;
     auto notLestThan = !lessThan;
     
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notAtLeast)>, std::decay_t<decltype(lessThan)>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notLestThan)>, std::decay_t<decltype(atLeast)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(notAtLeast)>, remove_cvref_t<decltype(lessThan)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(notLestThan)>, remove_cvref_t<decltype(atLeast)>>);
 
     CHECK(!atLeast(data));
     CHECK(lessThan(data));
@@ -128,8 +126,8 @@ TEST_CASE( "Validators: optionOccursAtMost and optionOccursMoreThan" , "[validat
     auto notAtMost = !atMost;
     auto notMoreThan = !moreThan;
     
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notAtMost)>, std::decay_t<decltype(moreThan)>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notMoreThan)>, std::decay_t<decltype(atMost)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(notAtMost)>, remove_cvref_t<decltype(moreThan)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(notMoreThan)>, remove_cvref_t<decltype(atMost)>>);
 
     CHECK(atMost(data));
     CHECK(!moreThan(data));
@@ -158,8 +156,8 @@ TEST_CASE( "Validators: optionOccursExactly and optionDoesntOccurExactly" , "[va
     auto notExactly = !exactly;
     auto notOpposite = !opposite;
     
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notExactly)>, std::decay_t<decltype(opposite)>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(notOpposite)>, std::decay_t<decltype(exactly)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(notExactly)>, remove_cvref_t<decltype(opposite)>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(notOpposite)>, remove_cvref_t<decltype(exactly)>>);
 
     CHECK(!exactly(data));
     CHECK(opposite(data));
@@ -197,11 +195,11 @@ TEST_CASE( "Validators: allOf" , "[validators]") {
     CHECK(!(True && False && True)(data));
     CHECK((True && True && True)(data));
 
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(True && True && False)>, CombinedValidator<ValidatorCombination::And, TrueValidator, TrueValidator, FalseValidator>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(allOf(True, True, False))>, std::decay_t<decltype(True && True && False)>>);
-    STATIC_REQUIRE(std::is_same_v<decltype((True && False) && (True && False)), decltype(True && False && True && False)>);
-    STATIC_REQUIRE(std::is_same_v<decltype(True && (True && False)), decltype(True && True && False)>);
-    STATIC_REQUIRE(std::is_same_v<decltype((True && False) && True), decltype(True && False && True)>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(True && True && False)>, CombinedValidator<ValidatorCombination::And, TrueValidator, TrueValidator, FalseValidator>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(allOf(True, True, False))>, remove_cvref_t<decltype(True && True && False)>>);
+    STATIC_REQUIRE(is_same_v<decltype((True && False) && (True && False)), decltype(True && False && True && False)>);
+    STATIC_REQUIRE(is_same_v<decltype(True && (True && False)), decltype(True && True && False)>);
+    STATIC_REQUIRE(is_same_v<decltype((True && False) && True), decltype(True && False && True)>);
 }
 
 TEST_CASE( "Validators: anyOf" , "[validators]") {
@@ -216,11 +214,11 @@ TEST_CASE( "Validators: anyOf" , "[validators]") {
     CHECK((True || False || True)(data));
     CHECK((True || True || True)(data));
 
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(True || True || False)>, CombinedValidator<ValidatorCombination::Or, TrueValidator, TrueValidator, FalseValidator>>);
-    STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(anyOf(True, True, False))>, std::decay_t<decltype(True || True || False)>>);
-    STATIC_REQUIRE(std::is_same_v<decltype((True || False) || (True || False)), decltype(True || False || True || False)>);
-    STATIC_REQUIRE(std::is_same_v<decltype(True || (True || False)), decltype(True || True || False)>);
-    STATIC_REQUIRE(std::is_same_v<decltype((True || False) || True), decltype(True || False || True)>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(True || True || False)>, CombinedValidator<ValidatorCombination::Or, TrueValidator, TrueValidator, FalseValidator>>);
+    STATIC_REQUIRE(is_same_v<remove_cvref_t<decltype(anyOf(True, True, False))>, remove_cvref_t<decltype(True || True || False)>>);
+    STATIC_REQUIRE(is_same_v<decltype((True || False) || (True || False)), decltype(True || False || True || False)>);
+    STATIC_REQUIRE(is_same_v<decltype(True || (True || False)), decltype(True || True || False)>);
+    STATIC_REQUIRE(is_same_v<decltype((True || False) || True), decltype(True || False || True)>);
 }
 
 TEST_CASE( "Validators: noneOf" , "[validators]") {

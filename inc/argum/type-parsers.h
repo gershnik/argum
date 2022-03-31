@@ -19,7 +19,7 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<class T, StringLike S> 
     requires(std::is_integral_v<T>)
-    auto parseIntegral(S && str, int base = 0) -> T {
+    auto parseIntegral(S && str, int base = 0) -> ARGUM_EXPECTED(CharTypeOf<S>, T) {
 
         using Char = CharTypeOf<S>;
         using ValidationError = typename BasicParser<Char>::ValidationError;
@@ -29,7 +29,7 @@ namespace Argum {
         std::basic_string<Char> value(std::forward<S>(str));
 
         if (value.empty())
-            throw ValidationError(format(Messages::notANumber(), value));
+            ARGUM_THROW(ValidationError, format(Messages::notANumber(), value));
 
         T ret;
         Char * endPtr;
@@ -41,14 +41,14 @@ namespace Argum {
                 auto res = CharConstants::toLong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
                     if (res < (decltype(res))std::numeric_limits<T>::min() || res > (decltype(res))std::numeric_limits<T>::max())
-                        throw ValidationError(format(Messages::outOfRange(), value));
+                        ARGUM_THROW(ValidationError, format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
             } else  {
                 auto res = CharConstants::toLongLong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
                     if (res < (decltype(res))std::numeric_limits<T>::min() || res > (decltype(res))std::numeric_limits<T>::max())
-                        throw ValidationError(format(Messages::outOfRange(), value));
+                        ARGUM_THROW(ValidationError, format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
             }
@@ -59,23 +59,23 @@ namespace Argum {
                 auto res = CharConstants::toULong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
                     if (res > (decltype(res))std::numeric_limits<T>::max())
-                        throw ValidationError(format(Messages::outOfRange(), value));
+                        ARGUM_THROW(ValidationError, format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
             } else  {
                 auto res = CharConstants::toULongLong(value.data(), &endPtr, base);
                 if constexpr (sizeof(T) < sizeof(res)) {
                     if (res > (decltype(res))std::numeric_limits<T>::max())
-                        throw ValidationError(format(Messages::outOfRange(), value));
+                        ARGUM_THROW(ValidationError, format(Messages::outOfRange(), value));
                 }
                 ret = T(res);
             }
         }
         if (errno == ERANGE)
-            throw ValidationError(format(Messages::outOfRange(), value));
+            ARGUM_THROW(ValidationError, format(Messages::outOfRange(), value));
         for ( ; endPtr != value.data() + value.size(); ++endPtr) {
             if (!CharConstants::isSpace(*endPtr))
-                throw ValidationError(format(Messages::notANumber(), value));
+                ARGUM_THROW(ValidationError, format(Messages::notANumber(), value));
         }
         
         return ret;
@@ -84,7 +84,7 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<class T, StringLike S> 
     requires(std::is_floating_point_v<T>)
-    auto parseFloatingPoint(S && str) -> T {
+    auto parseFloatingPoint(S && str) -> ARGUM_EXPECTED(CharTypeOf<S>, T) {
 
         using Char = CharTypeOf<S>;
         using ValidationError = typename BasicParser<Char>::ValidationError;
@@ -94,7 +94,7 @@ namespace Argum {
         std::basic_string<Char> value(std::forward<S>(str));
 
         if (value.empty())
-            throw ValidationError(format(Messages::notANumber(), value));
+            ARGUM_THROW(ValidationError, format(Messages::notANumber(), value));
 
         T ret;
         Char * endPtr;
@@ -109,10 +109,10 @@ namespace Argum {
         }
 
         if (errno == ERANGE)
-            throw ValidationError(format(Messages::outOfRange(), value));
+            ARGUM_THROW(ValidationError, format(Messages::outOfRange(), value));
         for ( ; endPtr != value.data() + value.size(); ++endPtr) {
             if (!CharConstants::isSpace(*endPtr))
-                throw ValidationError(format(Messages::notANumber(), value));
+                ARGUM_THROW(ValidationError, format(Messages::notANumber(), value));
         }
         
         return ret;
@@ -164,14 +164,14 @@ namespace Argum {
             this->m_choices.emplace_back(exp, m_options);
         }
 
-        auto parse(StringViewType value) const -> size_t {
+        auto parse(StringViewType value) const -> ARGUM_EXPECTED(Char, size_t) {
 
             auto it = std::find_if(this->m_choices.begin(), this->m_choices.end(), [&](const RegexType & regex) {
                 return regex_match(value.begin(), value.end(), regex);
             });
             if (it == this->m_choices.end()) {
                 if (!m_allowElse)
-                    throw ValidationError(format(Messages::notAValidChoice(), value, this->m_description));
+                    ARGUM_THROW(ValidationError, format(Messages::notAValidChoice(), value, this->m_description));
                 return this->m_choices.size();
             }
             return it - this->m_choices.begin();
@@ -228,8 +228,9 @@ namespace Argum {
             this->m_impl.addChoice(CharConstants<Char>::trueNames);
         }
 
-        auto parse(std::basic_string_view<Char> value) const -> bool {
-            return bool(this->m_impl.parse(value));
+        auto parse(std::basic_string_view<Char> value) const -> ARGUM_EXPECTED(Char, bool) {
+            ARGUM_CHECK_RESULT(auto ret, this->m_impl.parse(value));
+            return bool(ret);
         }
     private:
         BasicChoiceParser<Char> m_impl;
