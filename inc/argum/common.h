@@ -44,6 +44,7 @@
 
 #define ARGUM_INVALID_ARGUMENT(message) ::Argum::terminateApplication(message)
 
+
 #if defined(__GNUC__)
     #ifndef __EXCEPTIONS
         #define ARGUM_NO_THROW
@@ -69,11 +70,11 @@ namespace Argum {
 
     #ifndef ARGUM_CUSTOM_TERMINATE
         [[noreturn]] inline auto terminateApplication(const char * message) -> void { 
+            fprintf(stderr, "%s\n", message); 
+            fflush(stderr); 
             #ifndef NDEBUG
-                assert(message && false);
+                assert(false);
             #else
-                fprintf(stderr, "%s\n", message); 
-                fflush(stderr); 
                 std::terminate(); 
             #endif
         }

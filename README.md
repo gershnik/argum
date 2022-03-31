@@ -331,11 +331,11 @@ For reference this is the default implementation
 
 ```cpp
 [[noreturn]] inline void Argum::terminateApplication(const char * message) { 
+    fprintf(stderr, "%s\n", message); 
+    fflush(stderr); 
     #ifndef NDEBUG
-        assert(message && false);
+        assert(false);
     #else
-        fprintf(stderr, "%s\n", message); 
-        fflush(stderr); 
         std::terminate(); 
     #endif
 }
