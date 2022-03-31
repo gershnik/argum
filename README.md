@@ -18,10 +18,12 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
     - [Module](#module)
     - [CMake](#cmake)
 - [Configuration](#configuration)
+    - [Error reporting mode](#error-reporting-mode)
+    - [Customizing termination function](#customizing-termination-function)
 - [FAQ](#faq)
     - [Why another command line library?](#why-another-command-line-library)
     - [Why options cannot have more than 1 argument? ArgParse allows that](#why-options-cannot-have-more-than-1-argument-argparse-allows-that)
-    - [Why isn't it using std::ranges?](#why-isnt-it-using-stdranges)
+    - [Why isn't it using [C++20 feature X]?](#why-isnt-it-using-c20-feature-x)
 
 <!-- /TOC -->
 
@@ -274,9 +276,8 @@ Download `argum.h` from the [Releases][releases] page, drop it into your project
   
 If you are lucky (or unlucky?) to have a compiler and build system that support modules you can try to use **experimental** 
 module file. Download `argum-module.ixx` from [Releases][releases] page and integrate it into you project. Note, that of the compilers I
-have access to, only MSVC currently supports modules to any usable extent and, even there, many things appear to be broken. 
-There also appears to be no definite canonical way to write library modules yet (should I `#include` standard library headers or
-`import` them etc. etc.) Use at your own risk.
+have access to, only MSVC and GCC currently supports modules to any usable extent and, even there, many things appear to be broken. 
+If you encounter internal compiler errors please complain to your compiler vendor. Use at your own risk.
 
 ### CMake
   
@@ -306,6 +307,8 @@ On MSVC you need to have `_CRT_SECURE_NO_WARNINGS` defined to avoid its bogus "d
 
 ## Configuration
 
+### Error reporting mode
+
 Argum can operate in 3 modes selected at compile time:
 
 * Using exceptions (this is the default). In this mode parsing errors produce exceptions.
@@ -314,6 +317,25 @@ Argum can operate in 3 modes selected at compile time:
 
 Note that these modes only affect handling of _parsing_ errors. Logic errors such as passing incorrect parameters to configure parser always `assert` in debug and `std::terminate` in non-debug builds.
 
+### Customizing termination function
+
+By default, when being passed invalid arguments or when attempting to "throw" with exceptions disabled Argum calls `assert` in debug mode and 
+`std::terminate` in release. You can customize this behavior. To do so define `ARGUM_CUSTOM_TERMINATE` for the compilation. If you do this,
+you will need to provide your own implementation of `[[noreturn]] inline void terminateApplication(const char * message)`. 
+
+For reference this is the default implementation
+
+```cpp
+[[noreturn]] inline void Argum::terminateApplication(const char * message) { 
+    #ifndef NDEBUG
+        assert(message && false);
+    #else
+        fprintf(stderr, "%s\n", message); 
+        fflush(stderr); 
+        std::terminate(); 
+    #endif
+}
+```
 
 ## FAQ
 
@@ -331,12 +353,11 @@ Some libraries do better on some of these but none I could find do everything we
 
 ### Why options cannot have more than 1 argument? ArgParse allows that
 
-Having multiple options arguments is a very bad idea. Consider this. Normally with Posix/GNU approach when an option argument itself looks like an option you can always use some syntax to disambiguate. For example if you have option `--foo`, `-f` and argument `-x` you can say: `--foo=-x` and `-f-x` to unambiguously treat `-x` as an argument. With multiple arguments this becomes impossible. People using ArgParse occasionally hit this issue and are surprised. Argum follows standard Unix approach of having at most one argument per option.
+Having multiple options arguments is a very bad idea. Consider this. Normally with Posix/GNU approach when an option argument itself looks like an option you can always use some workaround syntax to disambiguate. For example if you have option `--foo` and `-f` and their **argument** `-x` you can say: `--foo=-x` and `-f-x` to avoid treating `-x` as an unknown option. With multiple arguments this becomes impossible. People using ArgParse occasionally hit this issue and are surprised. Argum follows standard Unix approach of having at most one argument per option.
 
 If you really, really need more than one argument to an option consider requiring to pass them as comma or semicolon separated list. This is also a de-facto standard Unix approach. See for example [getsubopt].
 
-### Why isn't it using `std::ranges`?
+### Why isn't it using [C++20 feature X]?
 
-This is simply due to the fact that, currently, not all compilers have standard libraries have ranges yet. Once ranges become widely available this library will integrate them.
-
+This is simply due to the fact that, currently, not all compilers and standard libraries have support for all C++20 features. Notably Ranges support is lacking on many. Once C++20 support improves this library will attempt to adjust when appropriate.
 
