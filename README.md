@@ -326,6 +326,8 @@ By default, when being passed invalid arguments or when attempting to "throw" wi
 you will need to provide your own implementation of `[[noreturn]] inline void terminateApplication(const char * message)`. 
 
 For reference this is the default implementation
+<details>
+<summary>Code</summary>
 
 ```cpp
 [[noreturn]] inline void Argum::terminateApplication(const char * message) { 
@@ -338,6 +340,7 @@ For reference this is the default implementation
     #endif
 }
 ```
+</details>
 
 ## FAQ
 
