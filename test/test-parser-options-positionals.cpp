@@ -160,3 +160,32 @@ TEST_CASE( "options that may or may not be arguments" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"z", {"a"}}))
     EXPECT_SUCCESS(ARGS("-3", "1", "a"), RESULTS({"-3", {"1"}}, {"z", {"a"}}))
 }
+
+TEST_CASE( "options with required attached arguments" , "[parser]") {
+
+    map<string, vector<Value>> results;
+    vector<string> remainder;
+
+    Parser parser;
+    parser.add(OPTION_REQ_ARG("-f", "--foo").requireAttachedArgument(true));
+    parser.add(OPTION_OPT_ARG("-g", "--goo").requireAttachedArgument(true));
+    parser.add(POSITIONAL("z").occurs(zeroOrMoreTimes));
+
+    EXPECT_FAILURE(ARGS("-f"), MISSING_OPTION_ARGUMENT("-f"))
+    EXPECT_FAILURE(ARGS("--foo"), MISSING_OPTION_ARGUMENT("--foo"))
+    EXPECT_FAILURE(ARGS("-f", "a"), MISSING_OPTION_ARGUMENT("-f"))
+    EXPECT_FAILURE(ARGS("--foo", "a"), MISSING_OPTION_ARGUMENT("--foo"))
+    EXPECT_FAILURE(ARGS("-fg", "a"), MISSING_OPTION_ARGUMENT("-f"))
+
+    EXPECT_SUCCESS(ARGS(), RESULTS())
+    EXPECT_SUCCESS(ARGS("-fa"), RESULTS({"-f", {"a"}}))
+    EXPECT_SUCCESS(ARGS("--foo=a"), RESULTS({"-f", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-fa", "b"), RESULTS({"-f", {"a"}}, {"z", {"b"}}))
+    EXPECT_SUCCESS(ARGS("--foo=a", "b"), RESULTS({"-f", {"a"}}, {"z", {"b"}}))
+    EXPECT_SUCCESS(ARGS("-g", "a"), RESULTS({"-g", {nullopt}}, {"z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("--goo", "a"), RESULTS({"-g", {nullopt}}, {"z", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-ga"), RESULTS({"-g", {"a"}}))
+    EXPECT_SUCCESS(ARGS("--goo=a"), RESULTS({"-g", {"a"}}))
+    EXPECT_SUCCESS(ARGS("-ga", "b"), RESULTS({"-g", {"a"}}, {"z", {"b"}}))
+    EXPECT_SUCCESS(ARGS("--goo=a", "b"), RESULTS({"-g", {"a"}}, {"z", {"b"}}))
+}

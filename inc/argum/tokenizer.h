@@ -251,7 +251,7 @@ namespace Argum {
 
             auto currentIndex = unsigned(this->m_names.size());
             for(auto & opt: names.all()) {
-                auto findResult = findLongestPrefix(opt);
+                auto findResult = this->findLongestPrefix(opt);
                 if (!findResult)
                     ARGUM_INVALID_ARGUMENT("option must start with a valid prefix");
                 if (findResult->size == opt.size())
@@ -348,6 +348,23 @@ namespace Argum {
                 }
             }
             return rest;
+        }
+
+        auto isOptionNameLong(const StringViewType name) const -> bool {
+            
+            auto findResult = this->findLongestPrefix(name);
+            if (!findResult)
+                ARGUM_INVALID_ARGUMENT("option must start with a valid prefix");
+            if (findResult->size == name.size())
+                ARGUM_INVALID_ARGUMENT("option must have more than a prefix");
+
+            if ((findResult->type & LongPrefix) == LongPrefix) {
+                return true;
+            } else if ((findResult->type & ShortPrefix) == ShortPrefix) {
+                return false;
+            } 
+                
+            ARGUM_INVALID_ARGUMENT("option is neither short nor long with currently defined prefixes");
         }
 
     private:

@@ -50,20 +50,10 @@ namespace Argum {
 
     public:
         BasicHelpFormatter(const BasicParser<Char> & parser, StringViewType progName, Layout layout = defaultLayout):
-            BasicHelpFormatter(progName, parser.options(), parser.positionals(), parser.subCommandMark(), layout) {
-        }
-
-        BasicHelpFormatter(StringViewType progName, 
-                           const std::vector<Option> & options, 
-                           const std::vector<Positional> & positionals,
-                           SubCommandMark subCommandMark,
-                           Layout layout = defaultLayout):
             m_progName(progName),
-            m_options(options),
-            m_positionals(positionals),
-            m_subCommandMark(subCommandMark),
+            m_parser(parser),
             m_layout(layout) {
-                
+            
             if (m_layout.helpNameMaxWidth == 0)
                 m_layout.helpNameMaxWidth = 1;
             if (m_layout.width <= m_layout.helpLeadingGap + m_layout.helpNameMaxWidth + m_layout.helpDescriptionGap)
@@ -89,7 +79,7 @@ namespace Argum {
 
         auto formatHelp(const std::optional<StringType> & subCommand) const -> StringType {
 
-            if (subCommand && this->m_subCommandMark.positionalIdx == size_t(-1))
+            if (subCommand && this->m_parser.subCommandMark().positionalIdx == size_t(-1))
                 ARGUM_INVALID_ARGUMENT("subcommand must be defined to use this function with non null subcommand");
 
             constexpr auto endl = CharConstants::endl;
@@ -125,13 +115,14 @@ namespace Argum {
 
         auto formatSyntax(const std::optional<StringType> & subCommand) const -> StringType {
 
-            if (subCommand && this->m_subCommandMark.positionalIdx == size_t(-1))
+            auto subCommandMark = this->m_parser.subCommandMark();
+            if (subCommand && subCommandMark.positionalIdx == size_t(-1))
                 ARGUM_INVALID_ARGUMENT("subcommand must be added to use this function with non null subcommand");
 
             constexpr auto space = CharConstants::space;
 
-            auto getSyntax = [](auto & obj) {
-                return obj.formatSyntax();
+            auto getSyntax = [&](auto & obj) {
+                return obj.formatSyntax(this->m_parser);
             };
 
             StringType ret = this->appendSyntax(
@@ -142,8 +133,8 @@ namespace Argum {
                 ret = this->appendSyntax(std::move(ret), *subCommand); 
                 ret = this->appendSyntax(std::move(ret), join(this->optionsBegin(true), this->optionsEnd(true), space, getSyntax));
                 ret = this->appendSyntax(std::move(ret), join(this->positionalsBegin(true), this->positionalsEnd(true), space, getSyntax));
-            } else if (this->m_subCommandMark.positionalIdx != size_t(-1)) {
-                ret = this->appendSyntax(std::move(ret), getSyntax(this->m_positionals[this->m_subCommandMark.positionalIdx]));
+            } else if (subCommandMark.positionalIdx != size_t(-1)) {
+                ret = this->appendSyntax(std::move(ret), getSyntax(this->m_parser.positionals()[subCommandMark.positionalIdx]));
             }
 
             return ret;
@@ -158,23 +149,24 @@ namespace Argum {
         auto calculateHelpContent(bool forSubCommand) const -> HelpContent {
             
             HelpContent ret;
+            auto subCommandMark = this->m_parser.subCommandMark();
 
             size_t positionalsSize;
-            if (forSubCommand || this->m_subCommandMark.positionalIdx == size_t(-1))
-                positionalsSize = this->m_positionals.size();
+            if (forSubCommand || subCommandMark.positionalIdx == size_t(-1))
+                positionalsSize = this->m_parser.positionals().size();
             else 
-                positionalsSize = this->m_subCommandMark.positionalIdx + 1;
+                positionalsSize = subCommandMark.positionalIdx + 1;
             for(size_t i = 0; i < positionalsSize; ++ i) {
-                if (forSubCommand && i == this->m_subCommandMark.positionalIdx)
+                if (forSubCommand && i == subCommandMark.positionalIdx)
                     continue;
-                auto & pos = this->m_positionals[i];
-                auto name = pos.formatHelpName();
+                auto & pos = this->m_parser.positionals()[i];
+                auto name = pos.formatHelpName(this->m_parser);
                 if (name.length() > ret.maxNameLen)
                     ret.maxNameLen = unsigned(name.length());
                 ret.positionalItems.emplace_back(std::move(name), pos.formatHelpDescription());
             }
-            std::for_each(this->m_options.begin(), this->optionsEnd(forSubCommand), [&](auto & opt){
-                auto name = opt.formatHelpName();
+            std::for_each(this->m_parser.options().begin(), this->optionsEnd(forSubCommand), [&](auto & opt){
+                auto name = opt.formatHelpName(this->m_parser);
                 if (name.length() > ret.maxNameLen)
                     ret.maxNameLen = unsigned(name.length());
                 ret.optionItems.emplace_back(std::move(name), opt.formatHelpDescription());
@@ -208,27 +200,31 @@ namespace Argum {
 
         auto optionsBegin(bool forSubCommand) const {
             if (!forSubCommand)
-                return  this->m_options.begin();
-            if (this->m_subCommandMark.optionIdx != size_t(-1))
-                return this->m_options.begin() + this->m_subCommandMark.optionIdx;
-            return this->m_options.end();
+                return  this->m_parser.options().begin();
+            auto subCommandMark = this->m_parser.subCommandMark();
+            if (subCommandMark.optionIdx != size_t(-1))
+                return this->m_parser.options().begin() + subCommandMark.optionIdx;
+            return this->m_parser.options().end();
         }
         auto optionsEnd(bool forSubCommand) const {
-            if (forSubCommand || this->m_subCommandMark.optionIdx == size_t(-1))
-                return this->m_options.end();
-            return this->m_options.begin() + this->m_subCommandMark.optionIdx;
+            auto subCommandMark = this->m_parser.subCommandMark();
+            if (forSubCommand || subCommandMark.optionIdx == size_t(-1))
+                return this->m_parser.options().end();
+            return this->m_parser.options().begin() + subCommandMark.optionIdx;
         }
         auto positionalsBegin(bool forSubCommand) const {
             if (!forSubCommand)
-                return this->m_positionals.begin();
-            if (this->m_subCommandMark.positionalIdx != size_t(-1))
-                return this->m_positionals.begin() + this->m_subCommandMark.positionalIdx + 1;
-            return this->m_positionals.end();
+                return this->m_parser.positionals().begin();
+            auto subCommandMark = this->m_parser.subCommandMark();
+            if (subCommandMark.positionalIdx != size_t(-1))
+                return this->m_parser.positionals().begin() + subCommandMark.positionalIdx + 1;
+            return this->m_parser.positionals().end();
         }
         auto positionalsEnd(bool forSubCommand) const {
-            if (forSubCommand || this->m_subCommandMark.positionalIdx == size_t(-1))
-                return this->m_positionals.end();
-            return this->m_positionals.begin() + this->m_subCommandMark.positionalIdx;
+            auto subCommandMark = this->m_parser.subCommandMark();
+            if (forSubCommand || subCommandMark.positionalIdx == size_t(-1))
+                return this->m_parser.positionals().end();
+            return this->m_parser.positionals().begin() + subCommandMark.positionalIdx;
         }
 
         static auto appendSyntax(StringType base, StringType addend) -> StringType {
@@ -248,9 +244,7 @@ namespace Argum {
         }
     private:
         StringType m_progName;
-        const std::vector<Option> & m_options;
-        const std::vector<Positional> & m_positionals;
-        SubCommandMark m_subCommandMark;
+        const BasicParser<Char> & m_parser;
         Layout m_layout;
     };
 

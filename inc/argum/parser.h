@@ -124,6 +124,14 @@ namespace Argum {
             return std::move(static_cast<BasicOption *>(this)->argName(n));
         }
 
+        auto requireAttachedArgument(bool val) & -> BasicOption & {
+            this->m_requireAttachedArgument = val;
+            return *this;
+        }
+        auto requireAttachedArgument(bool val) && -> BasicOption && {
+            return std::move(static_cast<BasicOption *>(this)->requireAttachedArgument(val));
+        }
+
         auto help(StringViewType str) & -> BasicOption & {
             this->m_description = str;
             return *this;
@@ -132,7 +140,7 @@ namespace Argum {
             return std::move(static_cast<BasicOption *>(this)->help(str));
         }
 
-        auto formatSyntax() const -> StringType {
+        auto formatSyntax(const BasicParser<CharType> & parser) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
@@ -141,7 +149,9 @@ namespace Argum {
 
             if (this->m_occurs.min() == 0)
                 ret += brop;
-            StringType nameAndArg = StringType(this->m_names.main()).append(this->formatArgSyntax());
+            auto & mainName = this->m_names.main();
+            bool isLong = parser.isOptionNameLong(mainName);
+            StringType nameAndArg = StringType(mainName).append(this->formatArgSyntax(isLong));
             ret.append(nameAndArg);
             unsigned idx = 1;
             for (; idx < this->m_occurs.min(); ++idx) {
@@ -161,31 +171,44 @@ namespace Argum {
             return ret;
         }
 
-        auto formatArgSyntax() const -> StringType {
+        auto formatArgSyntax(bool forLongName) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
+            constexpr auto eq = CharConstants::assignment;
 
             StringType ret;
             std::visit([&](const auto & handler) {
                 using HandlerType = std::remove_cvref_t<decltype(handler)>;
                 constexpr auto argumentKind = BasicOption::template argumentKindOf<HandlerType>();
                 if constexpr (argumentKind == ArgumentKind::Optional) {
-                    ret.append({space, brop}).append(this->m_argName).append({brcl});
+                    if (this->m_requireAttachedArgument)
+                        if (forLongName)
+                            ret.append({brop, eq});
+                        else
+                            ret.append({brop});
+                    else
+                        ret.append({space, brop});
+                    ret.append(this->m_argName).append({brcl});
                 } else if constexpr (argumentKind == ArgumentKind::Required)  {
-                    ret.append({space}).append(this->m_argName);
+                    if (this->m_requireAttachedArgument) {
+                        if (forLongName)
+                            ret.append({eq});
+                    } else {
+                        ret.append({space});
+                    }
+                    ret.append(this->m_argName);
                 }
             }, this->m_handler);
             return ret;
         }
 
-        auto formatHelpName() const -> StringType {
+        auto formatHelpName(const BasicParser<CharType> & parser) const -> StringType {
         
-            auto argSyntax = this->formatArgSyntax();
             StringType ret = this->m_names.all().front();
-            ret += argSyntax;
+            ret += this->formatArgSyntax(parser.isOptionNameLong(ret));
             std::for_each(this->m_names.all().begin() + 1, this->m_names.all().end(), [&](const auto & name) {
-                ret.append(Messages::listJoiner()).append(name).append(argSyntax);
+                ret.append(Messages::listJoiner()).append(name).append(this->formatArgSyntax(parser.isOptionNameLong(name)));
             });
 
             return ret;
@@ -201,6 +224,7 @@ namespace Argum {
 
         StringType m_argName = Messages::defaultArgName();
         StringType m_description;
+        bool m_requireAttachedArgument = false;
     };
 
     ARGUM_DECLARE_FRIENDLY_NAMES(Option)
@@ -252,7 +276,7 @@ namespace Argum {
             return std::move(static_cast<BasicPositional *>(this)->help(str));
         }
 
-        auto formatSyntax() const -> StringType {
+        auto formatSyntax(const BasicParser<CharType> & /*parser*/) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
@@ -283,7 +307,7 @@ namespace Argum {
             return ret;
         }
 
-        auto formatHelpName() const -> const StringType & {
+        auto formatHelpName(const BasicParser<CharType> & /*parser*/) const -> const StringType & {
             return this->m_name;
         }
 
@@ -491,6 +515,10 @@ namespace Argum {
             return ret;
         }
 
+        auto isOptionNameLong(const StringViewType name) const -> bool {
+            return this->m_tokenizer.isOptionNameLong(name);
+        }
+
     private:
         class ParsingState {
         public:
@@ -587,6 +615,7 @@ namespace Argum {
 
                 auto & option = m_owner.m_options[unsigned(m_optionIndex)];
                 ARGUM_PROPAGATE_ERROR(validateOptionMax(option));
+                bool requireAttachedArgument = option.m_requireAttachedArgument;
                 ARGUM_CHECK_RESULT(auto ret, std::visit([&](const auto & handler) -> ARGUM_EXPECTED(CharType, bool) {
                         using HandlerType = std::remove_cvref_t<decltype(handler)>;
                         constexpr auto argumentKind = Option::template argumentKindOf<HandlerType>();
@@ -595,10 +624,20 @@ namespace Argum {
                                 ARGUM_THROW(ExtraOptionArgument, m_optionName);
                             ARGUM_PROPAGATE_ERROR(handler());
                             return false;
+                        } else if constexpr (argumentKind == OptionArgumentKind::Optional) {
+                            if (requireAttachedArgument || m_optionArgument) {
+                                ARGUM_PROPAGATE_ERROR(handler(m_optionArgument));
+                                return false;
+                            } else {
+                                ARGUM_PROPAGATE_ERROR(handler(argument));
+                                return true;
+                            }
                         } else {
                             if (m_optionArgument) {
                                 ARGUM_PROPAGATE_ERROR(handler(*m_optionArgument));
                                 return false;
+                            } else if (requireAttachedArgument) {
+                                ARGUM_THROW(MissingOptionArgument, m_optionName);
                             } else {
                                 ARGUM_PROPAGATE_ERROR(handler(argument));
                                 return true;
