@@ -174,3 +174,23 @@ TEST_CASE( "quantifiers of options are printed correctly" , "[parser]") {
     }
 }
 
+TEST_CASE( "required attached arguments are printed correctly" , "[parser]") {
+    map<string, vector<Value>> results;
+    {
+        Parser parser;
+        parser.add(OPTION_REQ_ARG("-f").requireAttachedArgument(true).help("fhelp"));
+        parser.add(OPTION_OPT_ARG("-g").requireAttachedArgument(true).help("ghelp"));
+        parser.add(OPTION_REQ_ARG("--foo").requireAttachedArgument(true).help("foohelp"));
+        parser.add(OPTION_OPT_ARG("--goo").requireAttachedArgument(true).help("goohelp"));
+        CHECK(parser.formatUsage("PROG") == "Usage: PROG [-fARG] [-g[ARG]] [--foo=ARG] [--goo[=ARG]]");
+        CHECK(parser.formatHelp("PROG") == R"__(Usage: PROG [-fARG] [-g[ARG]] [--foo=ARG] [--goo[=ARG]]
+
+options:
+  -fARG        fhelp
+  -g[ARG]      ghelp
+  --foo=ARG    foohelp
+  --goo[=ARG]  goohelp
+
+)__");
+    }
+}
