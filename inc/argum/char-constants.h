@@ -10,6 +10,7 @@
 
 #include "common.h"
 
+#include <algorithm>
 #include <stdlib.h>
 #include <wchar.h>
 #include <ctype.h>
