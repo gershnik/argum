@@ -86,8 +86,8 @@ namespace Argum {
 
     template<class X>
     concept StringLike = requires(X name) {
-        Character<std::remove_cvref_t<decltype(name[0])>>;
-        std::is_convertible_v<X, std::basic_string_view<std::remove_cvref_t<decltype(name[0])>>>;
+        requires Character<std::remove_cvref_t<decltype(name[0])>>;
+        requires std::is_convertible_v<X, std::basic_string_view<std::remove_cvref_t<decltype(name[0])>>>;
     };
 
     template<StringLike S> using CharTypeOf = std::remove_cvref_t<decltype(std::declval<S>()[0])>;
@@ -111,10 +111,10 @@ namespace Argum {
     template<class T, class Char>
     concept ArgRange = requires(T & t) {
         std::begin(t);
-        ArgIterator<decltype(std::begin(t)), Char>;
+        requires ArgIterator<decltype(std::begin(t)), Char>;
         std::end(t);
-        std::is_same_v<decltype(std::begin(t) != std::end(t)), bool>;
-        std::is_convertible_v<decltype(t[0]), std::basic_string_view<Char>>;
+        requires std::is_same_v<decltype(std::begin(t) != std::end(t)), bool>;
+        requires std::is_convertible_v<decltype(t[0]), std::basic_string_view<Char>>;
     };
 
 

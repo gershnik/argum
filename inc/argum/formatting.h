@@ -15,6 +15,7 @@
 #include <charconv>
 #include <concepts>
 #include <optional>
+#include <algorithm>
 
 #include <limits.h>
 #include <assert.h>

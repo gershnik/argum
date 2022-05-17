@@ -18,6 +18,7 @@
 #include <vector>
 #include <stack>
 #include <span>
+#include <algorithm>
 
 namespace Argum {
 
