@@ -61,7 +61,7 @@ They demonstrates many of the most important features of the library. More examp
 
 ### Using exceptions
 <details>
-<summary>Code</summary>
+<summary>Click to expand</summary>
 
 ```cpp
 #include "argum.h"
@@ -164,7 +164,7 @@ int main(int argc, char * argv[]) {
 
 ### Using expected values
 <details>
-<summary>Code</summary>
+<summary>Click to expand</summary>
 
 ```cpp
 #include "argum.h"
