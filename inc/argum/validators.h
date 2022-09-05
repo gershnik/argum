@@ -104,7 +104,7 @@ namespace Argum {
     ARGUM_MOD_EXPORTED
     template<AnyParserValidator Validator>
     auto oppositeOf(Validator && val) {
-        return !std::forward<Validator>(val);
+        return NotValidator<std::remove_cvref_t<Validator>>(val);
     }
 
     //MARK: - CombinedValidator
