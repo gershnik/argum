@@ -177,8 +177,13 @@ TEST_CASE( "Validators: oppositeOf" , "[validators]") {
     auto t = [](const ValidationData & ) { return true; };
     auto f = [](const ValidationData & ) { return false; };
 
+    
+#ifndef _MSC_VER
+    //imbecilic MSVC applies built-in ! to lambdas producing bool
     CHECK(!(!t)(data));
     CHECK((!f)(data));
+#endif
+
     CHECK(!oppositeOf(t)(data));
     CHECK(oppositeOf(f)(data));
 }
