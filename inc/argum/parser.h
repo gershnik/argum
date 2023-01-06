@@ -503,11 +503,11 @@ namespace Argum {
             return this->m_subCommandMark;
         }
 
-        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand = std::nullopt) const -> StringType {
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand = std::optional<StringType>{}) const -> StringType {
             return HelpFormatter(*this, progName).formatUsage(subCommand);
         }
 
-        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand = std::nullopt) const -> StringType {
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand = std::optional<StringType>{}) const -> StringType {
             HelpFormatter formatter(*this, progName);
             StringType ret = formatter.formatUsage(subCommand);
             ret.append(2, CharConstants::endl);
