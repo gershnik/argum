@@ -66,7 +66,8 @@ jobs:
         disable-animations: false
         script: echo "Generated AVD snapshot for caching."
 
-    - uses: reactivecircus/android-emulator-runner@v2
+    - name: Configure, Build and Test
+      uses: reactivecircus/android-emulator-runner@v2
       with:
         api-level: ${{env.NDK_API}}
         arch: ${{env.NDK_ARCH}}
@@ -75,12 +76,11 @@ jobs:
         emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
         script: |
-            cmake -S . -B out \
-                 -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE \
-                 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake \
-                 -DANDROID_ABI:STRING=$NDK_ARCH \
-                 -DANDROID_PLATFORM:STRING=$NDK_API \
-                 -DANDROID_STL:STRING=c++_static
+            echo "::group::Configure"
+            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=$NDK_API -DANDROID_STL:STRING=c++_static
+            echo "::endgroup::"
+            echo "::group::Build and Test"
             cmake --build out --config $BUILD_TYPE --target run-test
+            echo "::endgroup::"
 
     
