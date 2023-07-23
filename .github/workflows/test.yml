@@ -28,27 +28,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-        
-
-    - name: Configure system
-      if: startsWith(matrix.os, 'ubuntu')
-      run: |
-        sudo apt-get install -y g++-$GCC_VER gcc-$GCC_VER 
-        echo "CC=gcc-$GCC_VER"  >> $GITHUB_ENV
-        echo "CXX=g++-$GCC_VER" >> $GITHUB_ENV
-#  sudo update-alternatives \
-#     --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VER 100 \
-#     --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-$GCC_VER \
-#     --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-$GCC_VER \
-#     --slave /usr/bin/gcov gcov /usr/bin/gcov-$GCC_VER
-#   sudo update-alternatives \
-#     --install /usr/bin/g++ g++ /usr/bin/g++-$GCC_VER 100
 
     - name: Configure
       shell: bash
       run: cmake -S . -B out -DCMAKE_BUILD_TYPE=$BUILD_TYPE 
 
     - name: Build and Test
+      shell: bash
       run: cmake --build out --config $BUILD_TYPE --target run-test
 
   android:
@@ -72,7 +58,7 @@ jobs:
       uses: reactivecircus/android-emulator-runner@v2
       with:
         api-level: ${{env.NDK_API}}
-        arch: ${{matrix.arch}}
+        arch: ${{env.NDK_ARCH}}
         target: google_apis
         ndk: ${{env.NDK_VER}}
         force-avd-creation: false
