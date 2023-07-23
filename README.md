@@ -16,7 +16,12 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 - [Integration](#integration)
     - [Single header](#single-header)
     - [Module](#module)
-    - [CMake](#cmake)
+    - [CMake via FetchContent](#cmake-via-fetchcontent)
+    - [CMake from download](#cmake-from-download)
+    - [Building and installing on your system](#building-and-installing-on-your-system)
+        - [Basic use](#basic-use)
+        - [CMake package](#cmake-package)
+        - [Via pkg-config](#via-pkg-config)
 - [Configuration](#configuration)
     - [Error reporting mode](#error-reporting-mode)
     - [Customizing termination function](#customizing-termination-function)
@@ -285,33 +290,95 @@ module file. Download `argum-module.ixx` from [Releases][releases] page and inte
 have access to, only MSVC and GCC currently supports modules to any usable extent and, even there, many things appear to be broken. 
 If you encounter internal compiler errors please complain to your compiler vendor. Use at your own risk.
 
-### CMake
+### CMake via FetchContent
   
 With modern CMake you can easily integrate Argum as follows:
 ```cmake
 include(FetchContent)
 FetchContent_Declare(argum
         GIT_REPOSITORY git@github.com:gershnik/argum.git
-        GIT_TAG <desired tag like v1.2>
+        GIT_TAG <desired tag like v2.5>
         GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(argum)
+...
+target_link_libraries(mytarget
+PRIVATE
+  argum::argum
+)
 ``` 
-  
+
+> ℹ&#xFE0F; _[What is FetchContent?](https://cmake.org/cmake/help/latest/module/FetchContent.html)_
+
+
+### CMake from download
+
 Alternatively you can clone this repository somewhere and do this:
 
 ```cmake
 add_subdirectory(PATH_WHERE_YOU_DOWNALODED_IT_TO, argum)
+...
+target_link_libraries(mytarget
+PRIVATE
+  argum::argum
+)
 ```
 
-In either case you can then use `argum` as a library in your project. 
+### Building and installing on your system
+
+You can also build and install this library on your system using CMake.
+
+1. Download or clone this repository into SOME_PATH
+2. On command line:
+```bash
+cd SOME_PATH
+cmake -S . -B build 
+cmake --build build
+
+#Optional
+#cmake --build build --target run-test
+
+#install to /usr/local
+sudo cmake --install build
+#or for a different prefix
+#cmake --install build --prefix /usr
+```
+
+Once the library has been installed it can be used int the following ways:
+
+#### Basic use 
+
+Set the include directory to `<prefix>/include` where `<prefix>` is the install prefix from above.
+
+#### CMake package
+
+```cmake
+find_package(argum)
+
+target_link_libraries(mytarget
+PRIVATE
+  argum::argum
+)
+```
+
+#### Via `pkg-config`
+
+Add the output of `pkg-config --cflags argum` to your compiler flags.
+
+Note that the default installation prefix `/usr/local` might not be in the list of places your
+`pkg-config` looks into. If so you might need to do:
+```bash
+export PKG_CONFIG_PATH=/usr/local/share/pkgconfig
+```
+before running `pkg-config`
+
+
+## Configuration
 
 Whichever method you use in order to use Argum your compiler needs to be set in C++20 mode. 
 Argum should compile cleanly even on a highest warnings level. 
 
-On MSVC you need to have `_CRT_SECURE_NO_WARNINGS` defined to avoid its bogus "deprecation" warnings.
-
-## Configuration
+If you don't use CMake, on MSVC you need to have `_CRT_SECURE_NO_WARNINGS` defined to avoid its bogus "deprecation" warnings.
 
 ### Error reporting mode
 
