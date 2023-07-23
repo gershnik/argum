@@ -6,7 +6,9 @@ on:
       - 'README.md'
       - '.gitignore'
       - 'LICENSE'
+      - 'CHANGELOG.md'
       - 'doc/**'
+      - 'github/workflows/publish.yml'
 
 env:
   BUILD_TYPE: Release
@@ -24,47 +26,75 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-2022]
     
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v3
+        
 
-    - name: Setup dependencies
+    - name: Configure system
       if: startsWith(matrix.os, 'ubuntu')
       run: |
-         sudo apt-get install -y g++-$GCC_VER gcc-$GCC_VER 
-         sudo update-alternatives \
-            --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VER 100 \
-            --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-$GCC_VER \
-            --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-$GCC_VER \
-            --slave /usr/bin/gcov gcov /usr/bin/gcov-$GCC_VER
-          sudo update-alternatives \
-            --install /usr/bin/g++ g++ /usr/bin/g++-$GCC_VER 100
+        sudo apt-get install -y g++-$GCC_VER gcc-$GCC_VER 
+        echo "CC=gcc-$GCC_VER"  >> $GITHUB_ENV
+        echo "CXX=g++-$GCC_VER" >> $GITHUB_ENV
+#  sudo update-alternatives \
+#     --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VER 100 \
+#     --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-$GCC_VER \
+#     --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-$GCC_VER \
+#     --slave /usr/bin/gcov gcov /usr/bin/gcov-$GCC_VER
+#   sudo update-alternatives \
+#     --install /usr/bin/g++ g++ /usr/bin/g++-$GCC_VER 100
 
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{github.workspace}}/build
-
-    - name: Configure CMake
+    - name: Configure
       shell: bash
-      working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DARGUM_TEST=1
+      run: cmake -S . -B out -DCMAKE_BUILD_TYPE=$BUILD_TYPE 
 
     - name: Build and Test
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target run-test
+      run: cmake --build out --config $BUILD_TYPE --target run-test
 
   android:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: AVD cache
+      uses: actions/cache@v3
+      id: avd-cache
+      with:
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-${{env.NDK_VER}}-${{env.NDK_ARCH}}-${{env.NDK_API}}
+
+    - name: Create AVD and generate snapshot for caching
+      if: steps.avd-cache.outputs.cache-hit != 'true'
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{env.NDK_API}}
+        arch: ${{matrix.arch}}
+        target: google_apis
+        ndk: ${{env.NDK_VER}}
+        force-avd-creation: false
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: false
+        script: echo "Generated AVD snapshot for caching."
+
     - uses: reactivecircus/android-emulator-runner@v2
       with:
         api-level: ${{env.NDK_API}}
         arch: ${{env.NDK_ARCH}}
         target: google_apis
         ndk: ${{env.NDK_VER}}
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: true
         script: |
-            mkdir -p ${{github.workspace}}/build
-            cmake -S $GITHUB_WORKSPACE -B $GITHUB_WORKSPACE/build -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DARGUM_TEST=1 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=$NDK_API -DANDROID_STL:STRING=c++_static
-            cmake --build $GITHUB_WORKSPACE/build --config $BUILD_TYPE --target run-test
+            cmake -S . -B out \
+                 -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE \
+                 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake \
+                 -DANDROID_ABI:STRING=$NDK_ARCH \
+                 -DANDROID_PLATFORM:STRING=$NDK_API \
+                 -DANDROID_STL:STRING=c++_static
+            cmake --build out --config $BUILD_TYPE --target run-test
 
     

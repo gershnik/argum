@@ -5,8 +5,6 @@
 #  https://github.com/gershnik/argum/blob/master/LICENSE
 #
 
-find_package (Python3 COMPONENTS Interpreter)
-
 
 function(configure_test name)
 
@@ -166,18 +164,10 @@ add_custom_target(run-test
     ${TEST_COMMAND}
 )
 
-if(${Python3_Interpreter_FOUND})
-
-    add_custom_target(amalgamate
-        COMMENT "Amalgamating"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../tools
-        COMMAND ${Python3_EXECUTABLE} amalgamate.py template.txt ../out/argum.h -d ../inc/argum 
-        COMMAND ${Python3_EXECUTABLE} amalgamate.py module-template.txt ../out/argum-module.ixx -d ../inc/argum 
-        DEPENDS 
-            ${UNICODE_DATA} 
-            ${UNICODE_SCRIPTS}
-    )
+if (TARGET amalgamate)
 
     add_dependencies(test amalgamate)
- 
+    add_dependencies(test_expected amalgamate)
+    add_dependencies(test_nothrow amalgamate)
+
 endif()

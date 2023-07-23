@@ -1,0 +1,14 @@
+#  Copyright 2022 Eugene Gershnik
+#
+#  Use of this source code is governed by a BSD-style
+#  license that can be found in the LICENSE file or at
+#  https://github.com/gershnik/argum/blob/master/LICENSE
+#
+
+@PACKAGE_INIT@
+
+
+# Avoid repeatedly including the targets
+if(NOT TARGET argum::argum)
+    include(${CMAKE_CURRENT_LIST_DIR}/argum-exports.cmake)
+endif()

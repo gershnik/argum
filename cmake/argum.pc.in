@@ -1,0 +1,10 @@
+prefix=${pcfiledir}/@FROM_PCFILEDIR_TO_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: argum
+Description: Fully-featured, powerful and simple to use C++ command line argument parser.
+Version: @PROJECT_VERSION@
+Requires:
+Cflags: -I${includedir}
+Libs: 

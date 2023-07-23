@@ -4,15 +4,25 @@
 #  license that can be found in the LICENSE file or at
 #  https://github.com/gershnik/argum/blob/master/LICENSE
 #
-cmake_minimum_required(VERSION "3.20")
+cmake_minimum_required(VERSION 3.25)
 
-project(argum)
+file(READ VERSION ARGUM_VERSION)
+if (NOT ARGUM_VERSION)
+    message(FATAL_ERROR "Cannot determine library version (VERSION file not found)")
+endif()
+string(STRIP ${ARGUM_VERSION} ARGUM_VERSION)
+
+project(argum VERSION ${ARGUM_VERSION} LANGUAGES CXX)
 
 add_library(argum INTERFACE)
 
+set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})
+set(TOOLSDIR ${SRCDIR}/tools)
+
 target_include_directories(argum 
     INTERFACE
-        inc
+        $<BUILD_INTERFACE:${SRCDIR}/inc>
+        $<INSTALL_INTERFACE:include>  # <prefix>/include
 )
 
 target_compile_definitions(argum
@@ -20,27 +30,38 @@ target_compile_definitions(argum
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 )
 
-target_sources(argum
-    PRIVATE
-        inc/argum/common.h
-        inc/argum/char-constants.h
-        inc/argum/messages.h
-        inc/argum/formatting.h
-        inc/argum/partitioner.h
-        inc/argum/flat-map.h
-        inc/argum/simple-file.h
-        inc/argum/data.h
-        inc/argum/expected.h
-        inc/argum/command-line.h
-        inc/argum/tokenizer.h
-        inc/argum/parser.h
-        inc/argum/validators.h
-        inc/argum/help-formatter.h
-        inc/argum/type-parsers.h
-
+set(PUBLIC_HEADERS 
+    ${SRCDIR}/inc/argum/common.h
+    ${SRCDIR}/inc/argum/char-constants.h
+    ${SRCDIR}/inc/argum/messages.h
+    ${SRCDIR}/inc/argum/formatting.h
+    ${SRCDIR}/inc/argum/partitioner.h
+    ${SRCDIR}/inc/argum/flat-map.h
+    ${SRCDIR}/inc/argum/simple-file.h
+    ${SRCDIR}/inc/argum/data.h
+    ${SRCDIR}/inc/argum/expected.h
+    ${SRCDIR}/inc/argum/command-line.h
+    ${SRCDIR}/inc/argum/tokenizer.h
+    ${SRCDIR}/inc/argum/parser.h
+    ${SRCDIR}/inc/argum/validators.h
+    ${SRCDIR}/inc/argum/help-formatter.h
+    ${SRCDIR}/inc/argum/type-parsers.h
 )
 
-if (ARGUM_TEST)
+target_sources(argum
+INTERFACE 
+    FILE_SET HEADERS BASE_DIRS ${SRCDIR}/inc FILES
+        ${PUBLIC_HEADERS}
+PRIVATE 
+    ${PUBLIC_HEADERS}
+)
+
+add_library(argum::argum ALIAS argum)
+
+if (PROJECT_IS_TOP_LEVEL)
+
+    include(cmake/install.cmake)
+    include(cmake/amalgamate.cmake)
 
     include(test/test.cmake)
 
