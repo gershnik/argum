@@ -23,7 +23,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-2022]
+        include:
+        - os: macos-latest
+        - os: windows-latest
+        - os: ubuntu-latest
+          cc: gcc-11
+          cxx: g++-11
+        - os: ubuntu-latest
+          cc: gcc-12
+          cxx: g++-12
+        - os: ubuntu-latest
+          cc: clang-13
+          cxx: clang++-13
+        - os: ubuntu-latest
+          cc: clang-14
+          cxx: clang++-14
     
     steps:
     - name: Checkout
@@ -31,7 +45,14 @@ jobs:
 
     - name: Configure
       shell: bash
-      run: cmake -S . -B out -DCMAKE_BUILD_TYPE=$BUILD_TYPE 
+      run: |
+        if [[ '${{ matrix.cc }}' != '' ]]; then
+          export CC=${{ matrix.cc }}
+        fi
+        if [[ '${{ matrix.cxx }}' != '' ]]; then
+          export CXX=${{ matrix.cxx }}
+        fi
+        cmake -S . -B out -DCMAKE_BUILD_TYPE=$BUILD_TYPE 
 
     - name: Build and Test
       shell: bash
