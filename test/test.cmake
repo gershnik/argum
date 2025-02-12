@@ -71,7 +71,7 @@ endfunction(configure_test name)
 
 
 
-add_executable(test)
+add_executable(test EXCLUDE_FROM_ALL)
 configure_test(test)
 
 target_compile_options(test
@@ -85,7 +85,7 @@ target_link_options(test
         $<$<CXX_COMPILER_ID:AppleClang>:-fprofile-instr-generate -fcoverage-mapping>
 )
 
-add_executable(test_expected)
+add_executable(test_expected EXCLUDE_FROM_ALL)
 configure_test(test_expected)
 
 target_compile_definitions(test_expected 
@@ -98,7 +98,7 @@ target_compile_options(test_expected
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
 )
 
-add_executable(test_nothrow)
+add_executable(test_nothrow EXCLUDE_FROM_ALL)
 configure_test(test_nothrow)
 
 target_compile_definitions(test_nothrow 
