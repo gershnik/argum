@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+### Added
+- `ARGUM_NO_TESTS` CMake configuration option. Setting it to `ON` disables all test targets
+
+### Changed
+- Test targets are now excluded from default (aka 'all') CMake build
+- Test infrastructure changed to Doctest from Catch2
+
+### Fixed
+- Added missing `<limits.h>` include file in one of the headers.
+
 ## [2.5] - 2023-07-23
 
 ### Changed
