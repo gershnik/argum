@@ -4,6 +4,8 @@
 
 #include <doctest/doctest.h>
 
+#include <ostream>
+
 using namespace Argum;
 using namespace std;
 

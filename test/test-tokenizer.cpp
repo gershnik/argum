@@ -6,6 +6,7 @@
 
 #include <variant>
 #include <array>
+#include <ostream>
 
 #ifdef _MSC_VER
 #pragma warning(disable:4505)
