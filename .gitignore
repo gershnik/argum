@@ -3,5 +3,6 @@
 out/
 .vs/
 .devcontainer/
+.vscode/
 
-.vscode/launch.json
+CMakeSettings.json
