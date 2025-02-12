@@ -2,5 +2,6 @@
 
 out/
 .vs/
+.devcontainer/
 
 .vscode/launch.json
