@@ -60,7 +60,6 @@ function(configure_test name)
 
     target_sources(${name} 
         PRIVATE
-            test/catch.hpp
             test/test.cpp
             test/test-common.h
             test/test-expected.cpp
