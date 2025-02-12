@@ -14,6 +14,7 @@
 #include <vector>
 #include <optional>
 #include <algorithm>
+#include <limits>
 
 
 namespace Argum {
