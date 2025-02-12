@@ -2,15 +2,16 @@
 
 #include <argum/formatting.h>
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 using namespace Argum;
 using namespace std;
 
 using namespace std::literals;
 
+TEST_SUITE("formatting") {
 
-TEST_CASE( "narrow formatting" , "[formatting]") {
+TEST_CASE( "narrow formatting" ) {
 
     CHECK(format("") == "");
     CHECK(format("abc") == "abc");
@@ -51,7 +52,7 @@ TEST_CASE( "narrow formatting" , "[formatting]") {
     CHECK(format("{1}", 1.2) == to_string(1.2));
 }
 
-TEST_CASE( "wide formatting" , "[formatting]") {
+TEST_CASE( "wide formatting" ) {
 
     CHECK(format(L"") == L"");
     CHECK(format(L"abc") == L"abc");
@@ -93,7 +94,7 @@ TEST_CASE( "wide formatting" , "[formatting]") {
     CHECK(format(L"{1}", 1.2) == to_wstring(1.2));
 }
 
-TEST_CASE( "indent" , "[formatting]") {
+TEST_CASE( "indent" ) {
     CHECK(indent("", 0) == "");
     CHECK(indent("", 100) == "");
     CHECK(indent("abc", 3) == "abc");
@@ -101,7 +102,7 @@ TEST_CASE( "indent" , "[formatting]") {
     CHECK(indent("a\nb\nc", 1) == "a\n b\n c");
 }
 
-TEST_CASE( "word wrap" , "[formatting]") {
+TEST_CASE( "word wrap" ) {
 
     CHECK(wordWrap("", 0) == "");
     CHECK(wordWrap("a", 0) == "");
@@ -124,4 +125,6 @@ TEST_CASE( "word wrap" , "[formatting]") {
     CHECK(wordWrap("ab c", 2) == "ab\nc");
     CHECK(wordWrap("a\nbc", 2) == "a\nbc");
     CHECK(wordWrap("ab\nc", 2) == "ab\nc");
+}
+
 }

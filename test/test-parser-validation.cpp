@@ -1,6 +1,8 @@
 #include "parser-common.h"
 
-TEST_CASE( "Mutually exclusive groups" , "[parser]") {
+TEST_SUITE("parser-validation") {
+
+TEST_CASE( "Mutually exclusive groups" ) {
 
     map<string, vector<Value>> results;
 
@@ -36,7 +38,7 @@ TEST_CASE( "Mutually exclusive groups" , "[parser]") {
 }
 
 
-TEST_CASE( "If one then other" , "[parser]") {
+TEST_CASE( "If one then other" ) {
 
     map<string, vector<Value>> results;
 
@@ -61,3 +63,4 @@ TEST_CASE( "If one then other" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-a2", "-b1", "-b2"), RESULTS({"-a2", {"+"}}, {"-b1", {"+"}}, {"-b2", {"+"}}))
 }
 
+}

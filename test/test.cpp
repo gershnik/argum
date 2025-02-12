@@ -1,5 +1,5 @@
-#define CATCH_CONFIG_RUNNER
-#include "catch.hpp"
+#define DOCTEST_CONFIG_IMPLEMENT
+#include <doctest/doctest.h>
 
 
 int main(int argc, char ** argv)
@@ -8,7 +8,7 @@ int main(int argc, char ** argv)
         SetConsoleOutputCP(CP_UTF8);
     #endif
 
-    return Catch::Session().run( argc, argv );
+    return doctest::Context(argc, argv).run();
 }
 
 

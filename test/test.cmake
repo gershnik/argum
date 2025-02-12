@@ -5,6 +5,16 @@
 #  https://github.com/gershnik/argum/blob/master/LICENSE
 #
 
+include(FetchContent)
+
+FetchContent_Declare(doctest
+    URL  https://raw.githubusercontent.com/doctest/doctest/v2.4.11/doctest/doctest.h
+    DOWNLOAD_NO_EXTRACT TRUE
+    SOURCE_DIR downloaded/doctest
+)
+
+FetchContent_MakeAvailable(doctest)
+
 
 function(configure_test name)
 
@@ -41,6 +51,11 @@ function(configure_test name)
                 -Wno-unknown-pragmas  #the whole point of pragmas it to be potentially unknown!
             >
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /Zc:preprocessor /W4 /WX>
+    )
+
+    target_include_directories(${name} 
+    PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/downloaded
     )
 
     target_sources(${name} 

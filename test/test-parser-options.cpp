@@ -1,6 +1,8 @@
 #include "parser-common.h"
 
-TEST_CASE( "Options boundary Cases" , "[parser]") {
+TEST_SUITE("parser-options") {
+
+TEST_CASE( "Options boundary Cases" ) {
 
     map<string, vector<Value>> results;
     {
@@ -35,7 +37,7 @@ TEST_CASE( "Options boundary Cases" , "[parser]") {
 #endif
 }
 
-TEST_CASE( "Option with a single-dash option string" , "[parser]") {
+TEST_CASE( "Option with a single-dash option string" ) {
 
     map<string, vector<Value>> results;
 
@@ -55,7 +57,7 @@ TEST_CASE( "Option with a single-dash option string" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-x-1"), RESULTS({"-x", {"-1"}}))
 }
 
-TEST_CASE( "Wide Option with a single-dash option string" , "[parser]") {
+TEST_CASE( "Wide Option with a single-dash option string" ) {
 
     map<wstring, vector<WValue>> results;
 
@@ -75,7 +77,7 @@ TEST_CASE( "Wide Option with a single-dash option string" , "[parser]") {
     EXPECT_SUCCESS(WARGS(L"-x-1"), WRESULTS({L"-x", {L"-1"}}))
 }
 
-TEST_CASE( "Combined single-dash options" , "[parser]") {
+TEST_CASE( "Combined single-dash options" ) {
 
     map<string, vector<Value>> results;
 
@@ -114,7 +116,7 @@ TEST_CASE( "Combined single-dash options" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-x", "-yyy", "-z", "a"), RESULTS({"-x", {"+"}}, {"-yyy", {"+"}}, {"-z", {"a"}}))
 }
 
-TEST_CASE( "Option with a multi-character single-dash option string" , "[parser]") {
+TEST_CASE( "Option with a multi-character single-dash option string" ) {
 
     map<string, vector<Value>> results;
 
@@ -141,7 +143,7 @@ TEST_CASE( "Option with a multi-character single-dash option string" , "[parser]
     //DIFFERENCE FROM ArgParse.
 }
 
-TEST_CASE( "Single dash options where option strings are subsets of each other" , "[parser]") {
+TEST_CASE( "Single dash options where option strings are subsets of each other" ) {
 
     map<string, vector<Value>> results;
 
@@ -167,7 +169,7 @@ TEST_CASE( "Single dash options where option strings are subsets of each other" 
     EXPECT_SUCCESS(ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
-TEST_CASE( "Single dash options that partially match but are not subsets" , "[parser]") {
+TEST_CASE( "Single dash options that partially match but are not subsets" ) {
 
     map<string, vector<Value>> results;
 
@@ -192,7 +194,7 @@ TEST_CASE( "Single dash options that partially match but are not subsets" , "[pa
     EXPECT_SUCCESS(ARGS("-foorab", "a"), RESULTS({"-foorab", {"a"}}))
 }
 
-TEST_CASE( "Short option with a numeric option string" , "[parser]") {
+TEST_CASE( "Short option with a numeric option string" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -213,7 +215,7 @@ TEST_CASE( "Short option with a numeric option string" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-1-2"), RESULTS({"-1", {"-2"}}))
 }
 
-TEST_CASE( "Long option with a numeric option string" , "[parser]") {
+TEST_CASE( "Long option with a numeric option string" ) {
     map<string, vector<Value>> results;
 
     Parser parser(Parser::Settings().addLongPrefix("-", "--").addValueDelimiter('='));
@@ -233,7 +235,7 @@ TEST_CASE( "Long option with a numeric option string" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-1=-2"), RESULTS({"-1", {"-2"}}))
 }
 
-TEST_CASE( "Option with a double-dash option string" , "[parser]") {
+TEST_CASE( "Option with a double-dash option string" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -253,7 +255,7 @@ TEST_CASE( "Option with a double-dash option string" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--foo=-2.5"), RESULTS({"--foo", {"-2.5"}}))
 }
 
-TEST_CASE( "Partial matching with a double-dash option string" , "[parser]") {
+TEST_CASE( "Partial matching with a double-dash option string" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -275,7 +277,7 @@ TEST_CASE( "Partial matching with a double-dash option string" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--badger"), RESULTS({"--badger", {"+"}}))
 }
 
-TEST_CASE( "Wide Partial matching with a double-dash option string" , "[parser]") {
+TEST_CASE( "Wide Partial matching with a double-dash option string" ) {
     map<wstring, vector<WValue>> results;
 
     WParser parser;
@@ -297,7 +299,7 @@ TEST_CASE( "Wide Partial matching with a double-dash option string" , "[parser]"
     EXPECT_SUCCESS(WARGS(L"--badger"), WRESULTS({L"--badger", {L"+"}}))
 }
 
-TEST_CASE( "One double-dash option string is a prefix of another" , "[parser]") {
+TEST_CASE( "One double-dash option string is a prefix of another" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -319,7 +321,7 @@ TEST_CASE( "One double-dash option string is a prefix of another" , "[parser]") 
     EXPECT_SUCCESS(ARGS("--badger"), RESULTS({"--badger", {"+"}}))
 }
 
-TEST_CASE( "Mix of options with single- and double-dash option strings" , "[parser]") {
+TEST_CASE( "Mix of options with single- and double-dash option strings" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -342,7 +344,7 @@ TEST_CASE( "Mix of options with single- and double-dash option strings" , "[pars
     EXPECT_SUCCESS(ARGS("-ba", "-f"), RESULTS({"-f", {"+"}}, {"-baz", {"+"}}))
 }
 
-TEST_CASE( "Combination of single- and double-dash option strings for an option" , "[parser]") {
+TEST_CASE( "Combination of single- and double-dash option strings for an option" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -360,7 +362,7 @@ TEST_CASE( "Combination of single- and double-dash option strings for an option"
     EXPECT_SUCCESS(ARGS("--noisy"), RESULTS({"-v", {"+"}}))
 }
 
-TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[parser]") {
+TEST_CASE( "Allow long options to be abbreviated unambiguously" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -378,7 +380,7 @@ TEST_CASE( "Allow long options to be abbreviated unambiguously" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--foobl", "--foo", "g"), RESULTS({"--foo", {"g"}}, {"--fooble", {"+"}}))
 }
 
-TEST_CASE( "Disallow abbreviation setting" , "[parser]") {
+TEST_CASE( "Disallow abbreviation setting" ) {
     map<string, vector<Value>> results;
 
     Parser parser(Parser::Settings::commonUnix().allowAbbreviation(false));
@@ -399,7 +401,7 @@ TEST_CASE( "Disallow abbreviation setting" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-foonly", "7", "-foodle", "-foo", "2"), RESULTS({"--foo", {"2"}}, {"--foodle", {"+"}}, {"--foonly", {"7"}}))
 }
 
-TEST_CASE( "Custom prefixes" , "[parser]") {
+TEST_CASE( "Custom prefixes" ) {
     map<string, vector<Value>> results;
 
     Parser parser(Parser::Settings()
@@ -431,7 +433,7 @@ TEST_CASE( "Custom prefixes" , "[parser]") {
     EXPECT_SUCCESS(ARGS("/ba", "+f"), RESULTS({"+f", {"+"}}, {"/baz", {"+"}}))
 }
 
-TEST_CASE( "Equivalent custom prefixes" , "[parser]") {
+TEST_CASE( "Equivalent custom prefixes" ) {
     map<string, vector<Value>> results;
 
     Parser::Settings settings;
@@ -467,7 +469,7 @@ TEST_CASE( "Equivalent custom prefixes" , "[parser]") {
 }
 
 
-TEST_CASE( "Optional arg for an option" , "[parser]") {
+TEST_CASE( "Optional arg for an option" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -483,7 +485,7 @@ TEST_CASE( "Optional arg for an option" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--work=2"), RESULTS({"-w", {"2"}}))
 }
 
-TEST_CASE( "Required option" , "[parser]") {
+TEST_CASE( "Required option" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -502,7 +504,7 @@ TEST_CASE( "Required option" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--work=42"), RESULTS({"-w", {"42"}}))
 }
 
-TEST_CASE( "Repeat one-or-more option" , "[parser]") {
+TEST_CASE( "Repeat one-or-more option" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -522,7 +524,7 @@ TEST_CASE( "Repeat one-or-more option" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--work", "42", "-w"), RESULTS({"-w", {"42", nullopt}}))
 }
 
-TEST_CASE( "Repeat 2-or-3 option" , "[parser]") {
+TEST_CASE( "Repeat 2-or-3 option" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -538,5 +540,5 @@ TEST_CASE( "Repeat 2-or-3 option" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--work=42", "-w", "-w34"), RESULTS({"-w", {"42", nullopt, "34"}}))
 }
 
-
+}
 

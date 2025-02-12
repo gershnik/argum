@@ -2,12 +2,18 @@
 
 #include <argum/expected.h>
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 using namespace Argum;
 using namespace std;
 
 using namespace std::literals;
+
+#ifndef ARGUM_NO_THROW
+    #define XREQUIRE(x) REQUIRE(x)
+#else
+    #define XREQUIRE(x) { bool res = bool(x); CHECK(res); if (!res) abort(); }
+#endif 
 
 namespace {
     struct foo {
@@ -28,41 +34,43 @@ namespace {
     };
 }
 
-TEST_CASE( "expected properties" , "[expected]") {
-    STATIC_REQUIRE(!is_default_constructible_v<Expected<foo>>);
-    STATIC_REQUIRE(is_copy_constructible_v<Expected<foo>>);
-    STATIC_REQUIRE(is_nothrow_move_constructible_v<Expected<foo>>);
-    STATIC_REQUIRE(is_copy_assignable_v<Expected<foo>>);
-    STATIC_REQUIRE(is_nothrow_move_assignable_v<Expected<foo>>);
-    STATIC_REQUIRE(is_constructible_v<Expected<foo>, foo>);
-    STATIC_REQUIRE(is_constructible_v<Expected<foo>, int>);
-    STATIC_REQUIRE(is_constructible_v<Expected<foo>, string>);
-    STATIC_REQUIRE(is_constructible_v<Expected<foo>, decltype(make_shared<Exc>())>);
+TEST_SUITE("expected") {
 
-    STATIC_REQUIRE(is_nothrow_default_constructible_v<Expected<void>>);
-    STATIC_REQUIRE(is_copy_constructible_v<Expected<void>>);
-    STATIC_REQUIRE(is_nothrow_move_constructible_v<Expected<void>>);
-    STATIC_REQUIRE(is_copy_assignable_v<Expected<void>>);
-    STATIC_REQUIRE(is_nothrow_move_assignable_v<Expected<void>>);
-    STATIC_REQUIRE(!is_constructible_v<Expected<void>, int>);
-    STATIC_REQUIRE(!is_constructible_v<Expected<void>, monostate>);
-    STATIC_REQUIRE(is_constructible_v<Expected<void>, decltype(make_shared<Exc>())>);
+TEST_CASE( "expected properties" ) {
+    static_assert(!is_default_constructible_v<Expected<foo>>);
+    static_assert(is_copy_constructible_v<Expected<foo>>);
+    static_assert(is_nothrow_move_constructible_v<Expected<foo>>);
+    static_assert(is_copy_assignable_v<Expected<foo>>);
+    static_assert(is_nothrow_move_assignable_v<Expected<foo>>);
+    static_assert(is_constructible_v<Expected<foo>, foo>);
+    static_assert(is_constructible_v<Expected<foo>, int>);
+    static_assert(is_constructible_v<Expected<foo>, string>);
+    static_assert(is_constructible_v<Expected<foo>, decltype(make_shared<Exc>())>);
 
-    STATIC_REQUIRE(is_constructible_v<Expected<void>, Expected<foo>>);
-    STATIC_REQUIRE(is_constructible_v<Expected<int>, Expected<short>>);
+    static_assert(is_nothrow_default_constructible_v<Expected<void>>);
+    static_assert(is_copy_constructible_v<Expected<void>>);
+    static_assert(is_nothrow_move_constructible_v<Expected<void>>);
+    static_assert(is_copy_assignable_v<Expected<void>>);
+    static_assert(is_nothrow_move_assignable_v<Expected<void>>);
+    static_assert(!is_constructible_v<Expected<void>, int>);
+    static_assert(!is_constructible_v<Expected<void>, monostate>);
+    static_assert(is_constructible_v<Expected<void>, decltype(make_shared<Exc>())>);
+
+    static_assert(is_constructible_v<Expected<void>, Expected<foo>>);
+    static_assert(is_constructible_v<Expected<int>, Expected<short>>);
 }
 
-TEST_CASE( "expected value" , "[expected]") {
+TEST_CASE( "expected value" ) {
     {
         Expected<foo> exp(3);
-        REQUIRE(exp);
+        XREQUIRE(exp);
         CHECK(!!exp);
         CHECK(exp.value().val == "3");
         CHECK(exp->val == "3");
         CHECK((*exp).val == "3");
     }
     {
-        REQUIRE(Expected<foo>(3));
+        XREQUIRE(Expected<foo>(3));
         CHECK(!!Expected<foo>(3));
         CHECK(Expected<foo>(3).value().val == "3");
         CHECK(Expected<foo>(3)->val == "3");
@@ -70,7 +78,7 @@ TEST_CASE( "expected value" , "[expected]") {
     }    
     {    
         const Expected<foo> exp(3);
-        REQUIRE(exp);
+        XREQUIRE(exp);
         CHECK(!!exp);
         CHECK(exp.value().val == "3");
         CHECK(exp->val == "3");
@@ -82,52 +90,52 @@ TEST_CASE( "expected value" , "[expected]") {
     
 }
 
-TEST_CASE( "expected void value" , "[expected]") {
+TEST_CASE( "expected void value" ) {
     {
         Expected<void> exp;
-        REQUIRE(exp);
+        XREQUIRE(exp);
         CHECK(!!exp);
-        STATIC_REQUIRE(is_void_v<decltype(exp.value())>);
-        STATIC_REQUIRE(is_void_v<decltype(*exp)>);
+        static_assert(is_void_v<decltype(exp.value())>);
+        static_assert(is_void_v<decltype(*exp)>);
     }
     {
-        REQUIRE(Expected<void>());
+        XREQUIRE(Expected<void>());
         CHECK(!!Expected<void>());
-        STATIC_REQUIRE(is_void_v<decltype(Expected<void>().value())>);
-        STATIC_REQUIRE(is_void_v<decltype(*Expected<void>())>);
+        static_assert(is_void_v<decltype(Expected<void>().value())>);
+        static_assert(is_void_v<decltype(*Expected<void>())>);
     }    
     {    
         const Expected<void> exp;
-        REQUIRE(exp);
+        XREQUIRE(exp);
         CHECK(!!exp);
-        STATIC_REQUIRE(is_void_v<decltype(exp.value())>);
-        STATIC_REQUIRE(is_void_v<decltype(*exp)>);
+        static_assert(is_void_v<decltype(exp.value())>);
+        static_assert(is_void_v<decltype(*exp)>);
     }
 }
 
-TEST_CASE( "expected error" , "[expected]") {
+TEST_CASE( "expected error" ) {
     {
         Expected<foo> exp(Failure<Exc>, "a");
-        REQUIRE(!bool(exp));
+        XREQUIRE(!bool(exp));
         CHECK(!exp);
-        REQUIRE(exp.error());
+        XREQUIRE(exp.error());
         CHECK(exp.error()->message() == "a");
         CHECK(exp.error()->what() == "a"s);
     }
 
     {
-        REQUIRE(!bool(Expected<foo>(Failure<Exc>, "a")));
+        XREQUIRE(!bool(Expected<foo>(Failure<Exc>, "a")));
         CHECK(!Expected<foo>(Failure<Exc>, "a"));
-        REQUIRE(Expected<foo>(Failure<Exc>, "a").error());
+        XREQUIRE(Expected<foo>(Failure<Exc>, "a").error());
         CHECK(Expected<foo>(Failure<Exc>, "a").error()->message() == "a");
         CHECK(Expected<foo>(Failure<Exc>, "a").error()->what() == "a"s);
     }
 
     {
         const Expected<foo> exp(Failure<Exc>, "a");
-        REQUIRE(!bool(exp));
+        XREQUIRE(!bool(exp));
         CHECK(!exp);
-        REQUIRE(exp.error());
+        XREQUIRE(exp.error());
         CHECK(exp.error()->message() == "a");
         CHECK(exp.error()->what() == "a"s);
     }
@@ -135,38 +143,38 @@ TEST_CASE( "expected error" , "[expected]") {
     {
         auto ex = make_shared<Exc>();
         Expected<foo> exp(ex);
-        REQUIRE(!bool(exp));
+        XREQUIRE(!bool(exp));
         CHECK(!exp);
-        REQUIRE(exp.error() == ex);
+        XREQUIRE(exp.error() == ex);
         CHECK(exp.error()->message() == "blah");
         CHECK(exp.error()->what() == "blah"s);
     }
 }
 
-TEST_CASE( "expected error in void" , "[expected]") {
+TEST_CASE( "expected error in void" ) {
 
     {
         Expected<void> exp(Failure<Exc>, "a");
-        REQUIRE(!bool(exp));
+        XREQUIRE(!bool(exp));
         CHECK(!exp);
-        REQUIRE(exp.error());
+        XREQUIRE(exp.error());
         CHECK(exp.error()->message() == "a");
         CHECK(exp.error()->what() == "a"s);
     }
 
     {
-        REQUIRE(!bool(Expected<void>(Failure<Exc>, "a")));
+        XREQUIRE(!bool(Expected<void>(Failure<Exc>, "a")));
         CHECK(!Expected<void>(Failure<Exc>, "a"));
-        REQUIRE(Expected<void>(Failure<Exc>, "a").error());
+        XREQUIRE(Expected<void>(Failure<Exc>, "a").error());
         CHECK(Expected<void>(Failure<Exc>, "a").error()->message() == "a");
         CHECK(Expected<void>(Failure<Exc>, "a").error()->what() == "a"s);
     }
 
     {
         const Expected<void> exp(Failure<Exc>, "a");
-        REQUIRE(!bool(exp));
+        XREQUIRE(!bool(exp));
         CHECK(!exp);
-        REQUIRE(exp.error());
+        XREQUIRE(exp.error());
         CHECK(exp.error()->message() == "a");
         CHECK(exp.error()->what() == "a"s);
     }
@@ -174,21 +182,21 @@ TEST_CASE( "expected error in void" , "[expected]") {
     {
         auto ex = make_shared<Exc>();
         Expected<void> exp(ex);
-        REQUIRE(!bool(exp));
+        XREQUIRE(!bool(exp));
         CHECK(!exp);
-        REQUIRE(exp.error() == ex);
+        XREQUIRE(exp.error() == ex);
         CHECK(exp.error()->message() == "blah");
         CHECK(exp.error()->what() == "blah"s);
     }
 }
 
-TEST_CASE( "converting expecteds" , "[expected]") {
+TEST_CASE( "converting expecteds" ) {
 
     CHECK(Expected<string>(Expected<const char *>("hello")).value() == "hello");
     CHECK(Expected<foo>(Expected<int>(5)).value().val == "5");
     CHECK(Expected<void>(Expected<int>(5)));
 }
 
-
+}
 
 

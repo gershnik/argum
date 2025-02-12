@@ -2,7 +2,7 @@
 
 #include <argum/partitioner.h>
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 
 using namespace Argum;
@@ -12,15 +12,26 @@ using namespace std::literals;
 
 #define RESULT(...) vector<decltype(p)::SizeType>{initializer_list<decltype(p)::SizeType>{__VA_ARGS__}}
 
-#define EXPECT_SUCCESS(n, expected) {\
-    auto res = p.partition(n).value(); \
-    REQUIRE(res.size() == p.paritionsCount()); \
-    CHECK(res == expected);\
-}
+#ifndef ARGUM_NO_THROW
+    #define EXPECT_SUCCESS(n, expected) {\
+        auto res = p.partition(n).value(); \
+        REQUIRE(res.size() == p.paritionsCount()); \
+        CHECK(res == expected);\
+    }
+#else
+    #define EXPECT_SUCCESS(n, expected) {\
+        auto res = p.partition(n).value(); \
+        CHECK(res.size() == p.paritionsCount()); \
+        if (res.size() != p.paritionsCount()) abort(); \
+        CHECK(res == expected);\
+    }
+#endif
 
 #define EXPECT_FAILURE(n) CHECK(!p.partition(n));
 
-TEST_CASE( "Empty partitioner", "[partitioner") {
+TEST_SUITE("partitioner") {
+
+TEST_CASE( "Empty partitioner" ) {
 
     Partitioner<unsigned> p;
 
@@ -30,7 +41,7 @@ TEST_CASE( "Empty partitioner", "[partitioner") {
     EXPECT_SUCCESS(0, RESULT(0));
 }
 
-TEST_CASE( "Partitioner {0}", "[partitioner") {
+TEST_CASE( "Partitioner {0}" ) {
     Partitioner<int> p;
 
     p.addRange(0, 0);
@@ -42,7 +53,7 @@ TEST_CASE( "Partitioner {0}", "[partitioner") {
     EXPECT_SUCCESS(2, RESULT(0, 2));
 }
 
-TEST_CASE( "Partitioner {0,1}", "[partitioner") {
+TEST_CASE( "Partitioner {0,1}" ) {
     Partitioner<short> p;
 
     p.addRange(0, 1);
@@ -54,7 +65,7 @@ TEST_CASE( "Partitioner {0,1}", "[partitioner") {
     EXPECT_SUCCESS(2, RESULT(1, 1));
 }
 
-TEST_CASE( "Partitioner {1}", "[partitioner") {
+TEST_CASE( "Partitioner {1}" ) {
     Partitioner<unsigned long> p;
 
     p.addRange(1, 1);
@@ -66,7 +77,7 @@ TEST_CASE( "Partitioner {1}", "[partitioner") {
     EXPECT_SUCCESS(2, RESULT(1, 1));
 }
 
-TEST_CASE( "Partitioner +{1}", "[partitioner") {
+TEST_CASE( "Partitioner +{1}" ) {
     Partitioner<unsigned> p;
 
     p.addRange(1, p.infinity);
@@ -80,7 +91,7 @@ TEST_CASE( "Partitioner +{1}", "[partitioner") {
     EXPECT_SUCCESS(100, RESULT(99, 1, 0));
 }
 
-TEST_CASE( "Partitioner {1}+", "[partitioner") {
+TEST_CASE( "Partitioner {1}+" ) {
     Partitioner<unsigned> p;
 
     p.addRange(1, 1);
@@ -94,7 +105,7 @@ TEST_CASE( "Partitioner {1}+", "[partitioner") {
     EXPECT_SUCCESS(100, RESULT(1, 99, 0));
 }
 
-TEST_CASE( "Partitioner {0,2}*{0,2}", "[partitioner") {
+TEST_CASE( "Partitioner {0,2}*{0,2}" ) {
     Partitioner<unsigned> p;
 
     p.addRange(0, 2);
@@ -110,4 +121,4 @@ TEST_CASE( "Partitioner {0,2}*{0,2}", "[partitioner") {
     EXPECT_SUCCESS(4, RESULT(2,2,0,0));
 }
 
-
+}

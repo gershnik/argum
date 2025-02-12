@@ -1,6 +1,8 @@
 #include "parser-common.h"
 
-TEST_CASE( "Changing positionals on the fly" , "[parser]") {
+TEST_SUITE("parser") {
+
+TEST_CASE( "Changing positionals on the fly" ) {
     map<string, vector<Value>> results;
     
     Parser parser;
@@ -25,7 +27,7 @@ TEST_CASE( "Changing positionals on the fly" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"p", {"a", "b"}}, {"f", {"c"}}))
 }
 
-TEST_CASE( "Changing options on the fly" , "[parser]") {
+TEST_CASE( "Changing options on the fly" ) {
     map<string, vector<Value>> results;
     
     Parser parser;
@@ -60,3 +62,6 @@ TEST_CASE( "Changing options on the fly" , "[parser]") {
     parser = savedParser;
     EXPECT_SUCCESS(ARGS("a", "b", "-c", "d", "e"), RESULTS({"p", {"a", "b"}}, {"-c", {"d"}}, {"f", {"e"}}))
 }
+
+}
+

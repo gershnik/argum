@@ -3,80 +3,86 @@
 
 #include <argum/type-parsers.h>
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 
 using namespace Argum;
 using namespace std;
 
-using Catch::Matchers::Message;
 
 #define NOT_A_NUMBER "is not a number"
 #define OUT_OF_RANGE "is out of range"
 
 #ifndef ARGUM_NO_THROW
     #define EXPECT_INT_FAILURE(type, expr, err) \
-        CHECK_THROWS_MATCHES(ARGUM_EXPECTED_VALUE(parseIntegral<type>(expr)), \
-                            BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError, \
-                            Message(format("invalid arguments: value \"{1}\" {2}", (expr), (err))))
+        CHECK_THROWS_WITH_AS(ARGUM_EXPECTED_VALUE(parseIntegral<type>(expr)), \
+                             format("invalid arguments: value \"{1}\" {2}", (expr), (err)).c_str(), \
+                             BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError)
     
     #define EXPECT_INT_SUCCESS(type, expr, res) CHECK(ARGUM_EXPECTED_VALUE(parseIntegral<type>(expr)) == res)
 
     #define EXPECT_FLOAT_FAILURE(type, expr, err) \
-        CHECK_THROWS_MATCHES(ARGUM_EXPECTED_VALUE(parseFloatingPoint<type>(expr)), \
-                            BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError, \
-                            Message(format("invalid arguments: value \"{1}\" {2}", (expr), (err))))
+        CHECK_THROWS_WITH_AS(ARGUM_EXPECTED_VALUE(parseFloatingPoint<type>(expr)), \
+                             format("invalid arguments: value \"{1}\" {2}", (expr), (err)).c_str(), \
+                             BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError)
 
     #define EXPECT_FLOAT_SUCCESS(type, expr, res) CHECK(ARGUM_EXPECTED_VALUE(parseFloatingPoint<type>(expr)) == res)
 
     #define EXPECT_CHOICE_FAILURE(expr, choices) \
-        CHECK_THROWS_MATCHES(ARGUM_EXPECTED_VALUE(parser.parse(expr)), \
-                            BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError, \
-                            Message(format("invalid arguments: value \"{1}\" is not one of the valid choices {{{2}}", (expr), (choices))))
+        CHECK_THROWS_WITH_AS(ARGUM_EXPECTED_VALUE(parser.parse(expr)), \
+                             format("invalid arguments: value \"{1}\" is not one of the valid choices {{{2}}", (expr), (choices)).c_str(), \
+                             BasicParser<remove_cvref_t<decltype(expr[0])>>::ValidationError)
     #define EXPECT_CHOICE_SUCCESS(expr, expected) \
         CHECK(ARGUM_EXPECTED_VALUE(parser.parse(expr)) == expected)
 
 #else
     #define EXPECT_INT_FAILURE(type, expr, err) {\
         auto error = parseIntegral<type>(expr).error(); \
-        REQUIRE(error); \
+        CHECK(error); \
+        if (!error) abort(); \
         CHECK(toString<char>(error->message()) == format("invalid arguments: value \"{1}\" {2}", (expr), (err))); \
     }
 
     #define EXPECT_INT_SUCCESS(type, expr, res) {\
         auto result = parseIntegral<type>(expr); \
-        REQUIRE(result); \
+        CHECK(result); \
+        if (!result) abort(); \
         CHECK(*result == res); \
     }
 
     #define EXPECT_FLOAT_FAILURE(type, expr, err) {\
         auto error = parseFloatingPoint<type>(expr).error(); \
-        REQUIRE(error); \
+        CHECK(error); \
+        if (!error) abort(); \
         CHECK(toString<char>(error->message()) == format("invalid arguments: value \"{1}\" {2}", (expr), (err))); \
     }
 
     #define EXPECT_FLOAT_SUCCESS(type, expr, res) {\
         auto result = parseFloatingPoint<type>(expr); \
-        REQUIRE(result); \
+        CHECK(result); \
+        if (!result) abort(); \
         CHECK(*result == res); \
     }
 
     #define EXPECT_CHOICE_FAILURE(expr, choices) {\
         auto error = parser.parse(expr).error(); \
-        REQUIRE(error); \
+        CHECK(error); \
+        if (!error) abort(); \
         CHECK(toString<char>(error->message()) == \
               format("invalid arguments: value \"{1}\" is not one of the valid choices {{{2}}", (expr), (choices))); \
     }
 
     #define EXPECT_CHOICE_SUCCESS(expr, expected) {\
         auto result = parser.parse(expr); \
-        REQUIRE(result); \
+        CHECK(result); \
+        if (!result) abort(); \
         CHECK(*result == expected); \
     }
 #endif
 
+TEST_SUITE("type-parsers") {
 
-TEST_CASE( "Integral Bool", "[type-parsers") {
+TEST_CASE( "Integral Bool" ) {
 
     EXPECT_INT_FAILURE(bool, "", NOT_A_NUMBER);
     EXPECT_INT_FAILURE(bool, "a", NOT_A_NUMBER);
@@ -93,7 +99,7 @@ TEST_CASE( "Integral Bool", "[type-parsers") {
     EXPECT_INT_SUCCESS(bool, "01", true);
 }
 
-TEST_CASE( "Integral Char", "[type-parsers") {
+TEST_CASE( "Integral Char" ) {
 
     EXPECT_INT_FAILURE(char, "", NOT_A_NUMBER);
     EXPECT_INT_FAILURE(char, "a", NOT_A_NUMBER);
@@ -105,7 +111,7 @@ TEST_CASE( "Integral Char", "[type-parsers") {
     EXPECT_INT_SUCCESS(char, "65", 'A');
 }
 
-TEST_CASE( "Integral Int", "[type-parsers") {
+TEST_CASE( "Integral Int" ) {
 
     EXPECT_INT_FAILURE(int, "", NOT_A_NUMBER);
     EXPECT_INT_FAILURE(int, "a", NOT_A_NUMBER);
@@ -117,7 +123,7 @@ TEST_CASE( "Integral Int", "[type-parsers") {
     EXPECT_INT_SUCCESS(int, "65", 65);
 }
 
-TEST_CASE( "Floating Float", "[type-parsers") {
+TEST_CASE( "Floating Float" ) {
 
     EXPECT_FLOAT_FAILURE(float, "", NOT_A_NUMBER);
     EXPECT_FLOAT_FAILURE(float, "a", NOT_A_NUMBER);
@@ -129,7 +135,7 @@ TEST_CASE( "Floating Float", "[type-parsers") {
     EXPECT_FLOAT_SUCCESS(float, "65.3", 65.3f);
 }
 
-TEST_CASE( "Floating Double", "[type-parsers") {
+TEST_CASE( "Floating Double" ) {
 
     EXPECT_FLOAT_FAILURE(double, "", NOT_A_NUMBER);
     EXPECT_FLOAT_FAILURE(double, "a", NOT_A_NUMBER);
@@ -141,7 +147,7 @@ TEST_CASE( "Floating Double", "[type-parsers") {
     EXPECT_FLOAT_SUCCESS(double, "65.3", 65.3);
 }
 
-TEST_CASE( "Floating Long Double", "[type-parsers") {
+TEST_CASE( "Floating Long Double" ) {
 
     EXPECT_FLOAT_FAILURE(long double, "", NOT_A_NUMBER);
     EXPECT_FLOAT_FAILURE(long double, "a", NOT_A_NUMBER);
@@ -153,7 +159,7 @@ TEST_CASE( "Floating Long Double", "[type-parsers") {
     EXPECT_FLOAT_SUCCESS(long double, "65.3", 65.3l);
 }
 
-TEST_CASE( "Simple Choice", "[type-parsers") {
+TEST_CASE( "Simple Choice" ) {
 
     ChoiceParser parser;
     parser.addChoice("a");
@@ -169,7 +175,7 @@ TEST_CASE( "Simple Choice", "[type-parsers") {
     EXPECT_CHOICE_FAILURE("b ", "a, b");
 }
 
-TEST_CASE( "Case Sensitive Choice", "[type-parsers") {
+TEST_CASE( "Case Sensitive Choice" ) {
 
     WChoiceParser parser({.caseSensitive = true});
     parser.addChoice(L"a");
@@ -185,7 +191,7 @@ TEST_CASE( "Case Sensitive Choice", "[type-parsers") {
     EXPECT_CHOICE_FAILURE(L"B", L"a, b");
 }
 
-TEST_CASE( "Escaped Choice", "[type-parsers") {
+TEST_CASE( "Escaped Choice" ) {
 
     ChoiceParser parser;
     parser.addChoice("a|");
@@ -200,7 +206,7 @@ TEST_CASE( "Escaped Choice", "[type-parsers") {
     EXPECT_CHOICE_FAILURE("[b", "a|, (b");
 }
 
-TEST_CASE( "Multi Choice", "[type-parsers") {
+TEST_CASE( "Multi Choice" ) {
 
     ChoiceParser parser;
     parser.addChoice("a|", "b"sv, "|c"s);
@@ -215,7 +221,7 @@ TEST_CASE( "Multi Choice", "[type-parsers") {
     EXPECT_CHOICE_FAILURE("", "a|, b, |c, Q");
 }
 
-TEST_CASE( "Else Choice", "[type-parsers") {
+TEST_CASE( "Else Choice" ) {
 
     ChoiceParser parser({.allowElse = true});
     parser.addChoice("a|", "b"sv, "|c"s);
@@ -229,7 +235,7 @@ TEST_CASE( "Else Choice", "[type-parsers") {
     EXPECT_CHOICE_SUCCESS("", 2);
 }
 
-TEST_CASE( "Boolean", "[type-parsers") {
+TEST_CASE( "Boolean" ) {
 
     {
         BooleanParser parser;
@@ -263,3 +269,4 @@ TEST_CASE( "Boolean", "[type-parsers") {
 
 }
 
+}

@@ -1,7 +1,8 @@
 #include "parser-common.h"
 
+TEST_SUITE("parser-options-positionals") {
 
-TEST_CASE( "Mix of options and positionals" , "[parser]") {
+TEST_CASE( "Mix of options and positionals" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -22,7 +23,7 @@ TEST_CASE( "Mix of options and positionals" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "-o", "--", "-n", "c"), RESULTS({"-o", {nullopt}}, {"p", {"a", "-n"}}, {"f", {"c"}}))
 }
 
-TEST_CASE( "More complicated partitioning" , "[parser]") {
+TEST_CASE( "More complicated partitioning" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -46,7 +47,7 @@ TEST_CASE( "More complicated partitioning" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c", "d", "e", "f", "g"), RESULTS({"p1", {"a", "b", "c"}}, {"p2", {"d", "e"}}, {"p3", {"f"}}, {"f", {"g"}}))
 }
 
-TEST_CASE( "Negative number args when numeric options are present" , "[parser]") {
+TEST_CASE( "Negative number args when numeric options are present" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -63,7 +64,7 @@ TEST_CASE( "Negative number args when numeric options are present" , "[parser]")
     EXPECT_SUCCESS(ARGS("-4", "-2"), RESULTS({"-4", {"+"}}, {"x", {"-2"}}))
 }
 
-TEST_CASE( "Empty arguments" , "[parser]") {
+TEST_CASE( "Empty arguments" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -76,7 +77,7 @@ TEST_CASE( "Empty arguments" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-y", ""), RESULTS({"-y", {""}}))
 }
 
-TEST_CASE( "Prefix character only arguments" , "[parser]") {
+TEST_CASE( "Prefix character only arguments" ) {
     
     map<string, vector<Value>> results;
 
@@ -94,7 +95,7 @@ TEST_CASE( "Prefix character only arguments" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-+-"), RESULTS({"-+-", {"+"}}))
 }
 
-TEST_CASE( "Option with optional arg followed by optional positional" , "[parser]") {
+TEST_CASE( "Option with optional arg followed by optional positional" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -112,7 +113,7 @@ TEST_CASE( "Option with optional arg followed by optional positional" , "[parser
 }
 
 //DIFFERENCE FROM ArgParse. We do not have argparse.REMAINDER
-TEST_CASE( "Stopping at unknown" , "[parser]") {
+TEST_CASE( "Stopping at unknown" ) {
     map<string, vector<Value>> results;
     vector<string> remainder;
 
@@ -129,7 +130,7 @@ TEST_CASE( "Stopping at unknown" , "[parser]") {
 }
 //DIFFERENCE FROM ArgParse
 
-TEST_CASE( "options that may or may not be arguments" , "[parser]") {
+TEST_CASE( "options that may or may not be arguments" ) {
     map<string, vector<Value>> results;
     vector<string> remainder;
 
@@ -161,7 +162,7 @@ TEST_CASE( "options that may or may not be arguments" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-3", "1", "a"), RESULTS({"-3", {"1"}}, {"z", {"a"}}))
 }
 
-TEST_CASE( "options with required attached arguments" , "[parser]") {
+TEST_CASE( "options with required attached arguments" ) {
 
     map<string, vector<Value>> results;
     vector<string> remainder;
@@ -188,4 +189,6 @@ TEST_CASE( "options with required attached arguments" , "[parser]") {
     EXPECT_SUCCESS(ARGS("--goo=a"), RESULTS({"-g", {"a"}}))
     EXPECT_SUCCESS(ARGS("-ga", "b"), RESULTS({"-g", {"a"}}, {"z", {"b"}}))
     EXPECT_SUCCESS(ARGS("--goo=a", "b"), RESULTS({"-g", {"a"}}, {"z", {"b"}}))
+}
+
 }

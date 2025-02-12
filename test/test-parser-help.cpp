@@ -1,6 +1,8 @@
 #include "parser-common.h"
 
-TEST_CASE( "Argument help aligns when options are longer" , "[parser]") {
+TEST_SUITE("parser-help") {
+
+TEST_CASE( "Argument help aligns when options are longer" ) {
 
     map<string, vector<Value>> results;
     Parser parser;
@@ -28,7 +30,7 @@ options:
 )__");
 }
 
-TEST_CASE( "extremely small number of columns" , "[parser]") {
+TEST_CASE( "extremely small number of columns" ) {
 
     map<string, vector<Value>> results;
     Parser parser;
@@ -77,7 +79,7 @@ options:
 )__");
 }
 
-TEST_CASE( "argument help aligns when options are longer" , "[parser]") {
+TEST_CASE( "argument help aligns when options are longer" ) {
 
     map<string, vector<Value>> results;
     Parser parser;
@@ -106,7 +108,7 @@ options:
 
 }
 
-TEST_CASE( "quantifiers of positionals are printed correctly" , "[parser]") {
+TEST_CASE( "quantifiers of positionals are printed correctly" ) {
     map<string, vector<Value>> results;
     {
       Parser parser;
@@ -140,7 +142,7 @@ TEST_CASE( "quantifiers of positionals are printed correctly" , "[parser]") {
     }
 }
 
-TEST_CASE( "quantifiers of options are printed correctly" , "[parser]") {
+TEST_CASE( "quantifiers of options are printed correctly" ) {
     map<string, vector<Value>> results;
     {
       Parser parser;
@@ -174,7 +176,7 @@ TEST_CASE( "quantifiers of options are printed correctly" , "[parser]") {
     }
 }
 
-TEST_CASE( "required attached arguments are printed correctly" , "[parser]") {
+TEST_CASE( "required attached arguments are printed correctly" ) {
     map<string, vector<Value>> results;
     {
         Parser parser;
@@ -193,4 +195,6 @@ options:
 
 )__");
     }
+}
+
 }

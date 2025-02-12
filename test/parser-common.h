@@ -6,7 +6,7 @@
 #include <argum/help-formatter.h>
 #include <argum/parser.h>
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 #include <iostream>
 
@@ -102,23 +102,27 @@ namespace std {
 #else 
     #define HANDLE_FAILURE(type, h) [](auto * ex) { \
         auto specific = ex->template as<type>(); \
-        REQUIRE(specific); \
+        CHECK(specific); \
+        if (!specific) abort(); \
         [](const type & ex)h(*specific); \
     }
 
     #define EXPECT_FAILURE(args, failure) { \
         auto res = parse(parser, args, results); \
-        REQUIRE(!res); \
+        CHECK(!res); \
+        if (!!res) abort(); \
         failure(res.error().get()); \
     }
     #define EXPECT_SUCCESS(args, expected) { \
         auto res = parse(parser, args, results); \
-        REQUIRE(res); \
+        CHECK(res); \
+        if (!res) abort(); \
         CHECK(results == expected); \
     }
     #define EXPECT_SUCCESS_UNTIL_UNKNOWN(args, expected, expectedRemainder) { \
         auto res = parseUntilUnknown(parser, args, results); \
-        REQUIRE(res); \
+        CHECK(res); \
+        if (!res) abort(); \
         remainder = *res; \
         CHECK(results == expected); \
         CHECK(remainder == expectedRemainder); \

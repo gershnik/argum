@@ -1,6 +1,8 @@
 #include "parser-common.h"
 
-TEST_CASE( "Positional boundary Cases" , "[parser]") {
+TEST_SUITE("parser-positionals") {
+
+TEST_CASE( "Positional boundary Cases" ) {
 
     map<string, vector<Value>> results;
 
@@ -25,7 +27,7 @@ TEST_CASE( "Positional boundary Cases" , "[parser]") {
 #endif
 }
 
-TEST_CASE( "Simple positional" , "[parser]") {
+TEST_CASE( "Simple positional" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -40,7 +42,7 @@ TEST_CASE( "Simple positional" , "[parser]") {
     EXPECT_SUCCESS(ARGS("-=foo"), RESULTS({"foo", {"-=foo"}}))
 }
 
-TEST_CASE( "Positional with explicit repeat once" , "[parser]") {
+TEST_CASE( "Positional with explicit repeat once" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -53,7 +55,7 @@ TEST_CASE( "Positional with explicit repeat once" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
 }
 
-TEST_CASE( "Positional with explicit repeat twice" , "[parser]") {
+TEST_CASE( "Positional with explicit repeat twice" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -67,7 +69,7 @@ TEST_CASE( "Positional with explicit repeat twice" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a", "b"}}))
 }
 
-TEST_CASE( "Positional with unlimited repeat" , "[parser]") {
+TEST_CASE( "Positional with unlimited repeat" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -81,7 +83,7 @@ TEST_CASE( "Positional with unlimited repeat" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b", "c"}}))
 }
 
-TEST_CASE( "Positional with one or more repeat" , "[parser]") {
+TEST_CASE( "Positional with one or more repeat" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -95,7 +97,7 @@ TEST_CASE( "Positional with one or more repeat" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b", "c"}}))
 }
 
-TEST_CASE( "Positional with zero or once repeat" , "[parser]") {
+TEST_CASE( "Positional with zero or once repeat" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -108,7 +110,7 @@ TEST_CASE( "Positional with zero or once repeat" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a"), RESULTS({"foo", {"a"}}))
 }
 
-TEST_CASE( "Two positionals" , "[parser]") {
+TEST_CASE( "Two positionals" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -123,7 +125,7 @@ TEST_CASE( "Two positionals" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[parser]") {
+TEST_CASE( "Positional with no explict repeat followed by one with 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -138,7 +140,7 @@ TEST_CASE( "Positional with no explict repeat followed by one with 1" , "[parser
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[parser]") {
+TEST_CASE( "Positional with repeat 2 followed by one with 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -154,7 +156,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with 1" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
 
-TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[parser]") {
+TEST_CASE( "Positional with repeat 1 followed by one with unlimited" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -169,7 +171,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with unlimited" , "[parser]
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[parser]") {
+TEST_CASE( "Positional with repeat 1 followed by one with one or more" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -184,7 +186,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with one or more" , "[parse
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[parser]") {
+TEST_CASE( "Positional with repeat 1 followed by one with an optional" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -199,7 +201,7 @@ TEST_CASE( "Positional with repeat 1 followed by one with an optional" , "[parse
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[parser]") {
+TEST_CASE( "Positional with unlimited repeat followed by one with 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -214,7 +216,7 @@ TEST_CASE( "Positional with unlimited repeat followed by one with 1" , "[parser]
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
 
-TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[parser]") {
+TEST_CASE( "Positional with one or more repeat followed by one with 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -228,7 +230,7 @@ TEST_CASE( "Positional with one or more repeat followed by one with 1" , "[parse
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
-TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[parser]") {
+TEST_CASE( "Positional with an optional repeat followed by one with 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -243,7 +245,7 @@ TEST_CASE( "Positional with an optional repeat followed by one with 1" , "[parse
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[parser]") {
+TEST_CASE( "Positional with repeat 2 followed by one with unlimited" ) {
     map<wstring, vector<WValue>> results;
 
     WParser parser;
@@ -258,7 +260,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with unlimited" , "[parser]
     EXPECT_SUCCESS(WARGS(L"a", L"b", L"c"), WRESULTS({L"foo", {L"a", L"b"}}, {L"bar", {L"c"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[parser]") {
+TEST_CASE( "Positional with repeat 2 followed by one with one or more" ) {
     map<wstring, vector<WValue>> results;
 
     WParser parser;
@@ -274,7 +276,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with one or more" , "[parse
     EXPECT_SUCCESS(WARGS(L"a", L"b", L"c", L"d"), WRESULTS({L"foo", {L"a", L"b"}}, {L"bar", {L"c", L"d"}}))
 }
 
-TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[parser]") {
+TEST_CASE( "Positional with repeat 2 followed by one with optional" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -290,7 +292,7 @@ TEST_CASE( "Positional with repeat 2 followed by one with optional" , "[parser]"
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a", "b"}}, {"bar", {"c"}}))
 }
 
-TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[parser]") {
+TEST_CASE( "Three positionals with repeats: 1, *, 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -307,7 +309,7 @@ TEST_CASE( "Three positionals with repeats: 1, *, 1" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c", "d"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}, {"baz", {"d"}}))
 }
 
-TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[parser]") {
+TEST_CASE( "Three positionals with repeats: 1, +, 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -324,7 +326,7 @@ TEST_CASE( "Three positionals with repeats: 1, +, 1" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c", "d"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}, {"baz", {"d"}}))
 }
 
-TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[parser]") {
+TEST_CASE( "Three positionals with repeats: 1, ?, 1" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -341,7 +343,7 @@ TEST_CASE( "Three positionals with repeats: 1, ?, 1" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}, {"baz", {"c"}}))
 }
 
-TEST_CASE( "Two positionals with repeats: ?, ?" , "[parser]") {
+TEST_CASE( "Two positionals with repeats: ?, ?" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -356,7 +358,7 @@ TEST_CASE( "Two positionals with repeats: ?, ?" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b"), RESULTS({"foo", {"a"}}, {"bar", {"b"}}))
 }
 
-TEST_CASE( "Two positionals with repeats: ?, *" , "[parser]") {
+TEST_CASE( "Two positionals with repeats: ?, *" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -371,7 +373,7 @@ TEST_CASE( "Two positionals with repeats: ?, *" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-TEST_CASE( "Two positionals with repeats: ?, +" , "[parser]") {
+TEST_CASE( "Two positionals with repeats: ?, +" ) {
     map<string, vector<Value>> results;
 
     Parser parser;
@@ -386,4 +388,4 @@ TEST_CASE( "Two positionals with repeats: ?, +" , "[parser]") {
     EXPECT_SUCCESS(ARGS("a", "b", "c"), RESULTS({"foo", {"a"}}, {"bar", {"b", "c"}}))
 }
 
-
+}

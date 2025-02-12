@@ -2,7 +2,7 @@
 
 #include <argum/tokenizer.h>
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 #include <variant>
 #include <array>
@@ -59,8 +59,10 @@ namespace Argum {
     }
 }
 
+TEST_SUITE("tokenizer") {
+
 #ifndef ARGUM_NO_THROW
-TEST_CASE( "Settings boundaries" , "[tokenizer]") {
+TEST_CASE( "Settings boundaries" ) {
 
     CHECK_THROWS_AS(Tokenizer::Settings().addShortPrefix("-").addLongPrefix("-"), invalid_argument);
     CHECK_THROWS_AS(Tokenizer::Settings().addLongPrefix("-").addShortPrefix("-"), invalid_argument);
@@ -69,7 +71,7 @@ TEST_CASE( "Settings boundaries" , "[tokenizer]") {
 #endif
 
 
-TEST_CASE( "Null Command Line" , "[tokenizer]") {
+TEST_CASE( "Null Command Line" ) {
 
     Tokenizer t;
 
@@ -85,24 +87,43 @@ TEST_CASE( "Null Command Line" , "[tokenizer]") {
 #define TOKENS(...) (initializer_list<Token>{__VA_ARGS__})
 
 
-#define TEST_TOKENIZER(t, args, results) {\
-    auto argv = vector(args); \
-    auto expected = vector(results); \
-    size_t current = 0;\
-    auto res = t.tokenize(argv.data(), argv.data() + size(argv), [&](const auto & token) {\
-        REQUIRE(current < size(expected));\
-        INFO("token index: " << current); \
-        CHECK(Token(token) == expected[current]);\
-        ++current;\
-        return Tokenizer::Continue;\
-    });\
-    CHECK(current == size(expected));\
-    CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});\
-}
+#ifndef ARGUM_NO_THROW
+
+    #define TEST_TOKENIZER(t, args, results) {\
+        auto argv = vector(args); \
+        auto expected = vector(results); \
+        size_t current = 0;\
+        auto res = t.tokenize(argv.data(), argv.data() + size(argv), [&](const auto & token) {\
+            REQUIRE(current < size(expected));\
+            INFO("token index: " << current); \
+            CHECK(Token(token) == expected[current]);\
+            ++current;\
+            return Tokenizer::Continue;\
+        });\
+        CHECK(current == size(expected));\
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});\
+    }
+#else
+    #define TEST_TOKENIZER(t, args, results) {\
+        auto argv = vector(args); \
+        auto expected = vector(results); \
+        size_t current = 0;\
+        auto res = t.tokenize(argv.data(), argv.data() + size(argv), [&](const auto & token) {\
+            CHECK(current < size(expected));\
+            if (current >= size(expected)) abort(); \
+            INFO("token index: " << current); \
+            CHECK(Token(token) == expected[current]);\
+            ++current;\
+            return Tokenizer::Continue;\
+        });\
+        CHECK(current == size(expected));\
+        CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});\
+    }
+    #endif
 
 
 
-TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
+TEST_CASE( "Empty Tokenizer" ) {
 
     Tokenizer t;
 
@@ -126,7 +147,7 @@ TEST_CASE( "Empty Tokenizer" , "[tokenizer]") {
     
 }
 
-TEST_CASE( "Short option" , "[tokenizer]") {
+TEST_CASE( "Short option" ) {
 
     Tokenizer t;
 
@@ -155,14 +176,14 @@ TEST_CASE( "Short option" , "[tokenizer]") {
     ));
 }
 
-TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
+TEST_CASE( "Tokenizer Single Char Stops" ) {
 
     Tokenizer t;
 
     t.add(OptionNames("-c"));
     t.add(OptionNames("-d"));
     t.add(OptionNames("-e"));
-    SECTION("First single char in group"){
+    SUBCASE("First single char in group"){
         const char * argv[] = {"-cdefg"};
         auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
@@ -185,7 +206,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
         });
         CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-defg"});
     }
-    SECTION("Middle single char in group"){
+    SUBCASE("Middle single char in group"){
         const char * argv[] = {"-cdefg"};
         auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
@@ -208,7 +229,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
         });
         CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg"});
     }
-    SECTION("Last single char in group"){
+    SUBCASE("Last single char in group"){
         const char * argv[] = {"-cdefg"};
         auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
@@ -231,7 +252,7 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
         });
         CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{});
     }
-    SECTION("Middle single char in group, other parameters"){
+    SUBCASE("Middle single char in group, other parameters"){
         const char * argv[] = {"abc", "-cdefg", "qqq"};
         auto res = t.tokenize(begin(argv), end(argv), [&](const auto & token) {
 
@@ -254,4 +275,6 @@ TEST_CASE( "Tokenizer Single Char Stops" , "[tokenizer]") {
         });
         CHECK(ARGUM_EXPECTED_VALUE(res) == vector<string>{"-efg", "qqq"});
     }
+}
+
 }
