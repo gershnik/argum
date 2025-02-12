@@ -11,7 +11,7 @@ jobs:
     permissions: write-all
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Amalgamate
         shell: bash
@@ -21,7 +21,7 @@ jobs:
            python3 amalgamate.py -d ../inc/argum module-template.txt ../out/argum-module.ixx
 
       - name: Make release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: false
