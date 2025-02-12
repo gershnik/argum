@@ -12,6 +12,8 @@ if (NOT ARGUM_VERSION)
 endif()
 string(STRIP ${ARGUM_VERSION} ARGUM_VERSION)
 
+option(ARGUM_NO_TESTS "suppress test targets" OFF)
+
 project(argum VERSION ${ARGUM_VERSION} LANGUAGES CXX)
 
 add_library(argum INTERFACE)
@@ -63,6 +65,8 @@ if (PROJECT_IS_TOP_LEVEL)
     include(cmake/install.cmake)
     include(cmake/amalgamate.cmake)
 
-    include(test/test.cmake)
+    if (NOT ARGUM_NO_TESTS)
+        include(test/test.cmake)
+    endif()
 
 endif()
