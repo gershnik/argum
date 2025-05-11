@@ -11,7 +11,6 @@ on:
       - 'github/workflows/publish.yml'
 
 env:
-  BUILD_TYPE: Release
   NDK_VER: 23.1.7779620
   NDK_ARCH: x86_64
   NDK_API: 29
@@ -20,27 +19,28 @@ env:
 jobs:
   desktop:
     runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-        - os: macos-latest
+        - {os: macos-latest, name: 'Apple Clang Latest' }
         
-        - os: windows-latest
+        - { os: windows-latest, name: 'MSVC Latest' }
         
-        - {os: ubuntu-latest, compiler: gcc, version: 11 }
-        - {os: ubuntu-latest, compiler: gcc, version: 12 }
-        - {os: ubuntu-latest, compiler: gcc, version: 13 }
-        - {os: ubuntu-24.04, compiler: gcc, version: 14 }
+        - {os: ubuntu-latest, compiler: gcc, version: 11, name: 'GCC 11' }
+        - {os: ubuntu-latest, compiler: gcc, version: 12, name: 'GCC 12' }
+        - {os: ubuntu-latest, compiler: gcc, version: 13, name: 'GCC 13' }
+        - {os: ubuntu-24.04, compiler: gcc, version: 14, name: 'GCC 14' }
 
-        - {os: ubuntu-22.04, compiler: clang, version: 13 }
-        - {os: ubuntu-22.04, compiler: clang, version: 14 }
-        - {os: ubuntu-22.04, compiler: clang, version: 15 }
-        - {os: ubuntu-22.04, compiler: clang, version: 16 }
-        - {os: ubuntu-latest, compiler: clang, version: 17 }
-        - {os: ubuntu-latest, compiler: clang, version: 18 }
-        - {os: ubuntu-latest, compiler: clang, version: 19 }
-        - {os: ubuntu-latest, compiler: clang, version: 20 }
+        - {os: ubuntu-22.04, compiler: clang, version: 13, name: 'Clang 13' }
+        - {os: ubuntu-22.04, compiler: clang, version: 14, name: 'Clang 14' }
+        - {os: ubuntu-22.04, compiler: clang, version: 15, name: 'Clang 15' }
+        - {os: ubuntu-22.04, compiler: clang, version: 16, name: 'Clang 16' }
+        - {os: ubuntu-latest, compiler: clang, version: 17, name: 'Clang 17' }
+        - {os: ubuntu-latest, compiler: clang, version: 18, name: 'Clang 18' }
+        - {os: ubuntu-latest, compiler: clang, version: 19, name: 'Clang 19' }
+        - {os: ubuntu-latest, compiler: clang, version: 20, name: 'Clang 20' }
     
     steps:
     - name: Checkout
@@ -72,12 +72,42 @@ jobs:
     - name: Configure
       shell: bash
       run: |
-        cmake -S . -B out -DCMAKE_BUILD_TYPE=$BUILD_TYPE 
+        cmake -S . -B out -DCMAKE_BUILD_TYPE=Release 
 
     - name: Build and Test
       shell: bash
-      run: cmake --build out --config $BUILD_TYPE --target run-test
+      run: cmake --build out --config Release --target run-test
 
+  container:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix: 
+        include:
+        - {container: gcc:15.1, module: true, name: 'GCC 15'}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: System Setup
+      shell: bash
+      run: |
+        apt-get update 
+        apt-get install -y ninja-build cmake
+        
+    - name: Configure
+      shell: bash
+      run: |
+        cmake -S . -B out -DCMAKE_BUILD_TYPE=Release
+  
+    - name: Build and Test
+      shell: bash
+      run: |
+        cmake --build out --config Release --target run-test
+  
   android:
     runs-on: ubuntu-latest
     
@@ -124,10 +154,10 @@ jobs:
         disable-animations: true
         script: |
             echo "::group::Configure"
-            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=$NDK_API -DANDROID_STL:STRING=c++_static
+            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=$NDK_API -DANDROID_STL:STRING=c++_static
             echo "::endgroup::"
             echo "::group::Build and Test"
-            cmake --build out --config $BUILD_TYPE --target run-test
+            cmake --build out --config Release --target run-test
             echo "::endgroup::"
 
     
