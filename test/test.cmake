@@ -18,8 +18,10 @@ FetchContent_MakeAvailable(doctest)
 
 function(configure_test name)
 
-    set_property(TARGET ${name} PROPERTY CXX_STANDARD 20)
-    set_property(TARGET ${name} PROPERTY CXX_STANDARD_REQUIRED ON)
+    if (NOT DEFINED CMAKE_CXX_STANDARD)
+        set_property(TARGET ${name} PROPERTY CXX_STANDARD 20)
+        set_property(TARGET ${name} PROPERTY CXX_STANDARD_REQUIRED ON)
+    endif()
     set_property(TARGET ${name} PROPERTY CXX_VISIBILITY_PRESET hidden)
     set_property(TARGET ${name} PROPERTY VISIBILITY_INLINES_HIDDEN ON)
     set_property(TARGET ${name} PROPERTY POSITION_INDEPENDENT_CODE ON)

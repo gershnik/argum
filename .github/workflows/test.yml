@@ -10,37 +10,104 @@ on:
       - 'doc/**'
       - 'github/workflows/publish.yml'
 
-env:
-  NDK_VER: 23.1.7779620
-  NDK_ARCH: x86_64
-  NDK_API: 29
-  GCC_VER: 11
 
 jobs:
+  define-matrix:
+    runs-on: ubuntu-latest
+
+    outputs:
+      hosts: ${{ steps.matrix.outputs.hosts }}
+      containers: ${{ steps.matrix.outputs.containers }}
+
+    steps:
+      - name: Define Matrix
+        id: matrix
+        shell: python
+        run: |
+          import json
+          import os
+
+          cxx_standards = [20, 23]
+
+          macos_map = {
+            'macos-13': "14.3.1",
+            'macos-14': "15.4",
+            'macos-15': "16.2"
+          }
+
+          win_paltforms = ["x64", "Win32"]
+
+          gcc_map = {
+            11: 'ubuntu-latest', 
+            12: 'ubuntu-latest', 
+            13: 'ubuntu-latest',
+            14: 'ubuntu-24.04'
+          }
+          gcc_cont_map = {
+            15: 'gcc:15.1'
+          }
+          clang_map = {
+            13: 'ubuntu-22.04', 
+            14: 'ubuntu-22.04', 
+            15: 'ubuntu-22.04', 
+            16: 'ubuntu-22.04',
+            17: 'ubuntu-latest', 
+            18: 'ubuntu-latest', 
+            19: 'ubuntu-latest', 
+            20: 'ubuntu-latest'
+          }
+          
+          hosts = []
+          containers=[]
+          emscriptens=[]
+
+          #macOS
+          for cxx_standard in cxx_standards:
+            for runon, xcode in macos_map.items():
+              hosts.append({'os': runon, 'version': xcode, 'cxx_standard': cxx_standard, 'jobname': f'macOS - Xcode{xcode} - C++{cxx_standard}'})
+          
+          #windows
+          for cxx_standard in cxx_standards:
+            for platform in win_paltforms:
+              hosts.append({'os': 'windows-latest', 'platform': platform, 'cxx_standard': cxx_standard, 'jobname': f'Windows - {platform} - C++{cxx_standard}'})
+          
+          #gcc hosts
+          for gcc, runon in gcc_map.items():
+            for cxx_standard in cxx_standards:
+              if gcc < 13 and cxx_standard == 23:
+                continue
+              hosts.append({'os': runon, 'compiler': 'gcc', 'version': gcc, 'cxx_standard': cxx_standard,
+                            'jobname': f'Linux - GCC{gcc} - C++{cxx_standard}'})
+
+          #gcc containers
+          for gcc, container in gcc_cont_map.items():
+            for cxx_standard in cxx_standards:
+              if gcc < 13 and cxx_standard == 23:
+                continue
+              containers.append({'container': container, 'cxx_standard': cxx_standard,
+                                 'jobname': f'Linux - GCC{gcc} - C++{cxx_standard}'})
+
+
+          #clang
+          for clang, runon in clang_map.items():
+            for cxx_standard in cxx_standards:
+              if clang < 18 and cxx_standard == 23:
+                  continue
+              hosts.append({'os': runon, 'compiler': 'clang', 'version': clang, 'cxx_standard': cxx_standard,
+                            'jobname': f'Linux - Clang{clang} - C++{cxx_standard}'})
+
+          with open(os.environ['GITHUB_OUTPUT'], 'w') as env:
+            print('hosts=' + json.dumps(hosts), file=env) 
+            print('containers=' + json.dumps(containers), file=env) 
+  
   desktop:
+    needs: define-matrix
+    name: ${{ matrix.jobname }}
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - {os: macos-latest, name: 'Apple Clang Latest' }
-        
-        - { os: windows-latest, name: 'MSVC Latest' }
-        
-        - {os: ubuntu-latest, compiler: gcc, version: 11, name: 'GCC 11' }
-        - {os: ubuntu-latest, compiler: gcc, version: 12, name: 'GCC 12' }
-        - {os: ubuntu-latest, compiler: gcc, version: 13, name: 'GCC 13' }
-        - {os: ubuntu-24.04, compiler: gcc, version: 14, name: 'GCC 14' }
-
-        - {os: ubuntu-22.04, compiler: clang, version: 13, name: 'Clang 13' }
-        - {os: ubuntu-22.04, compiler: clang, version: 14, name: 'Clang 14' }
-        - {os: ubuntu-22.04, compiler: clang, version: 15, name: 'Clang 15' }
-        - {os: ubuntu-22.04, compiler: clang, version: 16, name: 'Clang 16' }
-        - {os: ubuntu-latest, compiler: clang, version: 17, name: 'Clang 17' }
-        - {os: ubuntu-latest, compiler: clang, version: 18, name: 'Clang 18' }
-        - {os: ubuntu-latest, compiler: clang, version: 19, name: 'Clang 19' }
-        - {os: ubuntu-latest, compiler: clang, version: 20, name: 'Clang 20' }
+        include: ${{ fromJSON(needs.define-matrix.outputs.hosts) }}
     
     steps:
     - name: Checkout
@@ -69,24 +136,32 @@ jobs:
           fi
         fi
 
+        if [[ '${{ matrix.os }}' == macos-* ]]; then
+            echo "DEVELOPER_DIR=/Applications/Xcode_${{ matrix.version }}.app" >> $GITHUB_ENV
+        fi
+
     - name: Configure
       shell: bash
       run: |
-        cmake -S . -B out -DCMAKE_BUILD_TYPE=Release 
+        export EXTRA_FLAGS="-DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+        if [[ '${{ matrix.platform }}' != "" ]]; then
+            export EXTRA_FLAGS="$EXTRA_FLAGS -DCMAKE_GENERATOR_PLATFORM=${{ matrix.platform }}"
+        fi
+        cmake -S . -B out $EXTRA_FLAGS -DCMAKE_BUILD_TYPE=Release 
 
     - name: Build and Test
       shell: bash
       run: cmake --build out --config Release --target run-test
 
   container:
+    needs: define-matrix
+    name: ${{ matrix.jobname }}
     runs-on: ubuntu-latest
-    name: ${{ matrix.name }}
     container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix: 
-        include:
-        - {container: gcc:15.1, module: true, name: 'GCC 15'}
+        include: ${{ fromJSON(needs.define-matrix.outputs.containers) }}
     
     steps:
     - name: Checkout
@@ -101,7 +176,8 @@ jobs:
     - name: Configure
       shell: bash
       run: |
-        cmake -S . -B out -DCMAKE_BUILD_TYPE=Release
+        export EXTRA_FLAGS="-DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+        cmake -S . -B out $EXTRA_FLAGS -DCMAKE_BUILD_TYPE=Release
   
     - name: Build and Test
       shell: bash
@@ -110,6 +186,12 @@ jobs:
   
   android:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [23.1.7779620]
+        api: [29, 30]    
+        arch: [x86_64]
     
     steps:
     - name: Checkout
@@ -128,16 +210,16 @@ jobs:
         path: |
           ~/.android/avd/*
           ~/.android/adb*
-        key: avd-${{env.NDK_VER}}-${{env.NDK_ARCH}}-${{env.NDK_API}}
+        key: avd-${{ matrix.version }}-${{ matrix.arch }}-${{ matrix.api }}
 
     - name: Create AVD and generate snapshot for caching
       if: steps.avd-cache.outputs.cache-hit != 'true'
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: ${{env.NDK_API}}
-        arch: ${{env.NDK_ARCH}}
+        api-level: ${{ matrix.api }}
+        arch: ${{matrix.arch}}
         target: google_apis
-        ndk: ${{env.NDK_VER}}
+        ndk: ${{ matrix.version }}
         force-avd-creation: false
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
         disable-animations: false
@@ -146,15 +228,19 @@ jobs:
     - name: Configure, Build and Test
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: ${{env.NDK_API}}
-        arch: ${{env.NDK_ARCH}}
+        api-level: ${{ matrix.api }}
+        arch: ${{matrix.arch}}
         target: google_apis
-        ndk: ${{env.NDK_VER}}
+        ndk: ${{ matrix.version }}
         emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
         disable-animations: true
         script: |
             echo "::group::Configure"
-            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=$NDK_ARCH -DANDROID_PLATFORM:STRING=$NDK_API -DANDROID_STL:STRING=c++_static
+            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=Release \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/${{ matrix.version }}/build/cmake/android.toolchain.cmake \
+              -DANDROID_ABI:STRING=${{ matrix.arch }} \
+              -DANDROID_PLATFORM:STRING=${{ matrix.api }} \
+              -DANDROID_STL:STRING=c++_static
             echo "::endgroup::"
             echo "::group::Build and Test"
             cmake --build out --config Release --target run-test
