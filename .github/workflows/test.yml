@@ -236,11 +236,7 @@ jobs:
         disable-animations: true
         script: |
             echo "::group::Configure"
-            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=Release \
-              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/${{ matrix.version }}/build/cmake/android.toolchain.cmake \
-              -DANDROID_ABI:STRING=${{ matrix.arch }} \
-              -DANDROID_PLATFORM:STRING=${{ matrix.api }} \
-              -DANDROID_STL:STRING=c++_static
+            cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$ANDROID_SDK_ROOT/ndk/${{ matrix.version }}/build/cmake/android.toolchain.cmake -DANDROID_ABI:STRING=${{ matrix.arch }} -DANDROID_PLATFORM:STRING=${{ matrix.api }} -DANDROID_STL:STRING=c++_static
             echo "::endgroup::"
             echo "::group::Build and Test"
             cmake --build out --config Release --target run-test
