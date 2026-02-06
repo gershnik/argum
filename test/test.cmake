@@ -148,7 +148,7 @@ if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
             $<$<CXX_COMPILER_ID:Clang>:/GR- -D_HAS_EXCEPTIONS=0>
         )
     else()
-        target_compile_options(test_nothrows
+        target_compile_options(test_nothrow
         PRIVATE
             $<$<CXX_COMPILER_ID:Clang>:-fno-exceptions -fno-rtti>
         )
