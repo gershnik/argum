@@ -7,9 +7,11 @@
 //
 module;
 
-##SYS_INCLUDES##
+##SYS_C_INCLUDES##
 
 export module Argum;
+
+import std;
 
 #define ARGUM_MOD_EXPORTED export 
 
