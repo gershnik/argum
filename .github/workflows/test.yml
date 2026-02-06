@@ -30,9 +30,9 @@ jobs:
           cxx_standards = [20, 23]
 
           macos_map = {
-            'macos-13': "14.3.1",
             'macos-14': "15.4",
-            'macos-15': "16.2"
+            'macos-15': "16.2",
+            'macos-26': "26.2"
           }
 
           win_paltforms = ["x64", "Win32"]
@@ -54,12 +54,12 @@ jobs:
             17: 'ubuntu-latest', 
             18: 'ubuntu-latest', 
             19: 'ubuntu-latest', 
-            20: 'ubuntu-latest'
+            20: 'ubuntu-latest',
+            21: 'ubuntu-latest'
           }
           
           hosts = []
           containers=[]
-          emscriptens=[]
 
           #macOS
           for cxx_standard in cxx_standards:
