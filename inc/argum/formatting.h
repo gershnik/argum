@@ -9,6 +9,7 @@
 #define HEADER_ARGUM_FORMATTING_H_INCLUDED
 
 #include "char-constants.h"
+#include "wcwidth.h"
 
 #include <string_view>
 #include <string>
@@ -18,6 +19,7 @@
 #include <algorithm>
 
 #include <limits.h>
+#include <wchar.h>
 #include <assert.h>
 
 namespace Argum {
@@ -88,9 +90,27 @@ namespace Argum {
             { append(str, std::forward<T>(val)) } -> std::same_as<std::basic_string<Char> &>;
     };
 
+    namespace Impl {
+        template <typename T>
+        concept has_wcwidth = requires(T * t) {
+            { wcwidth(t, size_t(0)) };
+        };
+
+        constexpr bool wcswidthPresent = has_wcwidth<wchar_t>;
+
+        template<class T = wchar_t>
+        inline auto simpleWidth(const T * str, size_t size) -> int {
+            if constexpr (wcswidthPresent) {
+                return wcswidth(str, size);
+            } else {
+                return Argum::Wcwidth::wcswidth(str, size);
+            }
+        }
+    }
+
     inline auto stringWidth(const std::wstring_view & str) -> unsigned {
 
-        int res = wcswidth(str.data(), str.size());
+        int res = Impl::simpleWidth(str.data(), str.size());
         if (res >= 0)
             return res;
         
@@ -103,7 +123,7 @@ namespace Argum {
         } state = stateNormal;
         for (wchar_t c: str) {
             switch(state) {
-            break; case stateNormal: 
+            break; case stateNormal: restart:
                 if (c == L'\x1b') {
                     state = stateEsc;
                     continue;
@@ -116,7 +136,7 @@ namespace Argum {
                     continue;
                 }
                 state = stateNormal;
-                stripped += c;
+                goto restart;
 
             break; case stateControlStart:
                 if (c >= 0x30 && c <= 0x3F) {
@@ -131,7 +151,7 @@ namespace Argum {
                     continue;
                 }
                 state = stateNormal;
-                stripped += c;
+                goto restart;
 
             break; case stateControlIntermediate:
                 if (c >= 0x20 && c <= 0x2F) {
@@ -143,15 +163,15 @@ namespace Argum {
                     continue;
                 }
                 state = stateNormal;
-                stripped += c;
+                goto restart;
             }
         }
 
-        res = wcswidth(stripped.data(), stripped.size());
+        res = Impl::simpleWidth(stripped.data(), stripped.size());
         if (res >= 0)
             return res;
         
-        return stripped.size();
+        return unsigned(stripped.size());
     }
 
     inline auto stringWidth(const std::string_view & str) -> unsigned {

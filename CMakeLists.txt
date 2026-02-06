@@ -49,6 +49,7 @@ set(PUBLIC_HEADERS
     ${SRCDIR}/inc/argum/validators.h
     ${SRCDIR}/inc/argum/help-formatter.h
     ${SRCDIR}/inc/argum/type-parsers.h
+    ${SRCDIR}/inc/argum/wcwidth.h
 )
 
 target_sources(argum

@@ -104,6 +104,21 @@ TEST_CASE( "indent" ) {
     CHECK(indent("a\nb\nc", 1) == "a\n b\n c");
 }
 
+TEST_CASE( "string width" ) {
+
+    CHECK(stringWidth("") == 0);
+    CHECK(stringWidth("a") == 1);
+    CHECK(stringWidth("ab") == 2);
+    CHECK(stringWidth("a\nb") == 3);
+    CHECK(stringWidth("a\rb") == 3);
+    CHECK(stringWidth("a\x1b[2;3mb") == 2);
+    CHECK(stringWidth("\uFFFD") == 1);
+    CHECK(stringWidth("\u0041\u0301") == 1);
+    CHECK(stringWidth("\u754C") == 2);
+    auto emoji = stringWidth("\U0001F921");
+    CHECK((emoji == 2 || emoji == 1));
+}
+
 // TEST_CASE( "word wrap" ) {
 
 //     CHECK(wordWrap("", 0) == "");

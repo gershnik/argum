@@ -107,7 +107,7 @@ namespace Argum {
 
     ARGUM_MOD_EXPORTED
     template<Character Char, Color First, Color... Rest>
-    static constexpr auto makeColor() {
+    constexpr auto makeColor() {
         return BasicColorMaker<Char>::template make<First, Rest...>();
     }
 
