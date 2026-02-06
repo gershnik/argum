@@ -35,7 +35,7 @@ function(configure_test name)
 
     target_compile_options(${name} 
         PRIVATE
-            $<$<CXX_COMPILER_ID:AppleClang,Clang>:-Wall -Wextra -Wpedantic 
+            $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic 
                 -Wno-gnu-zero-variadic-macro-arguments #Clang bug - this is not an issue in C++20
                 # -Weverything 
                 # -Wno-c++98-compat 
@@ -54,6 +54,18 @@ function(configure_test name)
             >
             $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /Zc:preprocessor /W4 /WX>
     )
+
+    if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
+        target_compile_options(${name}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:Clang>:/W4;/WX>
+        )
+    else()
+        target_compile_options(${name}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:Clang>:-Wall;-Wextra;-pedantic>
+        )
+    endif()
 
     target_include_directories(${name} 
     PRIVATE

@@ -147,6 +147,7 @@ namespace Argum {
             if (ptr)
                 ptr->raise();
             ARGUM_ALWAYS_ASSERT(!"accessing value of moved-out BasicExpected");
+            abort();
         }
     private:
         ImplType m_impl;
