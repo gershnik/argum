@@ -137,10 +137,22 @@ target_compile_definitions(test_nothrow
 
 target_compile_options(test_nothrow
     PRIVATE
-        $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fno-exceptions -fno-rtti>
+        $<$<CXX_COMPILER_ID:AppleClang>:-fno-exceptions -fno-rtti>
         $<$<CXX_COMPILER_ID:GNU>:-fno-exceptions -fno-rtti>
         $<$<CXX_COMPILER_ID:MSVC>:/GR- -D_HAS_EXCEPTIONS=0>
 )
+
+if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
+        target_compile_options(test_nothrow
+        PRIVATE
+            $<$<CXX_COMPILER_ID:Clang>:/GR- -D_HAS_EXCEPTIONS=0>
+        )
+    else()
+        target_compile_options(test_nothrows
+        PRIVATE
+            $<$<CXX_COMPILER_ID:Clang>:-fno-exceptions -fno-rtti>
+        )
+    endif()
 
 set(TEST_COMMAND "")
 set(TEST_DEPS "")
