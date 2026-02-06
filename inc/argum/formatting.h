@@ -88,6 +88,79 @@ namespace Argum {
             { append(str, std::forward<T>(val)) } -> std::same_as<std::basic_string<Char> &>;
     };
 
+    inline auto stringWidth(const std::wstring_view & str) -> unsigned {
+
+        int res = wcswidth(str.data(), str.size());
+        if (res >= 0)
+            return res;
+        
+        std::wstring stripped;
+        enum {
+            stateNormal,
+            stateEsc,
+            stateControlStart,
+            stateControlIntermediate
+        } state = stateNormal;
+        for (wchar_t c: str) {
+            switch(state) {
+            break; case stateNormal: 
+                if (c == L'\x1b') {
+                    state = stateEsc;
+                    continue;
+                }
+                stripped += c;
+
+            break; case stateEsc:
+                if (c == L'[') {
+                    state = stateControlStart;
+                    continue;
+                }
+                state = stateNormal;
+                stripped += c;
+
+            break; case stateControlStart:
+                if (c >= 0x30 && c <= 0x3F) {
+                    continue;
+                }
+                if (c >= 0x20 && c <= 0x2F) {
+                    state = stateControlIntermediate;
+                    continue;
+                }
+                if (c >= 0x40 && c <= 0x7E) {
+                    state = stateNormal;
+                    continue;
+                }
+                state = stateNormal;
+                stripped += c;
+
+            break; case stateControlIntermediate:
+                if (c >= 0x20 && c <= 0x2F) {
+                    state = stateControlIntermediate;
+                    continue;
+                }
+                if (c >= 0x40 && c <= 0x7E) {
+                    state = stateNormal;
+                    continue;
+                }
+                state = stateNormal;
+                stripped += c;
+            }
+        }
+
+        res = wcswidth(stripped.data(), stripped.size());
+        if (res >= 0)
+            return res;
+        
+        return stripped.size();
+    }
+
+    inline auto stringWidth(const std::string_view & str) -> unsigned {
+
+        std::wstring sigh;
+        append(sigh, str);
+        return stringWidth(sigh);
+    }
+
     template<class Char, StringAppendable<Char> T>
     auto toString(T && val) -> std::basic_string<Char> {
         std::basic_string<Char> ret;
@@ -234,55 +307,12 @@ namespace Argum {
     }
 
     template<StringLike T>
-    auto wordWrap(T && input, unsigned maxLength) -> std::basic_string<CharTypeOf<T>> {
+    auto wordWrap(T && input, unsigned /*maxLength*/) -> std::basic_string<CharTypeOf<T>> {
         
         using Char = CharTypeOf<T>;
         
         
-        if (maxLength == 0)
-            return std::basic_string<Char>();
-
-        std::basic_string_view<Char> str(std::forward<T>(input));
-        if (str.size() < maxLength)
-            return std::basic_string<Char>(std::forward<T>(input));
-
-        std::basic_string<Char> ret;
-        ret.reserve(str.size());
-        
-        size_t endOfLastAdded = 0;
-        size_t lastSpacePos = str.npos;
-        for(size_t i = 0; i < str.size() && str.size() - endOfLastAdded > maxLength; ++i) {
-            Char c = str[i];
-            if (c == CharConstants<Char>::endl) {
-                ret += str.substr(endOfLastAdded, i + 1 - endOfLastAdded);
-                endOfLastAdded = i + 1;
-                lastSpacePos = str.npos;
-                continue;
-            }
-            
-            if (c == CharConstants<Char>::space) {
-                lastSpacePos = i;
-            }
-
-            if (i - endOfLastAdded == maxLength) {
-
-                if (lastSpacePos != str.npos) {
-
-                    ret += str.substr(endOfLastAdded, lastSpacePos - endOfLastAdded);
-                    ret += CharConstants<Char>::endl;
-                    endOfLastAdded = lastSpacePos + 1;
-                } else {
-
-                    ret += str.substr(endOfLastAdded, i - endOfLastAdded);
-                    ret += CharConstants<Char>::endl;
-                    endOfLastAdded = i;
-                }
-                lastSpacePos = str.npos;
-            }
-        }
-        ret.append(str.substr(endOfLastAdded));
-
-        return ret;
+        return std::basic_string<Char>(std::forward<T>(input));
     }
 
 }

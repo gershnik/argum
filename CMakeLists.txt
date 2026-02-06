@@ -36,6 +36,7 @@ set(PUBLIC_HEADERS
     ${SRCDIR}/inc/argum/common.h
     ${SRCDIR}/inc/argum/char-constants.h
     ${SRCDIR}/inc/argum/messages.h
+    ${SRCDIR}/inc/argum/color.h
     ${SRCDIR}/inc/argum/formatting.h
     ${SRCDIR}/inc/argum/partitioner.h
     ${SRCDIR}/inc/argum/flat-map.h

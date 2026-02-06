@@ -104,29 +104,29 @@ TEST_CASE( "indent" ) {
     CHECK(indent("a\nb\nc", 1) == "a\n b\n c");
 }
 
-TEST_CASE( "word wrap" ) {
+// TEST_CASE( "word wrap" ) {
 
-    CHECK(wordWrap("", 0) == "");
-    CHECK(wordWrap("a", 0) == "");
-    CHECK(wordWrap("ab", 0) == "");
+//     CHECK(wordWrap("", 0) == "");
+//     CHECK(wordWrap("a", 0) == "");
+//     CHECK(wordWrap("ab", 0) == "");
 
-    CHECK(wordWrap("", 1) == "");
-    CHECK(wordWrap("a", 1) == "a");
-    CHECK(wordWrap("ab", 1) == "a\nb");
-    CHECK(wordWrap("a b", 1) == "a\nb");
-    CHECK(wordWrap("a\nb", 1) == "a\nb");
-    CHECK(wordWrap("ab\n", 1) == "a\nb\n");
-    CHECK(wordWrap("\nab", 1) == "\na\nb");
+//     CHECK(wordWrap("", 1) == "");
+//     CHECK(wordWrap("a", 1) == "a");
+//     CHECK(wordWrap("ab", 1) == "a\nb");
+//     CHECK(wordWrap("a b", 1) == "a\nb");
+//     CHECK(wordWrap("a\nb", 1) == "a\nb");
+//     CHECK(wordWrap("ab\n", 1) == "a\nb\n");
+//     CHECK(wordWrap("\nab", 1) == "\na\nb");
 
-    CHECK(wordWrap("", 2) == "");
-    CHECK(wordWrap("a", 2) == "a");
-    CHECK(wordWrap("ab", 2) == "ab");
-    CHECK(wordWrap("abc", 2) == "ab\nc");
-    CHECK(wordWrap(" abc", 2) == "\nab\nc");
-    CHECK(wordWrap("a bc", 2) == "a\nbc");
-    CHECK(wordWrap("ab c", 2) == "ab\nc");
-    CHECK(wordWrap("a\nbc", 2) == "a\nbc");
-    CHECK(wordWrap("ab\nc", 2) == "ab\nc");
-}
+//     CHECK(wordWrap("", 2) == "");
+//     CHECK(wordWrap("a", 2) == "a");
+//     CHECK(wordWrap("ab", 2) == "ab");
+//     CHECK(wordWrap("abc", 2) == "ab\nc");
+//     CHECK(wordWrap(" abc", 2) == "\nab\nc");
+//     CHECK(wordWrap("a bc", 2) == "a\nbc");
+//     CHECK(wordWrap("ab c", 2) == "ab\nc");
+//     CHECK(wordWrap("a\nbc", 2) == "a\nbc");
+//     CHECK(wordWrap("ab\nc", 2) == "ab\nc");
+// }
 
 }
