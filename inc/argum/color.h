@@ -43,6 +43,8 @@ namespace Argum {
     template<Character Char>
     class BasicColorMaker {
     private:
+        using mytype = BasicColorMaker;
+
         template<size_t N>
         struct Str {
             Char wrapped[N];
@@ -60,46 +62,46 @@ namespace Argum {
         template<Color C, size_t N>
         static constexpr auto encode(Str<N> prev) {
             if constexpr (unsigned(C) < 10) {
-                auto ret = append(prev, Char(CharConstants<Char>::digit_0 + unsigned(C)));
+                auto ret = mytype::append(prev, Char(CharConstants<Char>::digit_0 + unsigned(C)));
                 return ret;
             } else {
                 constexpr auto prevDigits = Color(unsigned(C) / 10);
                 constexpr auto myDigit = Color(unsigned(C) % 10);
-                return encode<myDigit>(encode<prevDigits>(prev));
+                return mytype::encode<myDigit>(mytype::encode<prevDigits>(prev));
             }
         }
 
         template<Color First, Color... Rest, size_t N>
         static constexpr auto addNextColor(Str<N> prev) {
-            auto withSemicolon = append(prev, CharConstants<Char>::semicolon);
-            auto next = encode<First>(withSemicolon);
+            auto withSemicolon = mytype::append(prev, CharConstants<Char>::semicolon);
+            auto next = mytype::encode<First>(withSemicolon);
             if constexpr (sizeof...(Rest) != 0) {
-                return addNextColor<Rest...>(next);
+                return mytype::addNextColor<Rest...>(next);
             } else {
-                return append(next, CharConstants<Char>::letter_m);
+                return mytype::append(next, CharConstants<Char>::letter_m);
             }
         }
 
         template<Color First, Color... Rest>
         static constexpr auto doMakeColor() {
             constexpr Str<3> prefix{{CharConstants<Char>::esc, CharConstants<Char>::squareBracketOpen, 0}};
-            constexpr auto start = encode<First>(prefix);
+            constexpr auto start = mytype::encode<First>(prefix);
 
             if constexpr (sizeof...(Rest) != 0) {
-                return addNextColor<Rest...>(start);
+                return mytype::addNextColor<Rest...>(start);
             } else {
-                return append(start, CharConstants<Char>::letter_m);
+                return mytype::append(start, CharConstants<Char>::letter_m);
             }
         }
 
     private:
         template<Color First, Color... Rest>
-        static constexpr auto storage = doMakeColor<First, Rest...>();
+        static constexpr auto storage = mytype::doMakeColor<First, Rest...>();
 
     public:
         template<Color First, Color... Rest>
         static constexpr auto make() {
-            return std::basic_string_view<Char>(storage<First, Rest...>.wrapped);
+            return std::basic_string_view<Char>(mytype::storage<First, Rest...>.wrapped);
         }
     };
 
