@@ -154,7 +154,7 @@ jobs:
                 fi
                 echo "CC=$VCPREFIX\\${{ matrix.compiler }}" >> $GITHUB_ENV
                 echo "CXX=$VCPREFIX\\${{ matrix.compiler }}" >> $GITHUB_ENV
-                echo "CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+                echo "CMAKE_GENERATOR=-GNinja" >> $GITHUB_ENV
             fi
         fi
 
@@ -195,7 +195,9 @@ jobs:
       shell: bash
       run: |
         apt-get update 
-        apt-get install -y ninja-build cmake
+        apt-get install -y ninja-build cmake locales
+        sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen
+        locale-gen
         
     - name: Configure
       shell: bash
