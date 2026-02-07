@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+### Added
+- Help/usage output now supports colors, if desired.
+- `clang-cl` compiler is now supported on Windows
+
+### Fixed
+- Formatted output now better supports non-ascii symbols
+- tests are now more robust w.r.t. compiler/environment differences
+- module file now works with Visual Studio 2026
+
 ## [2.6] - 2025-02-12
 
 ### Added
