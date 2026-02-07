@@ -26,8 +26,7 @@ jobs:
         shell: bash
         run: |
           tar -czf argum-${{ env.RELEASE_NAME }}.tar.gz \
-                --transform 's/inc/argum\/inc/' \
-                inc LICENSE VERSION CHANGELOG.md
+                inc single-file LICENSE VERSION
 
       - name: Make release
         uses: softprops/action-gh-release@v2
