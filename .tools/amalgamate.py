@@ -71,7 +71,8 @@ def combineHeaders(dir: Path, template: Path, output: Path):
             return
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_bytes(bytes)
+    with open(output, "wb") as outfile:
+        outfile.write(bytes)
 
 def amalgamate():
     import argparse
