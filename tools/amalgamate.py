@@ -50,10 +50,14 @@ def combineHeaders(dir: Path, template: Path, output: Path):
     sys_includes = list(set(sys_includes))
     sys_includes.sort()
     sys_includes_text = ""
+    sys_c_includes_text = ""
     for sys_include in sys_includes:
         sys_includes_text += ("\n#include <" + sys_include + ">")
+        if sys_include.endswith('.h'):
+            sys_c_includes_text += ("\n#include <" + sys_include + ">")
 
     text = text.replace("##SYS_INCLUDES##", sys_includes_text)
+    text = text.replace("##SYS_C_INCLUDES##", sys_c_includes_text)
     text = text.replace("##NAME##", output.name.replace('.', '_').replace('-', '_').upper())
 
     output.parent.mkdir(parents=True, exist_ok=True)
