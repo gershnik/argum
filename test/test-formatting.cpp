@@ -104,6 +104,21 @@ TEST_CASE( "indent" ) {
     CHECK(indent("a\nb\nc", 1) == "a\n b\n c");
 }
 
+TEST_CASE( "string width" ) {
+
+    CHECK(stringWidth("") == 0);
+    CHECK(stringWidth("a") == 1);
+    CHECK(stringWidth("ab") == 2);
+    CHECK(stringWidth("a\nb") == 3);
+    CHECK(stringWidth("a\rb") == 3);
+    CHECK(stringWidth("a\x1b[2;3mb") == 2);
+    CHECK(stringWidth("\uFFFD") == 1);
+    CHECK(stringWidth("\u0041\u0301") == 1);
+    CHECK(stringWidth("\u754C") == 2);
+    auto emoji = stringWidth("\U0001F921");
+    CHECK((emoji == 2 || emoji == 1));
+}
+
 TEST_CASE( "word wrap" ) {
 
     CHECK(wordWrap("", 0) == "");
@@ -112,17 +127,17 @@ TEST_CASE( "word wrap" ) {
 
     CHECK(wordWrap("", 1) == "");
     CHECK(wordWrap("a", 1) == "a");
-    CHECK(wordWrap("ab", 1) == "a\nb");
+    CHECK(wordWrap("ab", 1) == "ab");
     CHECK(wordWrap("a b", 1) == "a\nb");
     CHECK(wordWrap("a\nb", 1) == "a\nb");
-    CHECK(wordWrap("ab\n", 1) == "a\nb\n");
-    CHECK(wordWrap("\nab", 1) == "\na\nb");
+    CHECK(wordWrap("ab\n", 1) == "ab\n");
+    CHECK(wordWrap("\nab", 1) == "\nab");
 
     CHECK(wordWrap("", 2) == "");
     CHECK(wordWrap("a", 2) == "a");
     CHECK(wordWrap("ab", 2) == "ab");
-    CHECK(wordWrap("abc", 2) == "ab\nc");
-    CHECK(wordWrap(" abc", 2) == "\nab\nc");
+    CHECK(wordWrap("abc", 2) == "abc");
+    CHECK(wordWrap(" abc", 2) == "\nabc");
     CHECK(wordWrap("a bc", 2) == "a\nbc");
     CHECK(wordWrap("ab c", 2) == "ab\nc");
     CHECK(wordWrap("a\nbc", 2) == "a\nbc");

@@ -78,6 +78,7 @@ function(configure_test name)
             test/test-parser-adaptive.cpp
             test/test-parser-validation.cpp
             test/test-type-parsers.cpp
+            test/test-color.cpp
 
             test/response.txt
             test/response1.txt
