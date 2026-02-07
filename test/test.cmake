@@ -222,5 +222,6 @@ if (TARGET amalgamate)
     add_dependencies(test amalgamate)
     add_dependencies(test_expected amalgamate)
     add_dependencies(test_nothrow amalgamate)
+    add_dependencies(test-single-header amalgamate)
 
 endif()

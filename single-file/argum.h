@@ -108,9 +108,8 @@ namespace Argum {
             fflush(stderr); 
             #ifndef NDEBUG
                 assert(false);
-            #else
-                std::terminate(); 
             #endif
+            std::terminate();
         }
     #endif
 

@@ -61,18 +61,15 @@ def combineHeaders(dir: Path, template: Path, output: Path):
     text = text.replace("##NAME##", output.name.replace('.', '_').replace('-', '_').upper())
     text += '\n'
 
-    bytes = text.encode("utf-8")
-
-    digest = hashlib.md5(bytes).hexdigest()
+    digest = hashlib.md5(text.encode("utf-8")).hexdigest()
 
     if output.exists():
-        existing_digest = hashlib.md5(output.read_bytes()).hexdigest()
+        existing_digest = hashlib.md5(output.read_text(encoding='utf-8').encode('utf-8')).hexdigest()
         if existing_digest == digest:
             return
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    with open(output, "wb") as outfile:
-        outfile.write(bytes)
+    output.write_text(text, encoding='utf-8')
 
 def amalgamate():
     import argparse
