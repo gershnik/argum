@@ -30,12 +30,13 @@ jobs:
           cxx_standards = [20, 23]
 
           macos_map = {
-            'macos-13': "14.3.1",
             'macos-14': "15.4",
-            'macos-15': "16.2"
+            'macos-15': "16.2",
+            'macos-26': "26.2"
           }
 
           win_paltforms = ["x64", "Win32"]
+          win_clang_archs = ["x64", "x86"]
 
           gcc_map = {
             11: 'ubuntu-latest', 
@@ -54,12 +55,12 @@ jobs:
             17: 'ubuntu-latest', 
             18: 'ubuntu-latest', 
             19: 'ubuntu-latest', 
-            20: 'ubuntu-latest'
+            20: 'ubuntu-latest',
+            21: 'ubuntu-latest'
           }
           
           hosts = []
           containers=[]
-          emscriptens=[]
 
           #macOS
           for cxx_standard in cxx_standards:
@@ -70,6 +71,10 @@ jobs:
           for cxx_standard in cxx_standards:
             for platform in win_paltforms:
               hosts.append({'os': 'windows-latest', 'platform': platform, 'cxx_standard': cxx_standard, 'jobname': f'Windows - {platform} - C++{cxx_standard}'})
+
+            for arch in win_clang_archs:
+              hosts.append({'os': 'windows-latest', 'arch': arch, 'compiler': 'clang-cl', 'cxx_standard': cxx_standard, 'jobname': f'Windows - clang - {arch} - C++{cxx_standard}'})
+          
           
           #gcc hosts
           for gcc, runon in gcc_map.items():
@@ -140,14 +145,33 @@ jobs:
             echo "DEVELOPER_DIR=/Applications/Xcode_${{ matrix.version }}.app" >> $GITHUB_ENV
         fi
 
+        if [[ '${{ matrix.os }}' == windows-* ]]; then
+            if [[ '${{ matrix.compiler }}' != '' ]]; then
+                if [[ '${{ matrix.arch }}' == "x64" ]]; then
+                    VCPREFIX="C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\Llvm\\x64\\bin"
+                else
+                    VCPREFIX="C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\Llvm\\bin"
+                fi
+                echo "CC=$VCPREFIX\\${{ matrix.compiler }}" >> $GITHUB_ENV
+                echo "CXX=$VCPREFIX\\${{ matrix.compiler }}" >> $GITHUB_ENV
+                echo "CMAKE_GENERATOR=-GNinja" >> $GITHUB_ENV
+            fi
+        fi
+
+        CMAKE_ARGS=(-DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} -DCMAKE_CXX_STANDARD_REQUIRED=ON)
+
+        if [[ '${{ matrix.platform }}' != "" ]]; then
+          CMAKE_ARGS+=(-DCMAKE_GENERATOR_PLATFORM=${{ matrix.platform }})
+        fi
+
+        if [[ ${#CMAKE_ARGS[@]} != 0 ]]; then
+          echo "CMAKE_ARGS=${CMAKE_ARGS[@]}" >> $GITHUB_ENV
+        fi
+
     - name: Configure
       shell: bash
       run: |
-        export EXTRA_FLAGS="-DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} -DCMAKE_CXX_STANDARD_REQUIRED=ON"
-        if [[ '${{ matrix.platform }}' != "" ]]; then
-            export EXTRA_FLAGS="$EXTRA_FLAGS -DCMAKE_GENERATOR_PLATFORM=${{ matrix.platform }}"
-        fi
-        cmake -S . -B out $EXTRA_FLAGS -DCMAKE_BUILD_TYPE=Release 
+        cmake $CMAKE_GENERATOR -S . -B out $CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
 
     - name: Build and Test
       shell: bash
@@ -171,7 +195,9 @@ jobs:
       shell: bash
       run: |
         apt-get update 
-        apt-get install -y ninja-build cmake
+        apt-get install -y ninja-build cmake locales
+        sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen
+        locale-gen
         
     - name: Configure
       shell: bash
@@ -189,7 +215,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [23.1.7779620]
+        version: [25.2.9519653]
         api: [29, 30]    
         arch: [x86_64]
     
