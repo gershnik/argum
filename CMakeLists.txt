@@ -19,7 +19,7 @@ project(argum VERSION ${ARGUM_VERSION} LANGUAGES CXX)
 add_library(argum INTERFACE)
 
 set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})
-set(TOOLSDIR ${SRCDIR}/tools)
+set(TOOLSDIR ${SRCDIR}/.tools)
 
 target_include_directories(argum 
     INTERFACE

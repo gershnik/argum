@@ -15,7 +15,7 @@ jobs:
 
       - name: Amalgamate
         shell: bash
-        working-directory: ${{github.workspace}}/tools
+        working-directory: ${{github.workspace}}/.tools
         run: |
            python3 amalgamate.py -d ../inc/argum template.txt ../out/argum.h
            python3 amalgamate.py -d ../inc/argum module-template.txt ../out/argum-module.ixx
