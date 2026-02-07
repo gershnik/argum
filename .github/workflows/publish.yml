@@ -13,12 +13,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Amalgamate
-        shell: bash
-        working-directory: ${{github.workspace}}/.tools
+      - name: Get release Name
+        shell: python
         run: |
-           python3 amalgamate.py -d ../inc/argum template.txt ../out/argum.h
-           python3 amalgamate.py -d ../inc/argum module-template.txt ../out/argum-module.ixx
+          import os
+          ref = os.environ['GITHUB_REF']
+          name = ref[ref.rfind('/') + 2:]
+          with open(os.environ['GITHUB_ENV'], 'w') as env:
+            print('RELEASE_NAME=' + name, file=env) 
+
+      - name: Zip Headers
+        shell: bash
+        run: |
+          tar -czf argum-${{ env.RELEASE_NAME }}.tar.gz \
+                --transform 's/inc/argum\/inc/' \
+                inc LICENSE VERSION CHANGELOG.md
 
       - name: Make release
         uses: softprops/action-gh-release@v2
@@ -27,5 +36,6 @@ jobs:
           prerelease: false
           body: ...edit me...
           files: |
-            out/argum.h
-            out/argum-module.ixx
+            argum-${{ env.RELEASE_NAME }}.tar.gz
+            single-file/argum.h
+            single-file/argum-module.ixx

@@ -143,16 +143,28 @@ target_compile_options(test_nothrow
 )
 
 if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
-        target_compile_options(test_nothrow
-        PRIVATE
-            $<$<CXX_COMPILER_ID:Clang>:/GR- -D_HAS_EXCEPTIONS=0>
-        )
-    else()
-        target_compile_options(test_nothrow
-        PRIVATE
-            $<$<CXX_COMPILER_ID:Clang>:-fno-exceptions -fno-rtti>
-        )
-    endif()
+    target_compile_options(test_nothrow
+    PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:/GR- -D_HAS_EXCEPTIONS=0>
+    )
+else()
+    target_compile_options(test_nothrow
+    PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:-fno-exceptions -fno-rtti>
+    )
+endif()
+
+add_executable(test-single-header EXCLUDE_FROM_ALL)
+
+target_sources(test-single-header 
+PRIVATE
+    test/test-single-header.cpp
+)
+
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    set_property(TARGET test-single-header PROPERTY CXX_STANDARD 20)
+    set_property(TARGET test-single-header PROPERTY CXX_STANDARD_REQUIRED ON)
+endif()
 
 set(TEST_COMMAND "")
 set(TEST_DEPS "")
@@ -198,7 +210,7 @@ else()
     list(APPEND TEST_COMMAND COMMAND test_nothrow)
 endif()
 
-list(APPEND TEST_DEPS test test_expected test_nothrow)
+list(APPEND TEST_DEPS test test_expected test_nothrow test-single-header)
 
 add_custom_target(run-test 
     DEPENDS ${TEST_DEPS}

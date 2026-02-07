@@ -4,7 +4,7 @@
 #  license that can be found in the LICENSE file or at
 #  https://github.com/gershnik/argum/blob/master/LICENSE
 #
-import sys
+import hashlib
 import re
 from pathlib import Path
 from typing import Dict, List
@@ -59,10 +59,19 @@ def combineHeaders(dir: Path, template: Path, output: Path):
     text = text.replace("##SYS_INCLUDES##", sys_includes_text)
     text = text.replace("##SYS_C_INCLUDES##", sys_c_includes_text)
     text = text.replace("##NAME##", output.name.replace('.', '_').replace('-', '_').upper())
+    text += '\n'
+
+    bytes = text.encode("utf-8")
+
+    digest = hashlib.md5(bytes).hexdigest()
+
+    if output.exists():
+        existing_digest = hashlib.md5(output.read_bytes()).hexdigest()
+        if existing_digest == digest:
+            return
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    with open(output, "w") as outfile:
-        print(text, file=outfile)
+    output.write_bytes(bytes)
 
 def amalgamate():
     import argparse

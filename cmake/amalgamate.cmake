@@ -5,9 +5,9 @@ if(${Python3_Interpreter_FOUND})
 
     add_custom_command(
         COMMENT "Generating amalgamated header"
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/argum.h
+        OUTPUT ${SRCDIR}/single-file/argum.h
         WORKING_DIRECTORY ${TOOLSDIR}
-        COMMAND ${Python3_EXECUTABLE} amalgamate.py template.txt ${CMAKE_CURRENT_BINARY_DIR}/argum.h -d ${SRCDIR}/inc/argum 
+        COMMAND ${Python3_EXECUTABLE} amalgamate.py -d ${SRCDIR}/inc/argum template.txt ${SRCDIR}/single-file/argum.h 
         DEPENDS 
             ${PUBLIC_HEADERS} 
             ${TOOLSDIR}/amalgamate.py
@@ -17,9 +17,9 @@ if(${Python3_Interpreter_FOUND})
 
     add_custom_command(
         COMMENT "Generating amalgamated module"
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/argum-module.ixx
+        OUTPUT ${SRCDIR}/single-file/argum-module.ixx
         WORKING_DIRECTORY ${TOOLSDIR}
-        COMMAND ${Python3_EXECUTABLE} amalgamate.py module-template.txt ${CMAKE_CURRENT_BINARY_DIR}/argum-module.ixx -d ${SRCDIR}/inc/argum 
+        COMMAND ${Python3_EXECUTABLE} amalgamate.py -d ${SRCDIR}/inc/argum module-template.txt ${SRCDIR}/single-file/argum-module.ixx
         DEPENDS 
             ${PUBLIC_HEADERS} 
             ${TOOLSDIR}/amalgamate.py
@@ -30,8 +30,8 @@ if(${Python3_Interpreter_FOUND})
     add_custom_target(amalgamate
         COMMENT "Amalgamating"
         DEPENDS 
-            ${CMAKE_CURRENT_BINARY_DIR}/argum-module.ixx
-            ${CMAKE_CURRENT_BINARY_DIR}/argum.h
+            ${SRCDIR}/single-file/argum-module.ixx
+            ${SRCDIR}/single-file/argum.h
     )
  
 endif()
