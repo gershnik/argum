@@ -312,10 +312,10 @@ namespace Argum {
 
     #ifdef _WIN32
         if (auto val = getenv("WT_SESSION"); val && *val)
-            return ColorStatus::suggested;
+            return ColorStatus::allowed;
     #endif
 
-        if (auto val = getenv("COLORTERM"))
+        if (auto val = getenv("COLORTERM"); val && *val)
             return ColorStatus::allowed;
 
         if (auto val = getenv("TERM")) {
@@ -338,13 +338,6 @@ namespace Argum {
             }
             for (auto & end: {"-256"sv, "-256color"sv}) {
                 if (term.size() >= end.size() && term.substr(term.size() - end.size()) == end)
-                    return ColorStatus::allowed;
-            }
-        }
-
-        if (auto val = getenv("CI")) {
-            for (auto * valid: {"GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI", "TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"}) {
-                if (getenv(valid))
                     return ColorStatus::allowed;
             }
         }
