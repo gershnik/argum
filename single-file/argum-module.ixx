@@ -3387,7 +3387,7 @@ namespace Argum {
         using Colorizer = BasicColorizer<CharType>;
 
         struct Layout {
-            unsigned width = 80;
+            unsigned width = unsigned(-1);
             unsigned helpLeadingGap = 2;
             unsigned helpNameMaxWidth = 20;
             unsigned helpDescriptionGap = 2;
