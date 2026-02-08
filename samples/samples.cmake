@@ -5,6 +5,9 @@ list(APPEND samples sample-demo)
 add_executable(sample-basics EXCLUDE_FROM_ALL samples/basics.cpp)
 list(APPEND samples sample-basics)
 
+add_executable(sample-color EXCLUDE_FROM_ALL samples/color.cpp samples/detect-color.h)
+list(APPEND samples sample-color)
+
 foreach(sample IN ITEMS ${samples})
     
     if (NOT DEFINED CMAKE_CXX_STANDARD)

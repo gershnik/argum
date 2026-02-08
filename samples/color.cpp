@@ -1,17 +1,28 @@
 #include "../single-file/argum.h"
 
+#include "detect-color.h"
 
 #include <iostream>
 
 using namespace Argum;
 using namespace std;
 
-enum Encoding { defaultEncoding, Base64, Hex };
+Colorizer colorizerForFile(FILE * fp) {
+
+    static ColorStatus envColorStatus = environmentColorStatus();
+    if (shouldUseColor(envColorStatus, fp))
+        return defaultColorizer();
+    return {};
+}
 
 int main(int argc, char * argv[]) {
 
+    auto colorizerForStdout = colorizerForFile(stdout);
+    auto colorizerForStderr = colorizerForFile(stderr);
+
     vector<string> sources;
     string destination;
+    enum Encoding { defaultEncoding, Base64, Hex };
     optional<Encoding> encoding = defaultEncoding;
     optional<string> compression;
     int compressionLevel = 9;
@@ -25,21 +36,21 @@ int main(int argc, char * argv[]) {
         occurs(zeroOrMoreTimes).
         handler([&](const string_view & value) { 
             sources.emplace_back(value);
-    }));
+            }));
     parser.add(
         Positional("destination").
         help("destination file"). 
         occurs(once). 
         handler([&](string_view value) { 
             destination = value;
-    }));
+            }));
     parser.add(
         Option("--help", "-h").
         help("show this help message and exit"). 
         handler([&]() {
-            cout << parser.formatHelp(progname);
+            cout << parser.formatHelp(progname, colorizerForStdout);
             exit(EXIT_SUCCESS);
-    }));
+            }));
     ChoiceParser encodingChoices;
     encodingChoices.addChoice("default");
     encodingChoices.addChoice("base64");
@@ -50,7 +61,7 @@ int main(int argc, char * argv[]) {
         argName(encodingChoices.description()).
         handler([&](string_view value) {
             encoding = Encoding(encodingChoices.parse(value));
-    }));
+            }));
     parser.add(
         Option("--compress", "-c").
         argName("ALGORITHM").
@@ -59,14 +70,14 @@ int main(int argc, char * argv[]) {
         handler([&](const optional<string_view> & value) {
             encoding = nullopt;
             compression = value.value_or("gzip");
-    }));
+            }));
     parser.add(
         Option("--level", "-l").
         argName("LEVEL").
         help("compression level, requires --compress"). 
         handler([&](const string_view & value) {
             compressionLevel = parseIntegral<int>(value);
-    }));
+            }));
     parser.addValidator(
         oneOrNoneOf(
             optionPresent("--format"),
@@ -82,8 +93,8 @@ int main(int argc, char * argv[]) {
     try {
         parser.parse(argc, argv);
     } catch (ParsingException & ex) {
-        cerr << ex.message() << '\n';
-        cerr << parser.formatUsage(progname) << '\n';
+        cerr << colorizerForStderr.error(ex.message()) << "\n\n";
+        cerr << parser.formatUsage(progname, colorizerForStderr) << '\n';
         return EXIT_FAILURE;
     }
 
@@ -91,7 +102,7 @@ int main(int argc, char * argv[]) {
         cout << "need to encode with encoding: " << *encoding <<'\n';
     else 
         cout << "need to compress with algorithm: " << *compression 
-             << " at level: " << compressionLevel <<'\n';
+        << " at level: " << compressionLevel <<'\n';
     cout << "sources: {" << join(sources.begin(), sources.end(), ", ") << "}\n";
     cout << "into: " << destination <<'\n';
 }
