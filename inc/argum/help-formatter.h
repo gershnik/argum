@@ -35,7 +35,7 @@ namespace Argum {
         using Colorizer = BasicColorizer<CharType>;
 
         struct Layout {
-            unsigned width = unsigned(-1);
+            unsigned width = std::numeric_limits<unsigned>::max();
             unsigned helpLeadingGap = 2;
             unsigned helpNameMaxWidth = 20;
             unsigned helpDescriptionGap = 2;

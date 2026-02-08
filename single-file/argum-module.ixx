@@ -24,8 +24,18 @@ module;
 #endif
 #include <wchar.h>
 #include <wctype.h>
-#ifdef _WIN32
-    #include <Windows.h>
+#ifndef NOMINMAX
+    #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+#ifdef min
+    #undef min
+#endif
+#ifdef max
+    #undef max
 #endif
 
 export module Argum;
@@ -3387,7 +3397,7 @@ namespace Argum {
         using Colorizer = BasicColorizer<CharType>;
 
         struct Layout {
-            unsigned width = unsigned(-1);
+            unsigned width = std::numeric_limits<unsigned>::max();
             unsigned helpLeadingGap = 2;
             unsigned helpNameMaxWidth = 20;
             unsigned helpDescriptionGap = 2;
@@ -4683,6 +4693,18 @@ namespace Argum {
 #endif
 
 #ifdef _WIN32
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #ifdef min
+        #undef min
+    #endif
+    #ifdef max
+        #undef max
+    #endif
 #endif
 
 namespace Argum {

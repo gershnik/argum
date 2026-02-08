@@ -17,7 +17,20 @@ user_include_re = re.compile(r'\s*#\s*include\s+"([^"]+)"\s*')
 special_handling = {
     'unistd.h': '#if !defined(_WIN32) && __has_include(<unistd.h>)\n    #include <unistd.h>\n#endif',
     'io.h': '#ifdef _WIN32\n    #include <io.h>\n#endif',
-    'Windows.h': '#ifdef _WIN32\n    #include <Windows.h>\n#endif',
+    'Windows.h': 
+'''#ifndef NOMINMAX
+    #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+#ifdef min
+    #undef min
+#endif
+#ifdef max
+    #undef max
+#endif''',
 }
 
 def getReplacement(header: str):
