@@ -89,10 +89,8 @@ TEST_CASE( "argument help aligns when options are longer" ) {
     parser.add(POSITIONAL("bob").occurs(Quantifier(0, 25)).help("hohahaha"));
     parser.add(POSITIONAL("fob").help("ghakl\njdks"));
 
-    CHECK(parser.formatUsage("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob
-bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob)__");
-    CHECK(parser.formatHelp("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob
-bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob
+    CHECK(parser.formatUsage("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob)__");
+    CHECK(parser.formatHelp("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob
 
 positional arguments:
   bob                 hohahaha
