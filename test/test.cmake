@@ -199,7 +199,7 @@ else()
     list(APPEND TEST_COMMAND COMMAND test_nothrow)
 endif()
 
-list(APPEND TEST_DEPS test test_expected test_nothrow test-single-header)
+list(APPEND TEST_DEPS test test_expected test_nothrow)
 
 add_custom_target(run-test 
     DEPENDS ${TEST_DEPS}
