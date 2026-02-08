@@ -17,3 +17,4 @@ import std;
 
 #include "parser.h"
 #include "type-parsers.h"
+#include "detect-color.h"

@@ -17,6 +17,9 @@
 #include <exception>
 #include <filesystem>
 #include <functional>
+#ifdef _WIN32
+    #include <io.h>
+#endif
 #include <iterator>
 #include <limits>
 #include <limits.h>
@@ -31,14 +34,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
 #include <string_view>
 #include <system_error>
 #include <tuple>
 #include <type_traits>
+#if !defined(_WIN32) && __has_include(<unistd.h>)
+    #include <unistd.h>
+#endif
 #include <variant>
 #include <vector>
 #include <wchar.h>
 #include <wctype.h>
+#ifdef _WIN32
+    #include <Windows.h>
+#endif
 
 #ifndef HEADER_ARGUM_PARSER_H_INCLUDED
 #define HEADER_ARGUM_PARSER_H_INCLUDED
@@ -4680,5 +4690,139 @@ namespace Argum {
 }
 
 #endif
+#ifndef HEADER_ARGUM_DETECT_COLOR_H_INCLUDED
+#define HEADER_ARGUM_DETECT_COLOR_H_INCLUDED
+
+
+#if !defined(_WIN32) && __has_include(<unistd.h>)
+    #define ARGUM_HAS_UNISTD_H
+#endif
+
+#ifdef _WIN32
+#endif
+
+namespace Argum {
+    
+    enum class ColorStatus {
+        unknown,
+        forbidden,
+        allowed,    
+        required    
+    };
+
+    // Detect ColorStatus from the environment
+    // Logic taken from combination of:
+    // https://no-color.org
+    // https://force-color.org
+    // https://bixense.com/clicolors/
+    // https://github.com/chalk/supports-color/blob/main/index.js
+    // https://gist.github.com/scop/4d5902b98f0503abec3fcbb00b38aec3
+    // https://andrey-zherikov.github.io/argparse/ansi-coloring-and-styling.html#heuristic
+    inline auto environmentColorStatus() -> ColorStatus {
+        using namespace std;
+        using namespace std::literals;
+
+        if (auto val = getenv("NO_COLOR"); val && *val)
+            return ColorStatus::forbidden;
+
+        if (auto val = getenv("FORCE_COLOR"); val && *val)
+            return ColorStatus::required;
+
+        if (auto val = getenv("CLICOLOR_FORCE"); val && *val) {
+            if (strcmp(val, "0") == 0 || strcmp(val, "false") == 0)
+                return ColorStatus::forbidden;
+            return ColorStatus::required;
+        }
+
+        if (auto val = getenv("CLICOLOR"); val && *val) {
+            if (strcmp(val, "0") == 0 || strcmp(val, "false") == 0)
+                return ColorStatus::forbidden;
+            return ColorStatus::allowed;
+        }
+
+#ifdef _WIN32
+        if (auto val = getenv("WT_SESSION"); val && *val)
+            return ColorStatus::allowed;
+#endif
+
+        if (auto val = getenv("COLORTERM"); val && *val)
+            return ColorStatus::allowed;
+
+        if (auto val = getenv("TERM")) {
+            string_view term(val);
+
+            if (term == "dumb")
+                return ColorStatus::forbidden;
+
+            for (auto & exact: {"xterm-256color"sv, "xterm-kitty"sv, "xterm-ghostty"sv, "wezterm"sv}) {
+                if (term == exact)
+                    return ColorStatus::allowed;
+            }
+            for (auto & start: {"screen"sv, "xterm"sv, "vt100"sv, "vt220"sv, "rxvt"sv}) {
+                if (term.size() >= start.size() && term.substr(start.size()) == start)
+                    return ColorStatus::allowed;
+            }
+            for (auto & inside: {"color"sv, "ansi"sv, "cygwin"sv, "linux"sv}) {
+                if (term.find(inside) != term.npos)
+                    return ColorStatus::allowed;
+            }
+            for (auto & end: {"-256"sv, "-256color"sv}) {
+                if (term.size() >= end.size() && term.substr(term.size() - end.size()) == end)
+                    return ColorStatus::allowed;
+            }
+        }
+
+        return ColorStatus::unknown;
+    }
+
+    //Portable isatty
+    bool isAtTty(FILE * fp) {
+#if defined(ARGUM_HAS_UNISTD_H)
+        return isatty(fileno(fp));
+#elif defined(_WIN32)
+        return _isatty(_fileno(fp));
+#else
+        return false;
+#endif
+    }
+
+
+    bool shouldUseColor(ColorStatus envColorStatus, FILE * fp) {
+        if (envColorStatus == ColorStatus::required)
+            return true;
+        if (envColorStatus == ColorStatus::forbidden)
+            return false;
+
+#ifndef _WIN32
+        if (envColorStatus == ColorStatus::unknown)
+            return false;
+#endif
+
+        if (!isAtTty(fp))
+            return false;
+
+#ifdef _WIN32
+        if (envColorStatus == ColorStatus::unknown) {
+        
+            HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (hOut == INVALID_HANDLE_VALUE)
+                return false;
+
+            DWORD dwMode = 0;
+            if (!GetConsoleMode(hOut, &dwMode))
+                return false;
+
+            if (!(dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING))
+                return false;
+        }
+#endif
+
+        return true;
+    }
+
+}
+
+#endif
+
 #endif 
 

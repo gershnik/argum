@@ -205,3 +205,11 @@ add_custom_target(run-test
     DEPENDS ${TEST_DEPS}
     ${TEST_COMMAND}
 )
+
+if (TARGET amalgamate)
+
+    add_dependencies(test amalgamate)
+    add_dependencies(test_expected amalgamate)
+    add_dependencies(test_nothrow amalgamate)
+
+endif()

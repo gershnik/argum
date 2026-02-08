@@ -13,9 +13,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#ifndef _WIN32
+#if !defined(_WIN32) && __has_include(<unistd.h>)
+    #define ARGUM_HAS_UNISTD_H
     #include <unistd.h>
-#else
+#endif
+
+#ifdef _WIN32
     #include <io.h>
     #include <Windows.h>
 #endif
@@ -96,10 +99,12 @@ namespace Argum {
 
     //Portable isatty
     bool isAtTty(FILE * fp) {
-#ifndef _WIN32
+#if defined(ARGUM_HAS_UNISTD_H)
         return isatty(fileno(fp));
-#else
+#elif defined(_WIN32)
         return _isatty(_fileno(fp));
+#else
+        return false;
 #endif
     }
 

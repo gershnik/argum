@@ -14,6 +14,15 @@ line_comment_re = re.compile(r'\s*//.*')
 sys_include_re = re.compile(r'\s*#\s*include\s+<([^>]+)>\s*')
 user_include_re = re.compile(r'\s*#\s*include\s+"([^"]+)"\s*')
 
+special_handling = {
+    'unistd.h': '#if !defined(_WIN32) && __has_include(<unistd.h>)\n    #include <unistd.h>\n#endif',
+    'io.h': '#ifdef _WIN32\n    #include <io.h>\n#endif',
+    'Windows.h': '#ifdef _WIN32\n    #include <Windows.h>\n#endif',
+}
+
+def getReplacement(header: str):
+    return special_handling.get(header, f"#include <{header}>")
+
 
 def processHeader(dir: Path, path: Path, sys_includes: List[str], processed_headers:Dict[str, bool], strip_initial_comment: bool):
 
@@ -48,13 +57,14 @@ def combineHeaders(dir: Path, template: Path, output: Path):
     text = processHeader(dir, template, sys_includes, processed_headers, strip_initial_comment=False)
 
     sys_includes = list(set(sys_includes))
-    sys_includes.sort()
+    sys_includes.sort(key = lambda x: x.lower())
     sys_includes_text = ""
     sys_c_includes_text = ""
     for sys_include in sys_includes:
-        sys_includes_text += ("\n#include <" + sys_include + ">")
+        repl = "\n" + getReplacement(sys_include)
+        sys_includes_text += (repl)
         if sys_include.endswith('.h'):
-            sys_c_includes_text += ("\n#include <" + sys_include + ">")
+            sys_c_includes_text += (repl)
 
     text = text.replace("##SYS_INCLUDES##", sys_includes_text)
     text = text.replace("##SYS_C_INCLUDES##", sys_c_includes_text)

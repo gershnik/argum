@@ -1,7 +1,5 @@
 #include "../single-file/argum.h"
 
-#include "detect-color.h"
-
 #include <iostream>
 
 using namespace Argum;
