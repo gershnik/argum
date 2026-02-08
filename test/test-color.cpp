@@ -75,7 +75,7 @@ TEST_CASE( "Custom color" ) {
         .optionArg =            makeColor<Color::bold, Color::bright_yellow>(),
         .positional =           makeColor<Color::bold, Color::bright_green>(),
         .error =                defaultColorScheme().error,
-        .warning =              defaultColorScheme().warning
+        .warning =              defaultColorScheme().warning,
     };
 
     map<string, vector<Value>> results;
@@ -119,6 +119,8 @@ TEST_CASE( "Custom wide color" ) {
         .longOption =           makeWColor<Color::bold, Color::bright_cyan>(),
         .optionArg =            makeWColor<Color::bold, Color::bright_yellow>(),
         .positional =           makeWColor<Color::bold, Color::bright_green>(),
+        .error =                defaultWColorScheme().error,
+        .warning =              defaultWColorScheme().warning,
     };
 
     map<wstring, vector<WValue>> results;
