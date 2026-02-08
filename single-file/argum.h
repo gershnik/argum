@@ -46,18 +46,20 @@
 #include <vector>
 #include <wchar.h>
 #include <wctype.h>
-#ifndef NOMINMAX
-    #define NOMINMAX
-#endif
-#ifndef WIN32_LEAN_AND_MEAN
-    #define WIN32_LEAN_AND_MEAN
-#endif
-#include <Windows.h>
-#ifdef min
-    #undef min
-#endif
-#ifdef max
-    #undef max
+#ifdef _WIN32
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <Windows.h>
+    #ifdef min
+        #undef min
+    #endif
+    #ifdef max
+        #undef max
+    #endif
 #endif
 
 #ifndef HEADER_ARGUM_PARSER_H_INCLUDED
