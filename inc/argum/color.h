@@ -11,6 +11,8 @@
 #include "common.h"
 #include "char-constants.h"
 
+#include <string.h>
+
 namespace Argum {
 
     ARGUM_MOD_EXPORTED

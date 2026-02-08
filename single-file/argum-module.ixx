@@ -15,6 +15,7 @@ module;
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wchar.h>
 #include <wctype.h>
 
@@ -3100,6 +3101,7 @@ namespace Argum {
 
 #ifndef HEADER_ARGUM_COLOR_H_INCLUDED
 #define HEADER_ARGUM_COLOR_H_INCLUDED
+
 
 
 namespace Argum {

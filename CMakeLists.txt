@@ -32,6 +32,13 @@ target_compile_definitions(argum
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 )
 
+if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
+    target_compile_definitions(argum
+        INTERFACE
+            $<$<CXX_COMPILER_ID:Clang>:_CRT_SECURE_NO_WARNINGS>
+    )
+endif()
+
 set(PUBLIC_HEADERS 
     ${SRCDIR}/inc/argum/common.h
     ${SRCDIR}/inc/argum/char-constants.h

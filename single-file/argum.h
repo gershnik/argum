@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
 #include <string_view>
 #include <system_error>
 #include <tuple>
@@ -3116,6 +3117,7 @@ namespace Argum {
 
 #ifndef HEADER_ARGUM_COLOR_H_INCLUDED
 #define HEADER_ARGUM_COLOR_H_INCLUDED
+
 
 
 namespace Argum {
