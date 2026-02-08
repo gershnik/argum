@@ -3377,6 +3377,87 @@ namespace Argum {
     inline constexpr auto defaultWColorizer() -> WColorizer {
         return {basicDefaultColorScheme<wchar_t>};
     }
+
+    ARGUM_MOD_EXPORTED
+    enum class ColorStatus {
+        unknown,
+        forbidden,
+        //use color if isatty() == true or you know that the output 
+        //goes to the end user rather than a pipe
+        allowed,    
+        required    
+    };
+
+    // Detect ColorStatus from the environment
+    // Logic taken from combination of:
+    // https://no-color.org
+    // https://force-color.org
+    // https://bixense.com/clicolors/
+    // https://github.com/chalk/supports-color/blob/main/index.js
+    // https://gist.github.com/scop/4d5902b98f0503abec3fcbb00b38aec3
+    ARGUM_MOD_EXPORTED
+    inline auto environmentColorStatus() -> ColorStatus {
+        using namespace std::literals;
+
+        if (auto val = getenv("NO_COLOR"); val && *val)
+            return ColorStatus::forbidden;
+
+        if (auto val = getenv("FORCE_COLOR"); val && *val)
+            return ColorStatus::required;
+
+        if (auto val = getenv("CLICOLOR_FORCE"); val && *val) {
+            if (strcmp(val, "0") == 0 || strcmp(val, "false") == 0)
+                return ColorStatus::forbidden;
+            return ColorStatus::required;
+        }
+
+        if (auto val = getenv("CLICOLOR"); val && *val) {
+            if (strcmp(val, "0") == 0 || strcmp(val, "false") == 0)
+                return ColorStatus::forbidden;
+            return ColorStatus::allowed;
+        }
+
+    #ifdef _WIN32
+        if (auto val = getenv("WT_SESSION"); val && *val)
+            return ColorStatus::suggested;
+    #endif
+
+        if (auto val = getenv("COLORTERM"))
+            return ColorStatus::allowed;
+
+        if (auto val = getenv("TERM")) {
+            std::string_view term(val);
+
+            if (term == "dumb")
+                return ColorStatus::forbidden;
+
+            for (auto & exact: {"xterm-256color"sv, "xterm-kitty"sv, "xterm-ghostty"sv, "wezterm"sv}) {
+                if (term == exact)
+                    return ColorStatus::allowed;
+            }
+            for (auto & start: {"screen"sv, "xterm"sv, "vt100"sv, "vt220"sv, "rxvt"sv}) {
+                if (term.size() >= start.size() && term.substr(start.size()) == start)
+                    return ColorStatus::allowed;
+            }
+            for (auto & inside: {"color"sv, "ansi"sv, "cygwin"sv, "linux"sv}) {
+                if (term.find(inside) != term.npos)
+                    return ColorStatus::allowed;
+            }
+            for (auto & end: {"-256"sv, "-256color"sv}) {
+                if (term.size() >= end.size() && term.substr(term.size() - end.size()) == end)
+                    return ColorStatus::allowed;
+            }
+        }
+
+        if (auto val = getenv("CI")) {
+            for (auto * valid: {"GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI", "TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"}) {
+                if (getenv(valid))
+                    return ColorStatus::allowed;
+            }
+        }
+
+        return ColorStatus::unknown;
+    }
 }
 
 #endif
