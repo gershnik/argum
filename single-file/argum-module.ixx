@@ -721,11 +721,6 @@ inline int wcswidth(const wchar_t *pwcs, size_t n) {
 
 
 
-#if defined(_MSC_VER) && defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
 namespace Argum {
 
     template<class T>
@@ -1068,10 +1063,6 @@ namespace Argum {
     }
 
 }
-
-#if defined(_MSC_VER) && defined(__clang__)
-    #pragma clang diagnostic pop
-#endif
 
 #endif
 #ifndef HEADER_ARGUM_VALIDATORS_H_INCLUDED
@@ -2861,11 +2852,6 @@ namespace Argum {
 
 
 
-#if defined(_MSC_VER) && defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
 namespace Argum {
 
     class SimpleFile {
@@ -2946,11 +2932,6 @@ namespace Argum {
         FILE * m_fp;
     };
 }
-
-#if defined(_MSC_VER) && defined(__clang__)
-    #pragma clang diagnostic pop
-#endif
-
 
 #endif
 
