@@ -69,6 +69,7 @@ if (PROJECT_IS_TOP_LEVEL)
 
     if (NOT ARGUM_NO_TESTS)
         include(test/test.cmake)
+        include(samples/samples.cmake)
     endif()
 
 endif()

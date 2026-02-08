@@ -154,17 +154,6 @@ else()
     )
 endif()
 
-add_executable(test-single-header EXCLUDE_FROM_ALL)
-
-target_sources(test-single-header 
-PRIVATE
-    test/test-single-header.cpp
-)
-
-if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set_property(TARGET test-single-header PROPERTY CXX_STANDARD 20)
-    set_property(TARGET test-single-header PROPERTY CXX_STANDARD_REQUIRED ON)
-endif()
 
 set(TEST_COMMAND "")
 set(TEST_DEPS "")
@@ -216,12 +205,3 @@ add_custom_target(run-test
     DEPENDS ${TEST_DEPS}
     ${TEST_COMMAND}
 )
-
-if (TARGET amalgamate)
-
-    add_dependencies(test amalgamate)
-    add_dependencies(test_expected amalgamate)
-    add_dependencies(test_nothrow amalgamate)
-    add_dependencies(test-single-header amalgamate)
-
-endif()
