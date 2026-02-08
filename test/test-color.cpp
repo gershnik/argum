@@ -74,6 +74,8 @@ TEST_CASE( "Custom color" ) {
         .longOption =           makeColor<Color::bold, Color::bright_cyan>(),
         .optionArg =            makeColor<Color::bold, Color::bright_yellow>(),
         .positional =           makeColor<Color::bold, Color::bright_green>(),
+        .error =                defaultColorScheme().error,
+        .warning =              defaultColorScheme().warning
     };
 
     map<string, vector<Value>> results;
