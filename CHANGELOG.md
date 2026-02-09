@@ -7,7 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 - Help/usage output now supports colors, if desired.
+- New `detect-system.h` header for detection of terminal width and whether to 
+  colorize output. 
+- New `width` argument for `formatUsage`/`formatHelp` to specify desired with.
+  (previously this required advanced `HelpFormatter` usage)
 - `clang-cl` compiler is now supported on Windows
+
+### Changed
+- The `formatUsage`/`formatHelp` is not word wrapped by default. Use
+  the aforementioned `width` argument to set specific width.
 
 ### Fixed
 - Formatted output now better supports non-ascii symbols
