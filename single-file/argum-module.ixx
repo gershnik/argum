@@ -4860,19 +4860,20 @@ namespace Argum {
             if (term == "dumb")
                 return ColorStatus::forbidden;
 
-            for (auto & exact: {"xterm-kitty"sv, "xterm-ghostty"sv, "wezterm"sv}) {
+            for (auto & exact: {"wezterm"sv}) {
                 if (term == exact)
                     return ColorStatus::allowed;
             }
-            for (auto & start: {"screen"sv, "xterm"sv, "vt100"sv, "vt220"sv, "rxvt"sv}) {
-                if (term.size() >= start.size() && term.substr(start.size()) == start)
+            for (auto & start: {"screen"sv, "xterm"sv, "vt100"sv, "vt220"sv, "rxvt"sv,
+                                "gnome"sv, "konsole"sv, "kterm"sv, "alacritty"sv, "console"sv}) {
+                if (term.size() >= start.size() && term.substr(0, start.size()) == start)
                     return ColorStatus::allowed;
             }
             for (auto & inside: {"color"sv, "ansi"sv, "cygwin"sv, "linux"sv}) {
                 if (term.find(inside) != term.npos)
                     return ColorStatus::allowed;
             }
-            for (auto & end: {"-256"sv, "-256color"sv}) {
+            for (auto & end: {"-256"sv}) {
                 if (term.size() >= end.size() && term.substr(term.size() - end.size()) == end)
                     return ColorStatus::allowed;
             }
