@@ -5,13 +5,6 @@
 using namespace Argum;
 using namespace std;
 
-Colorizer colorizerForFile(ColorStatus envColorStatus, FILE * fp) {
-
-    if (shouldUseColor(envColorStatus, fp))
-        return defaultColorizer();
-    return {};
-}
-
 int main(int argc, char * argv[]) {
 
     vector<string> sources;

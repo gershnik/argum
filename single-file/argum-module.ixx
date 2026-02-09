@@ -4905,6 +4905,13 @@ namespace Argum {
     }
 
     ARGUM_MOD_EXPORTED
+    inline auto colorizerForFile(ColorStatus envColorStatus, FILE * fp) -> Colorizer {
+        if (shouldUseColor(envColorStatus, fp))
+            return defaultColorizer();
+        return {};
+    }
+
+    ARGUM_MOD_EXPORTED
     inline unsigned terminalWidth(FILE * fp) {
         unsigned fallback = std::numeric_limits<unsigned>::max();
 
@@ -4924,7 +4931,7 @@ namespace Argum {
             auto val = CharConstants<char>::toULong(cols, &end, 10);
             if (val > 0 && val < std::numeric_limits<unsigned>::max() &&
                 end == cols + strlen(cols))
-                
+
                 return val;
         }
 
@@ -4933,7 +4940,7 @@ namespace Argum {
 #elif defined(_WIN32)
 
         if (!_isatty(_fileno(fp)))
-            return fallback
+            return fallback;
 
         HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
         if (h == INVALID_HANDLE_VALUE)
