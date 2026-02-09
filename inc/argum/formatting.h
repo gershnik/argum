@@ -93,7 +93,7 @@ namespace Argum {
     namespace Impl {
         template <typename T>
         concept has_wcwidth = requires(T * t) {
-            { wcwidth(t, size_t(0)) };
+            { wcswidth(t, size_t(0)) };
         };
 
         constexpr bool wcswidthPresent = has_wcwidth<wchar_t>;
