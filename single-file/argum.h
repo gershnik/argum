@@ -4949,7 +4949,7 @@ namespace Argum {
 #elif defined(_WIN32)
 
         if (!_isatty(_fileno(fp)))
-            return fallback
+            return fallback;
 
         HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
         if (h == INVALID_HANDLE_VALUE)
