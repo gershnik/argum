@@ -99,7 +99,7 @@ namespace Argum {
             if (term == "dumb")
                 return ColorStatus::forbidden;
 
-            for (auto & exact: {"xterm-256color"sv, "xterm-kitty"sv, "xterm-ghostty"sv, "wezterm"sv}) {
+            for (auto & exact: {"xterm-kitty"sv, "xterm-ghostty"sv, "wezterm"sv}) {
                 if (term == exact)
                     return ColorStatus::allowed;
             }

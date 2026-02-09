@@ -20,6 +20,8 @@ namespace Argum {
         faint = 2,
         italic = 3,
         underline = 4,
+        reverse = 7,
+
         black = 30,
         red = 31,
         green = 32,
@@ -28,6 +30,16 @@ namespace Argum {
         magenta = 35,
         cyan = 36,
         white = 37,
+
+        bg_black = 40,
+        bg_red = 41,
+        bg_green = 42,
+        bg_yellow = 43,
+        bg_blue = 44,
+        bg_magenta = 45,
+        bg_cyan = 46,
+        bg_white = 47,
+
         bright_black = 90,
         grey = bright_black,
         bright_red = 91,
@@ -36,7 +48,17 @@ namespace Argum {
         bright_blue = 94,
         bright_magenta = 95,
         bright_cyan = 96,
-        bright_white = 97
+        bright_white = 97,
+
+        bg_bright_black = 100,
+        bg_grey = bg_bright_black,
+        bg_bright_red = 101,
+        bg_bright_green = 102,
+        bg_bright_yellow = 103,
+        bg_bright_blue = 104,
+        bg_bright_magenta = 105,
+        bg_bright_cyan = 106,
+        bg_bright_white = 107
     };
 
     ARGUM_MOD_EXPORTED
