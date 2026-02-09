@@ -69,11 +69,13 @@ namespace Argum {
         auto formatUsage(const std::optional<StringType> & subCommand,
                          const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
-            return wordWrap(colorizer.heading(Messages::usageStart()).
-                            append(colorizer.progName(this->m_progName)).
-                            append({space}).
-                            append(this->formatSyntax(subCommand, colorizer)), 
-                   m_layout.width);
+            return indent(
+                        wordWrap(colorizer.heading(Messages::usageStart()).
+                                append(colorizer.progName(this->m_progName)).
+                                append({space}).
+                                append(this->formatSyntax(subCommand, colorizer)), 
+                            m_layout.width),
+                        m_layout.helpLeadingGap);
         }
 
         auto formatHelp(const Colorizer & colorizer = {}) const -> StringType {
