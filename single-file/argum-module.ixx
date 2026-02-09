@@ -190,6 +190,7 @@ namespace Argum {
         {makeString(t)} -> std::same_as<std::basic_string<Char>>;
     };
 
+    ARGUM_MOD_EXPORTED
     template<class It1, class It2, class Joiner>
     auto join(It1 first, It2 last, Joiner joiner) -> decltype(*first + joiner) {
         
@@ -206,6 +207,7 @@ namespace Argum {
         return ret;
     }
 
+    ARGUM_MOD_EXPORTED
     template<class It1, class It2, class Joiner, class Projection>
     auto join(It1 first, It2 last, Joiner joiner, Projection proj) -> decltype(proj(*first) + joiner) {
         
