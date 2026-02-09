@@ -4711,6 +4711,7 @@ namespace Argum {
 
 namespace Argum {
     
+    ARGUM_MOD_EXPORTED
     enum class ColorStatus {
         unknown,
         forbidden,
@@ -4726,6 +4727,7 @@ namespace Argum {
     // https://github.com/chalk/supports-color/blob/main/index.js
     // https://gist.github.com/scop/4d5902b98f0503abec3fcbb00b38aec3
     // https://andrey-zherikov.github.io/argparse/ansi-coloring-and-styling.html#heuristic
+    ARGUM_MOD_EXPORTED
     inline auto environmentColorStatus() -> ColorStatus {
         using namespace std;
         using namespace std::literals;
@@ -4784,7 +4786,8 @@ namespace Argum {
     }
 
     //Portable isatty
-    bool isAtTty(FILE * fp) {
+    ARGUM_MOD_EXPORTED
+    inline bool isAtTty(FILE * fp) {
 #if defined(ARGUM_HAS_UNISTD_H)
         return isatty(fileno(fp));
 #elif defined(_WIN32)
@@ -4795,7 +4798,8 @@ namespace Argum {
     }
 
 
-    bool shouldUseColor(ColorStatus envColorStatus, FILE * fp) {
+    ARGUM_MOD_EXPORTED
+    inline bool shouldUseColor(ColorStatus envColorStatus, FILE * fp) {
         if (envColorStatus == ColorStatus::required)
             return true;
         if (envColorStatus == ColorStatus::forbidden)
