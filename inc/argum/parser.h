@@ -577,6 +577,10 @@ namespace Argum {
             return this->formatHelp(progName, {}, HelpFormatter::defaultLayout.width, colorizer);
         }
 
+        auto formatHelp(StringViewType progName, unsigned width, const Colorizer & colorizer) {
+            return this->formatHelp(progName, {}, width, colorizer);
+        }
+
         auto formatHelp(StringViewType progName, std::optional<StringType> subCommand) {
             return this->formatHelp(progName, subCommand, HelpFormatter::defaultLayout.width, {});
         }

@@ -50,8 +50,8 @@ TEST_CASE( "extremely small number of columns" ) {
     });
 
     CHECK(formatter.formatUsage() == R"__(Usage: PROG
-[-h] [-v] [-x]
-[--y Y] foo bar)__");
+ [-h] [-v] [-x]
+ [--y Y] foo bar)__");
 
     CHECK(formatter.formatHelp() == R"__(positional
 arguments:

@@ -5,9 +5,8 @@
 using namespace Argum;
 using namespace std;
 
-Colorizer colorizerForFile(FILE * fp) {
+Colorizer colorizerForFile(ColorStatus envColorStatus, FILE * fp) {
 
-    static ColorStatus envColorStatus = environmentColorStatus();
     if (shouldUseColor(envColorStatus, fp))
         return defaultColorizer();
     return {};
@@ -22,7 +21,8 @@ int main(int argc, char * argv[]) {
     optional<string> compression;
     int compressionLevel = 9;
 
-    const char * progname = (argc ? argv[0] : "my_utility");
+    const char * const progname = (argc ? argv[0] : "my_utility");
+    const ColorStatus envColorStatus = environmentColorStatus();
 
     Parser parser;
     parser.add(
@@ -43,7 +43,8 @@ int main(int argc, char * argv[]) {
         Option("--help", "-h").
         help("show this help message and exit"). 
         handler([&]() {
-            cout << parser.formatHelp(progname, colorizerForFile(stdout));
+            auto colorizer = colorizerForFile(envColorStatus, stdout);
+            cout << parser.formatHelp(progname, terminalWidth(stdout), colorizer);
             exit(EXIT_SUCCESS);
             }));
     ChoiceParser encodingChoices;
@@ -88,7 +89,7 @@ int main(int argc, char * argv[]) {
     try {
         parser.parse(argc, argv);
     } catch (ParsingException & ex) {
-        auto colorizer = colorizerForFile(stderr);
+        auto colorizer = colorizerForFile(envColorStatus, stderr);
         cerr << colorizer.error(ex.message()) << "\n\n";
         cerr << parser.formatUsage(progname, terminalWidth(stderr), colorizer) << '\n';
         return EXIT_FAILURE;
