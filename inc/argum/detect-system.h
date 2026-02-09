@@ -8,6 +8,8 @@
 #ifndef HEADER_ARGUM_DETECT_COLOR_H_INCLUDED
 #define HEADER_ARGUM_DETECT_COLOR_H_INCLUDED
 
+#include "char-constants.h"
+
 #include <string_view>
 
 #include <string.h>
@@ -16,6 +18,13 @@
 #if !defined(_WIN32) && __has_include(<unistd.h>)
     #define ARGUM_HAS_UNISTD_H
     #include <unistd.h>
+#endif
+
+#if !defined(_WIN32) && __has_include(<sys/ioctl.h>)
+    #include <sys/ioctl.h>
+    #ifdef TIOCGWINSZ
+        #define ARGUM_HAS_TIOCGWINSZ
+    #endif
 #endif
 
 #ifdef _WIN32
@@ -156,6 +165,52 @@ namespace Argum {
 #endif
 
         return true;
+    }
+
+    ARGUM_MOD_EXPORTED
+    inline unsigned terminalWidth(FILE * fp) {
+        unsigned fallback = std::numeric_limits<unsigned>::max();
+
+#if defined(ARGUM_HAS_UNISTD_H) && defined(ARGUM_HAS_TIOCGWINSZ) 
+        struct winsize ws{};
+
+        int desc = fileno(fp);
+        if (isatty(desc) &&
+            ioctl(desc, TIOCGWINSZ, &ws) == 0 &&
+            ws.ws_col > 0) {
+
+            return ws.ws_col;
+        }
+
+        if (auto * cols = getenv("COLUMNS")) {
+            char * end;
+            auto val = CharConstants<char>::toULong(cols, &end, 10);
+            if (val > 0 && val < std::numeric_limits<unsigned>::max() &&
+                end == cols + strlen(cols))
+                
+                return val;
+        }
+
+        return fallback;
+
+#elif defined(_WIN32)
+
+        if (!_isatty(_fileno(fp)))
+            return fallback
+
+        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (h == INVALID_HANDLE_VALUE)
+            return fallback;
+
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        if (!GetConsoleScreenBufferInfo(h, &csbi))
+            return fallback;
+
+        return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+
+#else
+        return fallback;
+#endif
     }
 
 }

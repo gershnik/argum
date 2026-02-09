@@ -19,6 +19,9 @@ module;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if !defined(_WIN32) && __has_include(<sys/ioctl.h>)
+    #include <sys/ioctl.h>
+#endif
 #if !defined(_WIN32) && __has_include(<unistd.h>)
     #include <unistd.h>
 #endif
@@ -4127,22 +4130,78 @@ namespace Argum {
             return this->m_subCommandMark;
         }
 
-        auto formatUsage(StringViewType progName, const Colorizer & colorizer = {}) const -> StringType {
-            return this->formatUsage(progName, {}, colorizer);
+        auto formatUsage(StringViewType progName) const -> StringType {
+            return this->formatUsage(progName, {}, HelpFormatter::defaultLayout.width, {});
+        }
+
+        auto formatUsage(StringViewType progName, unsigned width) const -> StringType {
+            return this->formatUsage(progName, {}, width, {});
+        }
+
+        auto formatUsage(StringViewType progName, const Colorizer & colorizer) const -> StringType {
+            return this->formatUsage(progName, {}, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatUsage(StringViewType progName, 
+                         unsigned width,
+                         const Colorizer & colorizer) const -> StringType {
+            return this->formatUsage(progName, {}, width, colorizer);
+        }
+
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand) const -> StringType {
+            return this->formatUsage(progName, subCommand, HelpFormatter::defaultLayout.width, {});
         }
 
         auto formatUsage(StringViewType progName, std::optional<StringType> subCommand,
-                         const Colorizer & colorizer = {}) const -> StringType {
-            return HelpFormatter(*this, progName).formatUsage(subCommand, colorizer);
+                         unsigned width) const -> StringType {
+            return this->formatUsage(progName, subCommand, width, {});
         }
 
-        auto formatHelp(StringViewType progName, const Colorizer & colorizer = {}) {
-            return this->formatHelp(progName, {}, colorizer);
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand,
+                         const Colorizer & colorizer) const -> StringType {
+            return this->formatUsage(progName, subCommand, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand,
+                         unsigned width,
+                         const Colorizer & colorizer) const -> StringType {
+            typename HelpFormatter::Layout layout;
+            layout.width = width;
+            return HelpFormatter(*this, progName, layout).formatUsage(subCommand, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName) {
+            return this->formatHelp(progName, {}, HelpFormatter::defaultLayout.width, {});
+        }
+
+        auto formatHelp(StringViewType progName, unsigned width) {
+            return this->formatHelp(progName, {}, width, {});
+        }
+
+        auto formatHelp(StringViewType progName, const Colorizer & colorizer) {
+            return this->formatHelp(progName, {}, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand) {
+            return this->formatHelp(progName, subCommand, HelpFormatter::defaultLayout.width, {});
         }
 
         auto formatHelp(StringViewType progName, std::optional<StringType> subCommand,
-                        const Colorizer & colorizer = {}) const -> StringType {
-            HelpFormatter formatter(*this, progName);
+                        unsigned width) {
+            return this->formatHelp(progName, subCommand, width, {});
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand,
+                        const Colorizer & colorizer) {
+            return this->formatHelp(progName, subCommand, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand,
+                        unsigned width,
+                        const Colorizer & colorizer) const -> StringType {
+            typename HelpFormatter::Layout layout;
+            layout.width = width;           
+            HelpFormatter formatter(*this, progName, layout);
             StringType ret = formatter.formatUsage(subCommand, colorizer);
             ret.append(2, CharConstants::endl);
             ret.append(formatter.formatHelp(subCommand, colorizer));
@@ -4690,8 +4749,15 @@ namespace Argum {
 #define HEADER_ARGUM_DETECT_COLOR_H_INCLUDED
 
 
+
 #if !defined(_WIN32) && __has_include(<unistd.h>)
     #define ARGUM_HAS_UNISTD_H
+#endif
+
+#if !defined(_WIN32) && __has_include(<sys/ioctl.h>)
+    #ifdef TIOCGWINSZ
+        #define ARGUM_HAS_TIOCGWINSZ
+    #endif
 #endif
 
 #ifdef _WIN32
@@ -4830,6 +4896,52 @@ namespace Argum {
 #endif
 
         return true;
+    }
+
+    ARGUM_MOD_EXPORTED
+    inline unsigned terminalWidth(FILE * fp) {
+        unsigned fallback = std::numeric_limits<unsigned>::max();
+
+#if defined(ARGUM_HAS_UNISTD_H) && defined(ARGUM_HAS_TIOCGWINSZ) 
+        struct winsize ws{};
+
+        int desc = fileno(fp);
+        if (isatty(desc) &&
+            ioctl(desc, TIOCGWINSZ, &ws) == 0 &&
+            ws.ws_col > 0) {
+
+            return ws.ws_col;
+        }
+
+        if (auto * cols = getenv("COLUMNS")) {
+            char * end;
+            auto val = CharConstants<char>::toULong(cols, &end, 10);
+            if (val > 0 && val < std::numeric_limits<unsigned>::max() &&
+                end == cols + strlen(cols))
+                
+                return val;
+        }
+
+        return fallback;
+
+#elif defined(_WIN32)
+
+        if (!_isatty(_fileno(fp)))
+            return fallback
+
+        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (h == INVALID_HANDLE_VALUE)
+            return fallback;
+
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        if (!GetConsoleScreenBufferInfo(h, &csbi))
+            return fallback;
+
+        return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+
+#else
+        return fallback;
+#endif
     }
 
 }

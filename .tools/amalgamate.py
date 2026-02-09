@@ -16,6 +16,7 @@ user_include_re = re.compile(r'\s*#\s*include\s+"([^"]+)"\s*')
 
 special_handling = {
     'unistd.h': '#if !defined(_WIN32) && __has_include(<unistd.h>)\n    #include <unistd.h>\n#endif',
+    'sys/ioctl.h': '#if !defined(_WIN32) && __has_include(<sys/ioctl.h>)\n    #include <sys/ioctl.h>\n#endif',
     'io.h': '#ifdef _WIN32\n    #include <io.h>\n#endif',
     'Windows.h': 
 '''#ifdef _WIN32

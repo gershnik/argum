@@ -15,9 +15,6 @@ Colorizer colorizerForFile(FILE * fp) {
 
 int main(int argc, char * argv[]) {
 
-    auto colorizerForStdout = colorizerForFile(stdout);
-    auto colorizerForStderr = colorizerForFile(stderr);
-
     vector<string> sources;
     string destination;
     enum Encoding { defaultEncoding, Base64, Hex };
@@ -46,7 +43,7 @@ int main(int argc, char * argv[]) {
         Option("--help", "-h").
         help("show this help message and exit"). 
         handler([&]() {
-            cout << parser.formatHelp(progname, colorizerForStdout);
+            cout << parser.formatHelp(progname, colorizerForFile(stdout));
             exit(EXIT_SUCCESS);
             }));
     ChoiceParser encodingChoices;
@@ -91,8 +88,9 @@ int main(int argc, char * argv[]) {
     try {
         parser.parse(argc, argv);
     } catch (ParsingException & ex) {
-        cerr << colorizerForStderr.error(ex.message()) << "\n\n";
-        cerr << parser.formatUsage(progname, colorizerForStderr) << '\n';
+        auto colorizer = colorizerForFile(stderr);
+        cerr << colorizer.error(ex.message()) << "\n\n";
+        cerr << parser.formatUsage(progname, terminalWidth(stderr), colorizer) << '\n';
         return EXIT_FAILURE;
     }
 
