@@ -20,8 +20,13 @@
     #include <unistd.h>
 #endif
 
-#if !defined(_WIN32) && __has_include(<sys/ioctl.h>)
-    #include <sys/ioctl.h>
+#if !defined(_WIN32) 
+    #if __has_include(<sys/ioctl.h>)
+        #include <sys/ioctl.h>
+    #endif
+    #if __has_include(<termios.h>)
+        #include <termios.h>
+    #endif
     #ifdef TIOCGWINSZ
         #define ARGUM_HAS_TIOCGWINSZ
     #endif

@@ -40,6 +40,9 @@
     #include <sys/ioctl.h>
 #endif
 #include <system_error>
+#if !defined(_WIN32) && __has_include(<termios.h>)
+    #include <termios.h>
+#endif
 #include <tuple>
 #include <type_traits>
 #if !defined(_WIN32) && __has_include(<unistd.h>)
@@ -4800,7 +4803,11 @@ namespace Argum {
     #define ARGUM_HAS_UNISTD_H
 #endif
 
-#if !defined(_WIN32) && __has_include(<sys/ioctl.h>)
+#if !defined(_WIN32) 
+    #if __has_include(<sys/ioctl.h>)
+    #endif
+    #if __has_include(<termios.h>)
+    #endif
     #ifdef TIOCGWINSZ
         #define ARGUM_HAS_TIOCGWINSZ
     #endif
