@@ -57,7 +57,7 @@ set(PUBLIC_HEADERS
     ${SRCDIR}/inc/argum/help-formatter.h
     ${SRCDIR}/inc/argum/type-parsers.h
     ${SRCDIR}/inc/argum/wcwidth.h
-    ${SRCDIR}/inc/argum/detect-color.h
+    ${SRCDIR}/inc/argum/detect-system.h
 )
 
 target_sources(argum
