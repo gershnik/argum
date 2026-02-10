@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   (previously this required advanced `HelpFormatter` usage)
 - `clang-cl` compiler is now supported on Windows
 
+### Fixed
+- A few subtle bugs in word wrapping.
+
 ### Changed
 - The `formatUsage`/`formatHelp` is not word wrapped by default. Use
   the aforementioned `width` argument to set specific width.
