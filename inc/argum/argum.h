@@ -5,11 +5,12 @@
 // license that can be found in the LICENSE file or at
 // https://github.com/gershnik/argum/blob/master/LICENSE
 //
-#ifndef HEADER_ARGUM_##NAME##_INCLUDED
-#define HEADER_ARGUM_##NAME##_INCLUDED
+#ifndef HEADER_ARGUM_UBMRELLA_INCLUDED
+#define HEADER_ARGUM_UBMRELLA_INCLUDED
 
-##SYS_INCLUDES##
+#include "parser.h"
+#include "type-parsers.h"
+#include "detect-system.h"
 
-#include "argum.h"
+#endif
 
-#endif 

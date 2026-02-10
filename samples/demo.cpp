@@ -24,14 +24,14 @@ int main(int argc, char * argv[]) {
         occurs(zeroOrMoreTimes).
         handler([&](const string_view & value) { 
             sources.emplace_back(value);
-    }));
+        }));
     parser.add(
         Positional("destination").
         help("destination file"). 
         occurs(once). 
         handler([&](string_view value) { 
             destination = value;
-    }));
+        }));
     parser.add(
         Option("--help", "-h").
         help("show this help message and exit"). 
@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) {
             auto colorizer = colorizerForFile(envColorStatus, stdout);
             cout << parser.formatHelp(progname, terminalWidth(stdout), colorizer);
             exit(EXIT_SUCCESS);
-    }));
+        }));
     ChoiceParser encodingChoices;
     encodingChoices.addChoice("default");
     encodingChoices.addChoice("base64");
@@ -50,7 +50,7 @@ int main(int argc, char * argv[]) {
         argName(encodingChoices.description()).
         handler([&](string_view value) {
             encoding = Encoding(encodingChoices.parse(value));
-    }));
+        }));
     parser.add(
         Option("--compress", "-c").
         argName("ALGORITHM").
@@ -59,14 +59,15 @@ int main(int argc, char * argv[]) {
         handler([&](const optional<string_view> & value) {
             encoding = nullopt;
             compression = value.value_or("gzip");
-    }));
+        }));
     parser.add(
         Option("--level", "-l").
         argName("LEVEL").
         help("compression level, requires --compress"). 
         handler([&](const string_view & value) {
             compressionLevel = parseIntegral<int>(value);
-    }));
+        }));
+        
     parser.addValidator(
         oneOrNoneOf(
             optionPresent("--format"),

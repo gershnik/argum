@@ -8,6 +8,9 @@ list(APPEND samples sample-demo-expected)
 add_executable(sample-basics EXCLUDE_FROM_ALL samples/basics.cpp)
 list(APPEND samples sample-basics)
 
+add_executable(sample-minimal EXCLUDE_FROM_ALL samples/minimal.cpp)
+list(APPEND samples sample-minimal)
+
 
 foreach(sample IN ITEMS ${samples})
     

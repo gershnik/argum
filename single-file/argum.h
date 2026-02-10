@@ -68,6 +68,9 @@
     #endif
 #endif
 
+#ifndef HEADER_ARGUM_UBMRELLA_INCLUDED
+#define HEADER_ARGUM_UBMRELLA_INCLUDED
+
 #ifndef HEADER_ARGUM_PARSER_H_INCLUDED
 #define HEADER_ARGUM_PARSER_H_INCLUDED
 
@@ -5001,6 +5004,9 @@ namespace Argum {
 }
 
 #endif
+
+#endif
+
 
 #endif 
 

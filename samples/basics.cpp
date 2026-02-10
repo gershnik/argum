@@ -1,5 +1,4 @@
-#include "../single-file/argum.h"
-
+#include <argum.h>
 
 #include <iostream>
 

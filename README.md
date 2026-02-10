@@ -48,6 +48,8 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
   * The default syntax is the common Unix/GNU one 
   * Additional, pre-built configurations are available for GNU "long options only" and a couple of common Windows syntaxes.
   * You can define your own configurations from scratch or modify one of the above (e.g. add `+` as short option prefix in addition to `-`)
+* Support color output
+  * The default color scheme is shamelessly borrowed from Python 3.14 Argparse but you can define your own colors.
 * Can handle response files. 
 * Can operate using exceptions or _expected values_ (similar to `boost::outcome` or proposed `std::expected`)
   * Can be used with exceptions and RTTI completely disabled
@@ -61,92 +63,48 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 
 ## Examples
 
-Two equivalent examples - one using exceptions and one error codes - of file processing utility of some kind are given below. 
-They demonstrates many of the most important features of the library. More examples can be found on the [Wiki](https://github.com/gershnik/argum/wiki).
+Two equivalent examples that demonstrate many of the most important features of the library can be found at:
+* Using exceptions - [samples/demo.cpp](samples/demo.cpp)
+* Using expected values - [samples/demo-expected.cpp](samples/demo-expected.cpp)
 
-### Using exceptions
-<details>
-<summary>Click to expand</summary>
+A very minimalistic example to show "what does it look like" is below:
 
 ```cpp
-#include "argum.h"
+#include <argum.h>
+
 #include <iostream>
 
 using namespace Argum;
 using namespace std;
 
-enum Encoding { defaultEncoding, Base64, Hex };
-
 int main(int argc, char * argv[]) {
 
-    vector<string> sources;
-    string destination;
-    optional<Encoding> encoding = defaultEncoding;
-    optional<string> compression;
-    int compressionLevel = 9;
+    const char * progname = (argc ? argv[0] : "prog");
 
-    const char * progname = (argc ? argv[0] : "my_utility");
+    int optionValue = 0;
+    std::string positionalArg;
 
     Parser parser;
     parser.add(
-        Positional("source").
-        help("source file"). 
-        occurs(zeroOrMoreTimes).
-        handler([&](const string_view & value) { 
-            sources.emplace_back(value);
-    }));
-    parser.add(
-        Positional("destination").
-        help("destination file"). 
-        occurs(once). 
-        handler([&](string_view value) { 
-            destination = value;
-    }));
-    parser.add(
-        Option("--help", "-h").
+        Option("--help", "-h"). 
         help("show this help message and exit"). 
-        handler([&]() {
+        handler([&]() {  
             cout << parser.formatHelp(progname);
             exit(EXIT_SUCCESS);
-    }));
-    ChoiceParser encodingChoices;
-    encodingChoices.addChoice("default");
-    encodingChoices.addChoice("base64");
-    encodingChoices.addChoice("hex");
+        }));
     parser.add(
-        Option("--format", "-f", "--encoding", "-e").
-        help("output file format"). 
-        argName(encodingChoices.description()).
-        handler([&](string_view value) {
-            encoding = Encoding(encodingChoices.parse(value));
-    }));
-    parser.add(
-        Option("--compress", "-c").
-        argName("ALGORITHM").
-        requireAttachedArgument(true). //require -cALGORITHM or --compress=ALGORITHM syntax
-        help("compress output with a given algorithm (default gzip)"). 
-        handler([&](const optional<string_view> & value) {
-            encoding = nullopt;
-            compression = value.value_or("gzip");
-    }));
-    parser.add(
-        Option("--level", "-l").
-        argName("LEVEL").
-        help("compression level, requires --compress"). 
+        Option("--option", "-o").
+        argName("VALUE").
+        help("an option with a value"). 
         handler([&](const string_view & value) {
-            compressionLevel = parseIntegral<int>(value);
-    }));
-    parser.addValidator(
-        oneOrNoneOf(
-            optionPresent("--format"),
-            anyOf(optionPresent("--compress"), optionPresent("--level"))
-        ), 
-        "options --format and --compress/--level are mutually exclusive"
-    );
-    parser.addValidator(
-        !optionPresent("--level") || optionPresent("--compress"), 
-        "if --level is specified then --compress must be specified also"
-    );
+            optionValue = parseIntegral<int>(value);
+        }));
+    parser.add(
+        Positional("positional").
+        help("positional argument"). 
+        handler([&](const string_view & value) { 
+            positionalArg = value;
+        }));
 
     try {
         parser.parse(argc, argv);
@@ -156,124 +114,12 @@ int main(int argc, char * argv[]) {
         return EXIT_FAILURE;
     }
 
-    if (encoding)
-        cout << "need to encode with encoding: " << *encoding <<'\n';
-    else 
-        cout << "need to compress with algorithm: " << *compression 
-             << " at level: " << compressionLevel <<'\n';
-    cout << "sources: {" << join(sources.begin(), sources.end(), ", ") << "}\n";
-    cout << "into: " << destination <<'\n';
+    std::cout << "option value: " << optionValue << '\n';
+    std::cout << "positional argument: " << positionalArg << '\n';
 }
 ```
-</details>
 
-### Using expected values
-<details>
-<summary>Click to expand</summary>
-
-```cpp
-#include "argum.h"
-#include <iostream>
-
-using namespace Argum;
-using namespace std;
-
-enum Encoding { defaultEncoding, Base64, Hex };
-
-int main(int argc, char * argv[]) {
-
-    vector<string> sources;
-    string destination;
-    optional<Encoding> encoding = defaultEncoding;
-    optional<string> compression;
-    int compressionLevel = 9;
-
-    const char * progname = (argc ? argv[0] : "my_utility");
-
-    Parser parser;
-    parser.add(
-        Positional("source").
-        help("source file"). 
-        occurs(zeroOrMoreTimes).
-        handler([&](const string_view & value) { 
-            sources.emplace_back(value);
-    }));
-    parser.add(
-        Positional("destination").
-        help("destination file"). 
-        occurs(once). 
-        handler([&](string_view value) { 
-            destination = value;
-    }));
-    parser.add(
-        Option("--help", "-h").
-        help("show this help message and exit"). 
-        handler([&]() {
-            cout << parser.formatHelp(progname);
-            exit(EXIT_SUCCESS);
-    }));
-    ChoiceParser encodingChoices;
-    encodingChoices.addChoice("default");
-    encodingChoices.addChoice("base64");
-    encodingChoices.addChoice("hex");
-    parser.add(
-        Option("--format", "-f", "--encoding", "-e").
-        help("output file format"). 
-        argName(encodingChoices.description()).
-        handler([&](string_view value) -> Expected<void> {
-            auto result = encodingChoices.parse(value);
-            if (auto error = result.error()) return error;
-            encoding = Encoding(*result);
-            return {};
-    }));
-    parser.add(
-        Option("--compress", "-c").
-        argName("ALGORITHM").
-        requireAttachedArgument(true). //require -cALGORITHM or --compress=ALGORITHM syntax
-        help("compress output with a given algorithm (default gzip)"). 
-        handler([&](const optional<string_view> & value) {
-            encoding = nullopt;
-            compression = value.value_or("gzip");
-    }));
-    parser.add(
-        Option("--level", "-l").
-        argName("LEVEL").
-        help("compression level, requires --compress"). 
-        handler([&](const string_view & value) -> Expected<void> {
-            auto result = parseIntegral<int>(value);
-            if (auto error = result.error()) return error;
-            compressionLevel = *result;
-            return {};
-    }));
-    parser.addValidator(
-        oneOrNoneOf(
-            optionPresent("--format"),
-            anyOf(optionPresent("--compress"), optionPresent("--level"))
-        ), 
-        "options --format and --compress/--level are mutually exclusive"
-    );
-    parser.addValidator(
-        !optionPresent("--level") || optionPresent("--compress"), 
-        "if --level is specified then --compress must be specified also"
-    );
-
-    auto result = parser.parse(argc, argv);
-    if (auto error = result.error()) {
-        cerr << error->message() << '\n';
-        cerr << parser.formatUsage(progname) << '\n';
-        return EXIT_FAILURE;
-    }
-
-    if (encoding)
-        cout << "need to encode with encoding: " << *encoding <<'\n';
-    else 
-        cout << "need to compress with algorithm: " << *compression 
-             << " at level: " << compressionLevel <<'\n';
-    cout << "sources: {" << join(sources.begin(), sources.end(), ", ") << "}\n";
-    cout << "into: " << destination <<'\n';
-}
-```
-</details>
+More sample code can be found on the [Wiki](https://github.com/gershnik/argum/wiki).
 
 ## Integration
 
@@ -281,14 +127,17 @@ You can integrate Argum into your code in the following ways
 
 ### Single header 
 
-Download `argum.h` from the [Releases][releases] page, drop it into your project and `#include` it. This is the simplest way.
+Download [single-file/argum.h](single-file/argum.h) from this repo or [Releases][releases] page, 
+drop it into your project and `#include` it. This is the simplest way.
 
 ### Module
   
-If you are lucky (or unlucky?) to have a compiler and build system that support modules you can try to use **experimental** 
-module file. Download `argum-module.ixx` from [Releases][releases] page and integrate it into you project. Note, that of the compilers I
-have access to, only MSVC and GCC currently supports modules to any usable extent and, even there, many things appear to be broken. 
-If you encounter internal compiler errors please complain to your compiler vendor. Use at your own risk.
+If you have a compiler and build system that support modules you can try to use **experimental** 
+module file. Download [single-file/argum-module.ixx](single-file/argum-module.ixx) from this repo 
+or [Releases][releases] page and integrate it into you project. 
+
+Note, that of the compilers I have access to, only MSVC 2026 currently supports modules to any usable extent 
+and is capable of using that module file.
 
 ### CMake via FetchContent
   
@@ -406,9 +255,8 @@ For reference this is the default implementation
     fflush(stderr); 
     #ifndef NDEBUG
         assert(false);
-    #else
-        std::terminate(); 
     #endif
+    std::terminate(); 
 }
 ```
 </details>
@@ -433,7 +281,9 @@ Having multiple options arguments is a very bad idea. Consider this. Normally wi
 
 If you really, really need more than one argument to an option consider requiring to pass them as comma or semicolon separated list. This is also a de-facto standard Unix approach. See for example [getsubopt].
 
-### Why isn't it using [C++20 feature X]?
+### Why isn't it using [C++20/23/26 feature X]?
 
-This is simply due to the fact that, currently, not all compilers and standard libraries have support for all C++20 features. Notably Ranges support is lacking on many. Once C++20 support improves this library will attempt to adjust when appropriate.
+This is simply due to the fact that, currently, not all compilers and standard libraries have support for all standard C++ features. 
+Notably Ranges and `std::format` support is lacking on many. Once standard features support improves this library will attempt 
+to adjust when appropriate.
 
