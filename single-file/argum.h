@@ -1051,39 +1051,24 @@ namespace Argum {
     }
 
     template<StringLike T>
-    auto indent(T && input, unsigned count = 4) -> std::basic_string<CharTypeOf<T>> {
+    auto wordWrap(T && input, unsigned maxLength, unsigned indent = 0) -> std::basic_string<CharTypeOf<T>> {
 
         using Char = CharTypeOf<T>;
-        std::basic_string_view<Char> str(std::forward<T>(input));
-
-        std::basic_string<Char> ret;
-        size_t start = 0;
-        for ( ; ; ) {
-            auto lineEnd = str.find(CharConstants<Char>::endl, start);
-            if (lineEnd == str.npos)
-                break;
-            ret += str.substr(start, lineEnd + 1 - start);
-            start = lineEnd + 1;
-            ret.append(count, CharConstants<char>::space);
-        }
-        ret += str.substr(start);
-        return ret;
-    }
-
-    template<StringLike T>
-    auto wordWrap(T && input, unsigned maxLength) -> std::basic_string<CharTypeOf<T>> {
-        
-        using Char = CharTypeOf<T>;
-        
-        
-        if (maxLength == 0)
-            return std::basic_string<Char>();
 
         std::basic_string_view<Char> str(std::forward<T>(input));
+        
+        if (maxLength == 0 || str.empty())
+            return {};
+
+        if (indent > maxLength)
+            indent = maxLength - 1;
+
         std::basic_string<Char> ret;
         ret.reserve(str.size());
-        
-        while (!str.empty()) {
+        std::basic_string<Char> prefix;
+
+        bool firstLine = true;
+        for ( ; ; ) {
             auto eolPos = str.find(CharConstants<Char>::endl);
             auto line = str.substr(0, eolPos);
             bool needLineBreak = (eolPos != str.npos);
@@ -1096,12 +1081,21 @@ namespace Argum {
                 needLineBreak = true;
                 width = stringWidth(line);
             }
+            ret += prefix;
             ret += line;
             if (needLineBreak) {
                 ret += CharConstants<Char>::endl;
                 str = str.substr(line.size() + 1);
             } else {
                 str = str.substr(line.size());
+            }
+            if (str.empty())
+                break;
+
+            if (firstLine) {
+                prefix = std::basic_string<Char>(indent, CharConstants<char>::space);
+                maxLength -= indent;
+                firstLine = false;
             }
         }
         return ret;
@@ -3479,13 +3473,11 @@ namespace Argum {
         auto formatUsage(const std::optional<StringType> & subCommand,
                          const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
-            return indent(
-                        wordWrap(colorizer.heading(Messages::usageStart()).
+            return wordWrap(colorizer.heading(Messages::usageStart()).
                                 append(colorizer.progName(this->m_progName)).
                                 append({space}).
                                 append(this->formatSyntax(subCommand, colorizer)), 
-                            m_layout.width),
-                        m_layout.helpLeadingGap);
+                            m_layout.width, m_layout.helpLeadingGap);
         }
 
         auto formatHelp(const Colorizer & colorizer = {}) const -> StringType {
@@ -3507,7 +3499,7 @@ namespace Argum {
                 helpContent.maxNameLen = m_layout.helpNameMaxWidth;
 
             if (!helpContent.positionalItems.empty()) {
-                ret.append(wordWrap(colorizer.heading(Messages::positionalHeader()), m_layout.width));
+                ret.append(wordWrap(colorizer.heading(Messages::positionalHeader()), m_layout.width, m_layout.helpLeadingGap));
                 for(auto & [name, desc]: helpContent.positionalItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
                 }
@@ -3515,7 +3507,7 @@ namespace Argum {
             }
 
             if (!helpContent.optionItems.empty()) {
-                ret.append(wordWrap(colorizer.heading(Messages::optionsHeader()), m_layout.width));
+                ret.append(wordWrap(colorizer.heading(Messages::optionsHeader()), m_layout.width, m_layout.helpLeadingGap));
                 for(auto & [name, desc]: helpContent.optionItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
                 }
@@ -3602,7 +3594,7 @@ namespace Argum {
 
             auto descColumnOffset = this->m_layout.helpLeadingGap + maxNameLen + this->m_layout.helpDescriptionGap;
 
-            StringType ret = indent(wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width), this->m_layout.helpLeadingGap);
+            StringType ret = wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width, this->m_layout.helpLeadingGap);
             auto lastEndlPos = ret.rfind(endl);
             auto lastLineLen = stringWidth(StringViewType(ret.c_str() + (lastEndlPos + 1), ret.size() - (lastEndlPos + 1)));
 
@@ -3613,7 +3605,7 @@ namespace Argum {
                 ret.append(descColumnOffset - lastLineLen, space);
             }
 
-            ret.append(indent(wordWrap(description, this->m_layout.width - descColumnOffset), descColumnOffset));
+            ret.append(wordWrap(description, this->m_layout.width - descColumnOffset, descColumnOffset));
 
             return ret;
         }

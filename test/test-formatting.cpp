@@ -96,14 +96,6 @@ TEST_CASE( "wide formatting" ) {
     CHECK(format(L"{1}", 1.2) == to_wstring(1.2));
 }
 
-TEST_CASE( "indent" ) {
-    CHECK(indent("", 0) == "");
-    CHECK(indent("", 100) == "");
-    CHECK(indent("abc", 3) == "abc");
-    CHECK(indent("a\nb\nc", 0) == "a\nb\nc");
-    CHECK(indent("a\nb\nc", 1) == "a\n b\n c");
-}
-
 TEST_CASE( "string width" ) {
 
     CHECK(stringWidth("") == 0);
@@ -142,6 +134,9 @@ TEST_CASE( "word wrap" ) {
     CHECK(wordWrap("ab c", 2) == "ab\nc");
     CHECK(wordWrap("a\nbc", 2) == "a\nbc");
     CHECK(wordWrap("ab\nc", 2) == "ab\nc");
+
+    CHECK(wordWrap("ab cd", 2, 1) == "ab\n cd");
+    CHECK(wordWrap("ab cd ef", 2, 1) == "ab\n cd\n ef");
 }
 
 }

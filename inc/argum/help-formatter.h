@@ -69,13 +69,11 @@ namespace Argum {
         auto formatUsage(const std::optional<StringType> & subCommand,
                          const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
-            return indent(
-                        wordWrap(colorizer.heading(Messages::usageStart()).
+            return wordWrap(colorizer.heading(Messages::usageStart()).
                                 append(colorizer.progName(this->m_progName)).
                                 append({space}).
                                 append(this->formatSyntax(subCommand, colorizer)), 
-                            m_layout.width),
-                        m_layout.helpLeadingGap);
+                            m_layout.width, m_layout.helpLeadingGap);
         }
 
         auto formatHelp(const Colorizer & colorizer = {}) const -> StringType {
@@ -97,7 +95,7 @@ namespace Argum {
                 helpContent.maxNameLen = m_layout.helpNameMaxWidth;
 
             if (!helpContent.positionalItems.empty()) {
-                ret.append(wordWrap(colorizer.heading(Messages::positionalHeader()), m_layout.width));
+                ret.append(wordWrap(colorizer.heading(Messages::positionalHeader()), m_layout.width, m_layout.helpLeadingGap));
                 for(auto & [name, desc]: helpContent.positionalItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
                 }
@@ -105,7 +103,7 @@ namespace Argum {
             }
 
             if (!helpContent.optionItems.empty()) {
-                ret.append(wordWrap(colorizer.heading(Messages::optionsHeader()), m_layout.width));
+                ret.append(wordWrap(colorizer.heading(Messages::optionsHeader()), m_layout.width, m_layout.helpLeadingGap));
                 for(auto & [name, desc]: helpContent.optionItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
                 }
@@ -192,7 +190,7 @@ namespace Argum {
 
             auto descColumnOffset = this->m_layout.helpLeadingGap + maxNameLen + this->m_layout.helpDescriptionGap;
 
-            StringType ret = indent(wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width), this->m_layout.helpLeadingGap);
+            StringType ret = wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width, this->m_layout.helpLeadingGap);
             auto lastEndlPos = ret.rfind(endl);
             auto lastLineLen = stringWidth(StringViewType(ret.c_str() + (lastEndlPos + 1), ret.size() - (lastEndlPos + 1)));
 
@@ -203,7 +201,7 @@ namespace Argum {
                 ret.append(descColumnOffset - lastLineLen, space);
             }
 
-            ret.append(indent(wordWrap(description, this->m_layout.width - descColumnOffset), descColumnOffset));
+            ret.append(wordWrap(description, this->m_layout.width - descColumnOffset, descColumnOffset));
 
             return ret;
         }

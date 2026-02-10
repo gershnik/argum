@@ -307,39 +307,24 @@ namespace Argum {
     }
 
     template<StringLike T>
-    auto indent(T && input, unsigned count = 4) -> std::basic_string<CharTypeOf<T>> {
+    auto wordWrap(T && input, unsigned maxLength, unsigned indent = 0) -> std::basic_string<CharTypeOf<T>> {
 
         using Char = CharTypeOf<T>;
-        std::basic_string_view<Char> str(std::forward<T>(input));
-
-        std::basic_string<Char> ret;
-        size_t start = 0;
-        for ( ; ; ) {
-            auto lineEnd = str.find(CharConstants<Char>::endl, start);
-            if (lineEnd == str.npos)
-                break;
-            ret += str.substr(start, lineEnd + 1 - start);
-            start = lineEnd + 1;
-            ret.append(count, CharConstants<char>::space);
-        }
-        ret += str.substr(start);
-        return ret;
-    }
-
-    template<StringLike T>
-    auto wordWrap(T && input, unsigned maxLength) -> std::basic_string<CharTypeOf<T>> {
-        
-        using Char = CharTypeOf<T>;
-        
-        
-        if (maxLength == 0)
-            return std::basic_string<Char>();
 
         std::basic_string_view<Char> str(std::forward<T>(input));
+        
+        if (maxLength == 0 || str.empty())
+            return {};
+
+        if (indent > maxLength)
+            indent = maxLength - 1;
+
         std::basic_string<Char> ret;
         ret.reserve(str.size());
-        
-        while (!str.empty()) {
+        std::basic_string<Char> prefix;
+
+        bool firstLine = true;
+        for ( ; ; ) {
             auto eolPos = str.find(CharConstants<Char>::endl);
             auto line = str.substr(0, eolPos);
             bool needLineBreak = (eolPos != str.npos);
@@ -352,12 +337,21 @@ namespace Argum {
                 needLineBreak = true;
                 width = stringWidth(line);
             }
+            ret += prefix;
             ret += line;
             if (needLineBreak) {
                 ret += CharConstants<Char>::endl;
                 str = str.substr(line.size() + 1);
             } else {
                 str = str.substr(line.size());
+            }
+            if (str.empty())
+                break;
+
+            if (firstLine) {
+                prefix = std::basic_string<Char>(indent, CharConstants<char>::space);
+                maxLength -= indent;
+                firstLine = false;
             }
         }
         return ret;

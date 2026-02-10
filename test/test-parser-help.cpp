@@ -51,10 +51,11 @@ TEST_CASE( "extremely small number of columns" ) {
 
     CHECK(formatter.formatUsage() == R"__(Usage: PROG
  [-h] [-v] [-x]
- [--y Y] foo bar)__");
+ [--y Y] foo
+ bar)__");
 
     CHECK(formatter.formatHelp() == R"__(positional
-arguments:
+ arguments:
  foo
    FOO HELP
  bar
@@ -63,14 +64,15 @@ arguments:
 options:
  -h, --help
    show this
-   help message
+   help
+   message
    and exit
  -v, --version
    show
    program's
    version
-   number and
-   exit
+   number
+   and exit
  -x
    X HELP
  --y Y
