@@ -27,6 +27,11 @@ target_include_directories(argum
         $<INSTALL_INTERFACE:include>  # <prefix>/include
 )
 
+target_compile_options(argum
+    INTERFACE
+        $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>
+)
+
 target_compile_definitions(argum
     INTERFACE
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>

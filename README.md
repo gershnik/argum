@@ -224,10 +224,12 @@ before running `pkg-config`
 
 ## Configuration
 
-Whichever method you use in order to use Argum your compiler needs to be set in C++20 mode. 
-Argum should compile cleanly even on a highest warnings level. 
+Whichever method you use in order to use Argum your compiler needs to be set to C++20 mode or 
+above. Argum should compile cleanly even on a highest warnings level. 
 
-If you don't use CMake, on MSVC you need to have `_CRT_SECURE_NO_WARNINGS` defined to avoid its bogus "deprecation" warnings.
+If you don't use CMake, on MSVC you need to:
+- have `_CRT_SECURE_NO_WARNINGS` macro defined to avoid its bogus "deprecation" warnings.
+- compile with `/Zc:preprocessor` option to enable standard conformant preprocessor
 
 ### Error reporting mode
 
