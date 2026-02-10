@@ -1,6 +1,6 @@
 # Argum
 
-Fully-featured, powerful and simple to use C++ command line argument parser.
+Fully-featured, powerful and simple-to-use C++ command line argument parser.
 
 [![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
 [![Standard](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
@@ -36,27 +36,27 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 
 ## Features and goals
 
-* Supports the commonly used Unix and Windows command line conventions (Posix, GNU extensions to it, Python's Argparse, Microsoft syntax for its better designed utilities etc.). It should be possible to process complicated command lines like the ones of `git` or `clang` using this library. See [Syntax Description][syntax] on wiki for details on accepted syntax and configurability.
+* Supports the commonly used Unix and Windows command line conventions (Posix, GNU extensions to it, Python's Argparse, Microsoft syntax for its better designed utilities, etc.). It should be possible to process complicated command lines like the ones of `git` or `clang` using this library. See [Syntax Description][syntax] on the wiki for details on accepted syntax and configurability.
 * Sequential processing. The arguments are handled in the order they are specified so you can handle things differently based on order if you want to. 
 * Adaptive processing. You can also modify parser definitions while processing - this way you can _adapt_ the argument handling on the fly rather than have to pre-configure everything at once. 
 * Simple to use. 
-  * This library does not attempt to shove all the arguments into a map like data structure and neither does it attempt to define increasingly convoluted ways to "bind" arguments to variables in your code and convert them to internal types. Instead you provide callback lambdas (or any other function objects, of course) that put the data where you need it and convert how you want it. Beyond toy examples this usually results in simpler code and less mental effort to write.
-  * Simple and extensible way to do rule based syntax validation. There are no rigid "groups" with predefined mutual exclusion only.
-* Configurability beyond just "globally replace `-` with `/`". You can specify what prefixes to use on short options, long options, which prefixes are equivalent, disable short or long options behaviors altogether, what separator to use for arguments instead of `=` and more.
-  * The default syntax is the common Unix/GNU one 
+  * This library does not attempt to shove all the arguments into a map-like data structure, and neither does it attempt to define increasingly convoluted ways to "bind" arguments to variables in your code and convert them to internal types. Instead you provide callback lambdas (or any other function objects, of course) that put the data where you need it and convert how you want it. Beyond toy examples this usually results in simpler code and less mental effort to write.
+  * Simple and extensible way to do rule-based syntax validation. There are no rigid "groups" with predefined mutual exclusion only.
+* Configurability beyond just "globally replace `-` with `/`". You can specify what prefixes to use on short options, long options, which prefixes are equivalent, disable short or long options behaviors altogether, what separator to use for arguments instead of `=`, and more.
+  * The default syntax is the common Unix/GNU one. 
   * Additional, pre-built configurations are available for GNU "long options only" and a couple of common Windows syntaxes.
   * You can define your own configurations from scratch or modify one of the above (e.g. add `+` as short option prefix in addition to `-`)
-* Support color output
+* Supports color output.
   * The default color scheme is shamelessly borrowed from Python 3.14 Argparse but you can define your own colors.
 * Can handle response files. 
-* Can operate using exceptions or _expected values_ (similar to `boost::outcome` or proposed `std::expected`)
-  * Can be used with exceptions and RTTI completely disabled
+* Can operate using exceptions or _expected values_ (similar to `boost::outcome` or proposed `std::expected`).
+  * Can be used with exceptions and RTTI completely disabled.
 * No dependencies beyond C++ standard library. Can be used via a single file header.
   * Requires C++20 or above. 
   * Does not use `iostreams` in any way.
 * Equivalent support for `char` and `wchar_t`. 
 * Allows for localization with user-supplied message translations.
-* Modularity. Everything is not shoved into a one giant "parser" class. You can combine different parts of the library in different ways if you really need to build something unusual. Similarly, things like printing help messages expose functions that print various parts of the whole to allow you to build your own help while reusing the tedious bits.
+* Modularity. Everything is not shoved into one giant "parser" class. You can combine different parts of the library in different ways if you really need to build something unusual. Similarly, things like printing help messages expose functions that print various parts of the whole to allow you to build your own help while reusing the tedious bits.
 
 
 ## Examples
@@ -121,7 +121,7 @@ More sample code can be found on the [Wiki](https://github.com/gershnik/argum/wi
 
 ## Integration
 
-You can integrate Argum into your code in the following ways
+You can integrate Argum into your code in the following ways:
 
 ### Single header 
 
@@ -132,9 +132,9 @@ drop it into your project and `#include` it. This is the simplest way.
   
 If you have a compiler and build system that support modules you can try to use **experimental** 
 module file. Download [single-file/argum-module.ixx](single-file/argum-module.ixx) from this repo 
-or [Releases][releases] page and integrate it into you project. 
+or [Releases][releases] page and integrate it into your project. 
 
-Note, that of the compilers I have access to, only MSVC 2026 currently supports modules to any usable extent 
+Note that, of the compilers I have access to, only MSVC 2026 currently supports modules to any usable extent 
 and is capable of using that module file.
 
 ### CMake via FetchContent
@@ -163,7 +163,7 @@ PRIVATE
 Alternatively you can clone this repository somewhere and do this:
 
 ```cmake
-add_subdirectory(PATH_WHERE_YOU_DOWNALODED_IT_TO, argum)
+add_subdirectory(PATH_WHERE_YOU_DOWNLOADED_IT_TO, argum)
 ...
 target_link_libraries(mytarget
 PRIVATE
@@ -191,7 +191,7 @@ sudo cmake --install build
 #cmake --install build --prefix /usr
 ```
 
-Once the library has been installed it can be used int the following ways:
+Once the library has been installed it can be used in the following ways:
 
 #### Basic use 
 
@@ -223,7 +223,7 @@ before running `pkg-config`
 ## Configuration
 
 Whichever method you use in order to use Argum your compiler needs to be set to C++20 mode or 
-above. Argum should compile cleanly even on a highest warnings level. 
+above. Argum should compile cleanly even at the highest warnings level. 
 
 If you don't use CMake, on MSVC you need to:
 - have `_CRT_SECURE_NO_WARNINGS` macro defined to avoid its bogus "deprecation" warnings.
@@ -234,8 +234,8 @@ If you don't use CMake, on MSVC you need to:
 Argum can operate in 3 modes selected at compile time:
 
 * Using exceptions (this is the default). In this mode parsing errors produce exceptions.
-* Using expected values, with exceptions enabled. In this mode parsing errors are reported via `Expected<T>` return values. This class similar to proposed `std::expected` or `boost::outcome`. Trying to access a `result.value()` when it contains an error throws an equivalent exceptions. This mode is enabled via `ARGUM_USE_EXPECTED` macro.
-* With exceptions disabled. In this mode expected values used as above but trying to access a `result.value()` when it contains an error calls `std::terminate`. This mode can be manually enabled via `ARGUM_NO_THROW` macro. On Clang, GCC and MSVC Argum automatically detects if exceptions are disabled during compilation and switches to this mode. 
+* Using expected values, with exceptions enabled. In this mode parsing errors are reported via `Expected<T>` return values. This class is similar to proposed `std::expected` or `boost::outcome`. Trying to access a `result.value()` when it contains an error throws an equivalent exception. This mode is enabled via `ARGUM_USE_EXPECTED` macro.
+* With exceptions disabled. In this mode expected values are used as above, but trying to access a `result.value()` when it contains an error calls `std::terminate`. This mode can be manually enabled via `ARGUM_NO_THROW` macro. On Clang, GCC and MSVC Argum automatically detects if exceptions are disabled during compilation and switches to this mode. 
 
 Note that these modes only affect handling of _parsing_ errors. Logic errors such as passing incorrect parameters to configure parser always `assert` in debug and `std::terminate` in non-debug builds.
 
@@ -265,21 +265,21 @@ For reference this is the default implementation
 
 ### Why another command line library?
 
-There are quite a few command line parsing libraries for C++ out there including [Boost.Program_options](https://www.boost.org/doc/libs/1_78_0/doc/html/program_options.html), [Lyra](https://github.com/bfgroup/Lyra), [TCLAP](http://tclap.sourceforge.net) and many others. 
+There are quite a few command line parsing libraries for C++ out there, including [Boost.Program_options](https://www.boost.org/doc/libs/1_78_0/doc/html/program_options.html), [Lyra](https://github.com/bfgroup/Lyra), [TCLAP](http://tclap.sourceforge.net) and many others. 
 Unfortunately, beyond toy applications I found none of them simultaneously easy to integrate, easy to use and easy to tweak. Specifically:
 * Such a library needs to be header-only (and ideally a single file) one that can be quickly used in any little command line project without setting up and building a library dependency. 
-* Simple examples work well with all libraries, but trying to implement something in real life soon requires you to fight the library defaults, add ad-hoc validation code, figure out workarounds etc. etc. 
-* Handle sequential parsing. It is not uncommon to have meaningful order of options and positional arguments and parsers that don't allow making decisions based on order are just standing in the way.
+* Simple examples work well with all libraries, but trying to implement something in real life soon requires you to fight the library defaults, add ad-hoc validation code, figure out workarounds, etc. etc. 
+* Handle sequential parsing. It is not uncommon to have a meaningful order of options and positional arguments and parsers that don't allow making decisions based on order are just standing in the way.
 * Configurability. Most libraries do let you change prefixes but usually in a clumsy way that doesn't really work well on Windows or other situations where you need custom syntax.
-* Modularity. Most often this is an issue if you want a different way to display help while not redoing everything from scratch. Most libraries hide everything inside and only expose high level "print help" method with some custom header and footer. Also nobody exposes internal lexer/tokenizer which would allow different parsing semantics.
+* Modularity. Most often this is an issue if you want a different way to display help while not redoing everything from scratch. Most libraries hide everything inside and only expose a high-level "print help" method with some custom header and footer. Also nobody exposes the internal lexer/tokenizer which would allow different parsing semantics.
 
 Some libraries do better on some of these but none I could find do everything well. Hence this project.
 
 ### Why options cannot have more than 1 argument? ArgParse allows that
 
-Having multiple options arguments is a very bad idea. Consider this. Normally with Posix/GNU approach when an option argument itself looks like an option you can always use some workaround syntax to disambiguate. For example if you have option `--foo` and `-f` and their **argument** `-x` you can say: `--foo=-x` and `-f-x` to avoid treating `-x` as an unknown option. With multiple arguments this becomes impossible. People using ArgParse occasionally hit this issue and are surprised. Argum follows standard Unix approach of having at most one argument per option.
+Having multiple options arguments is a very bad idea. Consider this: normally with POSIX/GNU approach when an option argument itself looks like an option you can always use some workaround syntax to disambiguate. For example if you have option `--foo` and `-f` and their **argument** `-x` you can say: `--foo=-x` and `-f-x` to avoid treating `-x` as an unknown option. With multiple arguments this becomes impossible. People using ArgParse occasionally hit this issue and are surprised. Argum follows standard Unix approach of having at most one argument per option.
 
-If you really, really need more than one argument to an option consider requiring to pass them as comma or semicolon separated list. This is also a de-facto standard Unix approach. See for example [getsubopt].
+If you really, really need more than one argument to an option consider requiring to pass them as comma or semicolon separated list. This is also a de facto standard Unix approach. See for example [getsubopt].
 
 ### Why isn't it using [C++20/23/26 feature X]?
 
