@@ -29,6 +29,11 @@ foreach(sample IN ITEMS ${samples})
             $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
     )
 
+    target_compile_options(${sample}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>
+    )
+
     if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
         target_compile_definitions(${sample}
             PRIVATE
