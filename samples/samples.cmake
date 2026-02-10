@@ -2,11 +2,12 @@
 add_executable(sample-demo EXCLUDE_FROM_ALL samples/demo.cpp)
 list(APPEND samples sample-demo)
 
+add_executable(sample-demo-expected EXCLUDE_FROM_ALL samples/demo-expected.cpp)
+list(APPEND samples sample-demo-expected)
+
 add_executable(sample-basics EXCLUDE_FROM_ALL samples/basics.cpp)
 list(APPEND samples sample-basics)
 
-add_executable(sample-color EXCLUDE_FROM_ALL samples/color.cpp)
-list(APPEND samples sample-color)
 
 foreach(sample IN ITEMS ${samples})
     
@@ -14,6 +15,11 @@ foreach(sample IN ITEMS ${samples})
         set_property(TARGET ${sample} PROPERTY CXX_STANDARD 20)
         set_property(TARGET ${sample} PROPERTY CXX_STANDARD_REQUIRED ON)
     endif()
+
+    target_include_directories(${sample}
+        PRIVATE
+            single-file
+    )
 
     target_compile_definitions(${sample}
         PRIVATE

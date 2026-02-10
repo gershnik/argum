@@ -1,22 +1,21 @@
-#include "../single-file/argum.h"
-
+#include <argum.h>
 
 #include <iostream>
 
 using namespace Argum;
 using namespace std;
 
-enum Encoding { defaultEncoding, Base64, Hex };
-
 int main(int argc, char * argv[]) {
 
     vector<string> sources;
     string destination;
+    enum Encoding { defaultEncoding, Base64, Hex };
     optional<Encoding> encoding = defaultEncoding;
     optional<string> compression;
     int compressionLevel = 9;
 
-    const char * progname = (argc ? argv[0] : "my_utility");
+    const char * const progname = (argc ? argv[0] : "my_utility");
+    const ColorStatus envColorStatus = environmentColorStatus();
 
     Parser parser;
     parser.add(
@@ -37,7 +36,8 @@ int main(int argc, char * argv[]) {
         Option("--help", "-h").
         help("show this help message and exit"). 
         handler([&]() {
-            cout << parser.formatHelp(progname);
+            auto colorizer = colorizerForFile(envColorStatus, stdout);
+            cout << parser.formatHelp(progname, terminalWidth(stdout), colorizer);
             exit(EXIT_SUCCESS);
     }));
     ChoiceParser encodingChoices;
@@ -82,8 +82,9 @@ int main(int argc, char * argv[]) {
     try {
         parser.parse(argc, argv);
     } catch (ParsingException & ex) {
-        cerr << ex.message() << '\n';
-        cerr << parser.formatUsage(progname) << '\n';
+        auto colorizer = colorizerForFile(envColorStatus, stderr);
+        cerr << colorizer.error(ex.message()) << "\n\n";
+        cerr << parser.formatUsage(progname, terminalWidth(stderr), colorizer) << '\n';
         return EXIT_FAILURE;
     }
 
@@ -91,7 +92,7 @@ int main(int argc, char * argv[]) {
         cout << "need to encode with encoding: " << *encoding <<'\n';
     else 
         cout << "need to compress with algorithm: " << *compression 
-             << " at level: " << compressionLevel <<'\n';
+             << " at level: " << compressionLevel << '\n';
     cout << "sources: {" << join(sources.begin(), sources.end(), ", ") << "}\n";
     cout << "into: " << destination <<'\n';
 }
