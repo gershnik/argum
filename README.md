@@ -11,8 +11,6 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 
 - [Features and goals](#features-and-goals)
 - [Examples](#examples)
-    - [Using exceptions](#using-exceptions)
-    - [Using expected values](#using-expected-values)
 - [Integration](#integration)
     - [Single header](#single-header)
     - [Module](#module)
@@ -28,7 +26,7 @@ Fully-featured, powerful and simple to use C++ command line argument parser.
 - [FAQ](#faq)
     - [Why another command line library?](#why-another-command-line-library)
     - [Why options cannot have more than 1 argument? ArgParse allows that](#why-options-cannot-have-more-than-1-argument-argparse-allows-that)
-    - [Why isn't it using [C++20 feature X]?](#why-isnt-it-using-c20-feature-x)
+    - [Why isn't it using [C++20/23/26 feature X]?](#why-isnt-it-using-c202326-feature-x)
 
 <!-- /TOC -->
 
