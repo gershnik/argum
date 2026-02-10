@@ -16,6 +16,7 @@
 #include "partitioner.h"
 #include "command-line.h"
 #include "help-formatter.h"
+#include "color.h"
 
 #include <string>
 #include <string_view>
@@ -45,6 +46,7 @@ namespace Argum {
     private:
         using CharConstants = Argum::CharConstants<CharType>;
         using Messages = Argum::Messages<CharType>;
+        using Colorizer = BasicColorizer<CharType>;
         using HandlerReturnType = ARGUM_EXPECTED(CharType, void);
 
         using NoArgHandler = std::function<HandlerReturnType ()>; 
@@ -140,7 +142,8 @@ namespace Argum {
             return std::move(static_cast<BasicOption *>(this)->help(str));
         }
 
-        auto formatSyntax(const BasicParser<CharType> & parser) const -> StringType {
+        auto formatSyntax(const BasicParser<CharType> & parser,
+                          const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
@@ -151,7 +154,8 @@ namespace Argum {
                 ret += brop;
             auto & mainName = this->m_names.main();
             bool isLong = parser.isOptionNameLong(mainName);
-            StringType nameAndArg = StringType(mainName).append(this->formatArgSyntax(isLong));
+            StringType nameAndArg = isLong ? colorizer.longOptionInUsage(mainName) : colorizer.shortOptionInUsage(mainName);
+            nameAndArg.append(this->formatArgSyntax(isLong, true, colorizer));
             ret.append(nameAndArg);
             unsigned idx = 1;
             for (; idx < this->m_occurs.min(); ++idx) {
@@ -171,7 +175,7 @@ namespace Argum {
             return ret;
         }
 
-        auto formatArgSyntax(bool forLongName) const -> StringType {
+        auto formatArgSyntax(bool forLongName, bool forUsage, const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
@@ -181,6 +185,7 @@ namespace Argum {
             std::visit([&](const auto & handler) {
                 using HandlerType = std::remove_cvref_t<decltype(handler)>;
                 constexpr auto argumentKind = BasicOption::template argumentKindOf<HandlerType>();
+                auto colorArg = forUsage ? colorizer.optionArgInUsage(this->m_argName) : colorizer.optionArg(this->m_argName);
                 if constexpr (argumentKind == ArgumentKind::Optional) {
                     if (this->m_requireAttachedArgument)
                         if (forLongName)
@@ -189,7 +194,7 @@ namespace Argum {
                             ret.append({brop});
                     else
                         ret.append({space, brop});
-                    ret.append(this->m_argName).append({brcl});
+                    ret.append(colorArg).append({brcl});
                 } else if constexpr (argumentKind == ArgumentKind::Required)  {
                     if (this->m_requireAttachedArgument) {
                         if (forLongName)
@@ -197,18 +202,30 @@ namespace Argum {
                     } else {
                         ret.append({space});
                     }
-                    ret.append(this->m_argName);
+                    ret.append(colorArg);
                 }
             }, this->m_handler);
             return ret;
         }
 
-        auto formatHelpName(const BasicParser<CharType> & parser) const -> StringType {
+        auto formatHelpName(const BasicParser<CharType> & parser, 
+                            const Colorizer & colorizer = {}) const -> StringType {
+
+            auto handleName = [&](const StringType & name) {
+                auto isLong = parser.isOptionNameLong(name);
+                StringType ret = isLong ? colorizer.longOption(name) : colorizer.shortOption(name);
+                ret += this->formatArgSyntax(isLong, false, colorizer);
+                return ret;
+            };
+
+            auto & all = this->m_names.all();
+            auto first = all.begin();
+            auto last = all.end();
         
-            StringType ret = this->m_names.all().front();
-            ret += this->formatArgSyntax(parser.isOptionNameLong(ret));
-            std::for_each(this->m_names.all().begin() + 1, this->m_names.all().end(), [&](const auto & name) {
-                ret.append(Messages::listJoiner()).append(name).append(this->formatArgSyntax(parser.isOptionNameLong(name)));
+            StringType ret = handleName(*first);
+            ++first;
+            std::for_each(first, last, [&](const auto & name) {
+                ret.append(Messages::listJoiner()).append(handleName(name));
             });
 
             return ret;
@@ -241,6 +258,7 @@ namespace Argum {
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
+        using Colorizer = BasicColorizer<CharType>;
         using HandlerReturnType = ARGUM_EXPECTED(CharType, void);
 
     public:
@@ -276,7 +294,8 @@ namespace Argum {
             return std::move(static_cast<BasicPositional *>(this)->help(str));
         }
 
-        auto formatSyntax(const BasicParser<CharType> & /*parser*/) const -> StringType {
+        auto formatSyntax(const BasicParser<CharType> & /*parser*/,
+                          const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
             constexpr auto brop = CharConstants::squareBracketOpen;
             constexpr auto brcl = CharConstants::squareBracketClose;
@@ -284,20 +303,22 @@ namespace Argum {
 
             StringType ret;
 
+            StringType colorizedName = colorizer.positionalInUsage(this->m_name);
+
             if (this->m_occurs.min() == 0)
                 ret += brop;
-            ret += this->m_name;
+            ret += colorizedName;
             unsigned idx = 1;
             for (; idx < this->m_occurs.min(); ++idx) {
-                ret.append({space}).append(this->m_name);
+                ret.append({space}).append(colorizedName);
             }
             if (idx < this->m_occurs.max()) {
-                ret.append({space, brop}).append(this->m_name);
+                ret.append({space, brop}).append(colorizedName);
                 if (this->m_occurs.max() != Quantifier::infinity) {
                     for (++idx; idx < this->m_occurs.max(); ++idx)
-                        ret.append({space}).append(this->m_name);
+                        ret.append({space}).append(colorizedName);
                 } else {
-                    ret.append({space}).append(ellipsis);
+                    ret.append({space}).append(colorizer.positionalInUsage(ellipsis));
                 }
                 ret += brcl;
             }
@@ -307,8 +328,9 @@ namespace Argum {
             return ret;
         }
 
-        auto formatHelpName(const BasicParser<CharType> & /*parser*/) const -> const StringType & {
-            return this->m_name;
+        auto formatHelpName(const BasicParser<CharType> & /*parser*/,
+                          const Colorizer & colorizer = {}) const -> StringType {
+            return colorizer.positional(this->m_name);
         }
 
         auto formatHelpDescription() const -> const StringType & {
@@ -337,6 +359,7 @@ namespace Argum {
         using Settings = typename BasicTokenizer<Char>::Settings;
         using HelpFormatter = BasicHelpFormatter<CharType>;
         using SubCommandMark = typename HelpFormatter::SubCommandMark;
+        using Colorizer = BasicColorizer<Char>;
 
     private:
         using CharConstants = Argum::CharConstants<CharType>;
@@ -503,15 +526,85 @@ namespace Argum {
             return this->m_subCommandMark;
         }
 
-        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand = std::optional<StringType>{}) const -> StringType {
-            return HelpFormatter(*this, progName).formatUsage(subCommand);
+        auto formatUsage(StringViewType progName) const -> StringType {
+            return this->formatUsage(progName, {}, HelpFormatter::defaultLayout.width, {});
         }
 
-        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand = std::optional<StringType>{}) const -> StringType {
-            HelpFormatter formatter(*this, progName);
-            StringType ret = formatter.formatUsage(subCommand);
+        auto formatUsage(StringViewType progName, unsigned width) const -> StringType {
+            return this->formatUsage(progName, {}, width, {});
+        }
+
+        auto formatUsage(StringViewType progName, const Colorizer & colorizer) const -> StringType {
+            return this->formatUsage(progName, {}, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatUsage(StringViewType progName, 
+                         unsigned width,
+                         const Colorizer & colorizer) const -> StringType {
+            return this->formatUsage(progName, {}, width, colorizer);
+        }
+
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand) const -> StringType {
+            return this->formatUsage(progName, subCommand, HelpFormatter::defaultLayout.width, {});
+        }
+
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand,
+                         unsigned width) const -> StringType {
+            return this->formatUsage(progName, subCommand, width, {});
+        }
+
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand,
+                         const Colorizer & colorizer) const -> StringType {
+            return this->formatUsage(progName, subCommand, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatUsage(StringViewType progName, std::optional<StringType> subCommand,
+                         unsigned width,
+                         const Colorizer & colorizer) const -> StringType {
+            typename HelpFormatter::Layout layout;
+            layout.width = width;
+            return HelpFormatter(*this, progName, layout).formatUsage(subCommand, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName) {
+            return this->formatHelp(progName, {}, HelpFormatter::defaultLayout.width, {});
+        }
+
+        auto formatHelp(StringViewType progName, unsigned width) {
+            return this->formatHelp(progName, {}, width, {});
+        }
+
+        auto formatHelp(StringViewType progName, const Colorizer & colorizer) {
+            return this->formatHelp(progName, {}, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName, unsigned width, const Colorizer & colorizer) {
+            return this->formatHelp(progName, {}, width, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand) {
+            return this->formatHelp(progName, subCommand, HelpFormatter::defaultLayout.width, {});
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand,
+                        unsigned width) {
+            return this->formatHelp(progName, subCommand, width, {});
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand,
+                        const Colorizer & colorizer) {
+            return this->formatHelp(progName, subCommand, HelpFormatter::defaultLayout.width, colorizer);
+        }
+
+        auto formatHelp(StringViewType progName, std::optional<StringType> subCommand,
+                        unsigned width,
+                        const Colorizer & colorizer) const -> StringType {
+            typename HelpFormatter::Layout layout;
+            layout.width = width;           
+            HelpFormatter formatter(*this, progName, layout);
+            StringType ret = formatter.formatUsage(subCommand, colorizer);
             ret.append(2, CharConstants::endl);
-            ret.append(formatter.formatHelp(subCommand));
+            ret.append(formatter.formatHelp(subCommand, colorizer));
             return ret;
         }
 

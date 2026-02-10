@@ -34,6 +34,10 @@ namespace Argum {
         static constexpr auto pipe                          = prefix ## '|'; \
         static constexpr auto endl                          = prefix ## '\n'; \
         static constexpr auto ellipsis                      = prefix ## "..."; \
+        static constexpr auto esc                           = prefix ## '\x1B'; \
+        static constexpr auto semicolon                     = prefix ## ';'; \
+        static constexpr auto letter_m                      = prefix ## 'm'; \
+        static constexpr auto digit_0                       = prefix ## '0'; \
         static constexpr auto mustEscapeInRegex             = prefix ## R"([.^$|()\[\]{}*+?\\])"; \
         static constexpr auto regexEscapeReplacement        = prefix ## R"(\\&)"; \
         static constexpr auto falseNames                    = {prefix ## "0", prefix ## "false", prefix ## "off", prefix ## "no"}; \

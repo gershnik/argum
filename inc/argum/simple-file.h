@@ -96,5 +96,4 @@ namespace Argum {
     };
 }
 
-
 #endif

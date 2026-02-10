@@ -17,6 +17,7 @@
     [[noreturn]] inline void Argum::terminateApplication(const char * message) {
         #ifndef NDEBUG
             assert(message && false);
+            abort();
         #else
             fprintf(stderr, "%s\n", message); 
             fflush(stderr); 

@@ -9,6 +9,7 @@
 #define HEADER_ARGUM_FORMATTING_H_INCLUDED
 
 #include "char-constants.h"
+#include "wcwidth.h"
 
 #include <string_view>
 #include <string>
@@ -18,6 +19,7 @@
 #include <algorithm>
 
 #include <limits.h>
+#include <wchar.h>
 #include <assert.h>
 
 namespace Argum {
@@ -87,6 +89,97 @@ namespace Argum {
         requires(std::basic_string<Char> & str, T && val) {
             { append(str, std::forward<T>(val)) } -> std::same_as<std::basic_string<Char> &>;
     };
+
+    namespace Impl {
+        template <typename T>
+        concept has_wcwidth = requires(T * t) {
+            { wcswidth(t, size_t(0)) };
+        };
+
+        constexpr bool wcswidthPresent = has_wcwidth<wchar_t>;
+
+        template<class T = wchar_t>
+        inline auto simpleWidth(const T * str, size_t size) -> int {
+            if constexpr (wcswidthPresent) {
+                return wcswidth(str, size);
+            } else {
+                return Argum::Wcwidth::wcswidth(str, size);
+            }
+        }
+    }
+
+    inline auto stringWidth(const std::wstring_view & str) -> unsigned {
+
+        int res = Impl::simpleWidth(str.data(), str.size());
+        if (res >= 0)
+            return res;
+        
+        std::wstring stripped;
+        enum {
+            stateNormal,
+            stateEsc,
+            stateControlStart,
+            stateControlIntermediate
+        } state = stateNormal;
+        for (wchar_t c: str) {
+            switch(state) {
+            break; case stateNormal: restart:
+                if (c == L'\x1b') {
+                    state = stateEsc;
+                    continue;
+                }
+                stripped += c;
+
+            break; case stateEsc:
+                if (c == L'[') {
+                    state = stateControlStart;
+                    continue;
+                }
+                state = stateNormal;
+                goto restart;
+
+            break; case stateControlStart:
+                if (c >= 0x30 && c <= 0x3F) {
+                    continue;
+                }
+                if (c >= 0x20 && c <= 0x2F) {
+                    state = stateControlIntermediate;
+                    continue;
+                }
+                if (c >= 0x40 && c <= 0x7E) {
+                    state = stateNormal;
+                    continue;
+                }
+                state = stateNormal;
+                goto restart;
+
+            break; case stateControlIntermediate:
+                if (c >= 0x20 && c <= 0x2F) {
+                    state = stateControlIntermediate;
+                    continue;
+                }
+                if (c >= 0x40 && c <= 0x7E) {
+                    state = stateNormal;
+                    continue;
+                }
+                state = stateNormal;
+                goto restart;
+            }
+        }
+
+        res = Impl::simpleWidth(stripped.data(), stripped.size());
+        if (res >= 0)
+            return res;
+        
+        return unsigned(stripped.size());
+    }
+
+    inline auto stringWidth(const std::string_view & str) -> unsigned {
+
+        std::wstring sigh;
+        append(sigh, str);
+        return stringWidth(sigh);
+    }
 
     template<class Char, StringAppendable<Char> T>
     auto toString(T && val) -> std::basic_string<Char> {
@@ -214,74 +307,53 @@ namespace Argum {
     }
 
     template<StringLike T>
-    auto indent(T && input, unsigned count = 4) -> std::basic_string<CharTypeOf<T>> {
+    auto wordWrap(T && input, unsigned maxLength, unsigned indent = 0) -> std::basic_string<CharTypeOf<T>> {
 
         using Char = CharTypeOf<T>;
-        std::basic_string_view<Char> str(std::forward<T>(input));
-
-        std::basic_string<Char> ret;
-        size_t start = 0;
-        for ( ; ; ) {
-            auto lineEnd = str.find(CharConstants<Char>::endl, start);
-            if (lineEnd == str.npos)
-                break;
-            ret += str.substr(start, lineEnd + 1 - start);
-            start = lineEnd + 1;
-            ret.append(count, CharConstants<char>::space);
-        }
-        ret += str.substr(start);
-        return ret;
-    }
-
-    template<StringLike T>
-    auto wordWrap(T && input, unsigned maxLength) -> std::basic_string<CharTypeOf<T>> {
-        
-        using Char = CharTypeOf<T>;
-        
-        
-        if (maxLength == 0)
-            return std::basic_string<Char>();
 
         std::basic_string_view<Char> str(std::forward<T>(input));
-        if (str.size() < maxLength)
-            return std::basic_string<Char>(std::forward<T>(input));
+        
+        if (maxLength == 0 || str.empty())
+            return {};
+
+        if (indent > maxLength)
+            indent = maxLength - 1;
 
         std::basic_string<Char> ret;
         ret.reserve(str.size());
-        
-        size_t endOfLastAdded = 0;
-        size_t lastSpacePos = str.npos;
-        for(size_t i = 0; i < str.size() && str.size() - endOfLastAdded > maxLength; ++i) {
-            Char c = str[i];
-            if (c == CharConstants<Char>::endl) {
-                ret += str.substr(endOfLastAdded, i + 1 - endOfLastAdded);
-                endOfLastAdded = i + 1;
-                lastSpacePos = str.npos;
-                continue;
+        std::basic_string<Char> prefix;
+
+        bool firstLine = true;
+        for ( ; ; ) {
+            auto eolPos = str.find(CharConstants<Char>::endl);
+            auto line = str.substr(0, eolPos);
+            bool needLineBreak = (eolPos != str.npos);
+            auto width = stringWidth(line);
+            while (width > maxLength) {
+                auto spacePos = line.rfind(CharConstants<Char>::space);
+                if (spacePos == line.npos)
+                    break;
+                line = line.substr(0, spacePos);
+                needLineBreak = true;
+                width = stringWidth(line);
             }
-            
-            if (c == CharConstants<Char>::space) {
-                lastSpacePos = i;
+            ret += prefix;
+            ret += line;
+            if (needLineBreak) {
+                ret += CharConstants<Char>::endl;
+                str = str.substr(line.size() + 1);
+            } else {
+                str = str.substr(line.size());
             }
+            if (str.empty())
+                break;
 
-            if (i - endOfLastAdded == maxLength) {
-
-                if (lastSpacePos != str.npos) {
-
-                    ret += str.substr(endOfLastAdded, lastSpacePos - endOfLastAdded);
-                    ret += CharConstants<Char>::endl;
-                    endOfLastAdded = lastSpacePos + 1;
-                } else {
-
-                    ret += str.substr(endOfLastAdded, i - endOfLastAdded);
-                    ret += CharConstants<Char>::endl;
-                    endOfLastAdded = i;
-                }
-                lastSpacePos = str.npos;
+            if (firstLine) {
+                prefix = std::basic_string<Char>(indent, CharConstants<char>::space);
+                maxLength -= indent;
+                firstLine = false;
             }
         }
-        ret.append(str.substr(endOfLastAdded));
-
         return ret;
     }
 

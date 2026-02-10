@@ -5,13 +5,11 @@
 // license that can be found in the LICENSE file or at
 // https://github.com/gershnik/argum/blob/master/LICENSE
 //
-module;
+#ifndef HEADER_ARGUM_##NAME##_INCLUDED
+#define HEADER_ARGUM_##NAME##_INCLUDED
 
 ##SYS_INCLUDES##
 
-export module Argum;
+#include "argum.h"
 
-#define ARGUM_MOD_EXPORTED export 
-
-#include "parser.h"
-#include "type-parsers.h"
+#endif 

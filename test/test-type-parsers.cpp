@@ -107,7 +107,11 @@ TEST_CASE( "Integral Char" ) {
     EXPECT_INT_FAILURE(char, "257", OUT_OF_RANGE);
     
     EXPECT_INT_SUCCESS(char, "5", char(5));
-    EXPECT_INT_SUCCESS(char, L"-1", char(-1));
+    if constexpr (int(char(-1)) < 0) {
+        EXPECT_INT_SUCCESS(char, L"-1", char(-1));
+    } else {
+        EXPECT_INT_FAILURE(char, L"-1", OUT_OF_RANGE);
+    }
     EXPECT_INT_SUCCESS(char, "65", 'A');
 }
 

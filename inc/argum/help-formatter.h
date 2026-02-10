@@ -10,6 +10,7 @@
 
 #include "messages.h"
 #include "formatting.h"
+#include "color.h"
 
 #include <string_view>
 #include <string>
@@ -31,9 +32,10 @@ namespace Argum {
         using StringType = std::basic_string<CharType>;
         using Option = BasicOption<CharType>;
         using Positional = BasicPositional<CharType>;
+        using Colorizer = BasicColorizer<CharType>;
 
         struct Layout {
-            unsigned width = 80;
+            unsigned width = std::numeric_limits<unsigned>::max();
             unsigned helpLeadingGap = 2;
             unsigned helpNameMaxWidth = 20;
             unsigned helpDescriptionGap = 2;
@@ -60,24 +62,26 @@ namespace Argum {
                 m_layout.width = m_layout.helpLeadingGap + m_layout.helpNameMaxWidth + m_layout.helpDescriptionGap + 1;
         }
 
-        auto formatUsage() const -> StringType {
-            return this->formatUsage(std::nullopt);
+        auto formatUsage(const Colorizer & colorizer = {}) const -> StringType {
+            return this->formatUsage(std::nullopt, colorizer);
         }
 
-        auto formatUsage(const std::optional<StringType> & subCommand) const -> StringType {
+        auto formatUsage(const std::optional<StringType> & subCommand,
+                         const Colorizer & colorizer = {}) const -> StringType {
             constexpr auto space = CharConstants::space;
-            return wordWrap(StringType(Messages::usageStart()).
-                            append(this->m_progName).
-                            append({space}).
-                            append(this->formatSyntax(subCommand)), 
-                   m_layout.width);
+            return wordWrap(colorizer.heading(Messages::usageStart()).
+                                append(colorizer.progName(this->m_progName)).
+                                append({space}).
+                                append(this->formatSyntax(subCommand, colorizer)), 
+                            m_layout.width, m_layout.helpLeadingGap);
         }
 
-        auto formatHelp() const -> StringType {
-            return this->formatHelp(std::nullopt);
+        auto formatHelp(const Colorizer & colorizer = {}) const -> StringType {
+            return this->formatHelp(std::nullopt, colorizer);
         }
 
-        auto formatHelp(const std::optional<StringType> & subCommand) const -> StringType {
+        auto formatHelp(const std::optional<StringType> & subCommand,
+                        const Colorizer & colorizer = {}) const -> StringType {
 
             if (subCommand && this->m_parser.subCommandMark().positionalIdx == size_t(-1))
                 ARGUM_INVALID_ARGUMENT("subcommand must be defined to use this function with non null subcommand");
@@ -86,12 +90,12 @@ namespace Argum {
 
             StringType ret;
 
-            auto helpContent = this->calculateHelpContent(bool(subCommand));
+            auto helpContent = this->calculateHelpContent(bool(subCommand), colorizer);
             if (helpContent.maxNameLen > m_layout.helpNameMaxWidth)
                 helpContent.maxNameLen = m_layout.helpNameMaxWidth;
 
             if (!helpContent.positionalItems.empty()) {
-                ret.append(wordWrap(Messages::positionalHeader(), m_layout.width));
+                ret.append(wordWrap(colorizer.heading(Messages::positionalHeader()), m_layout.width, m_layout.helpLeadingGap));
                 for(auto & [name, desc]: helpContent.positionalItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
                 }
@@ -99,7 +103,7 @@ namespace Argum {
             }
 
             if (!helpContent.optionItems.empty()) {
-                ret.append(wordWrap(Messages::optionsHeader(), m_layout.width));
+                ret.append(wordWrap(colorizer.heading(Messages::optionsHeader()), m_layout.width, m_layout.helpLeadingGap));
                 for(auto & [name, desc]: helpContent.optionItems) {
                     ret.append({endl}).append(this->formatItemHelp(name, desc, helpContent.maxNameLen));
                 }
@@ -108,12 +112,13 @@ namespace Argum {
             return ret;
         }
 
-        auto formatSyntax() const -> StringType {
+        auto formatSyntax(const Colorizer & colorizer = {}) const -> StringType {
 
-            return this->formatSyntax(std::nullopt);
+            return this->formatSyntax(std::nullopt, colorizer);
         }
 
-        auto formatSyntax(const std::optional<StringType> & subCommand) const -> StringType {
+        auto formatSyntax(const std::optional<StringType> & subCommand,
+                          const Colorizer & colorizer = {}) const -> StringType {
 
             auto subCommandMark = this->m_parser.subCommandMark();
             if (subCommand && subCommandMark.positionalIdx == size_t(-1))
@@ -122,7 +127,7 @@ namespace Argum {
             constexpr auto space = CharConstants::space;
 
             auto getSyntax = [&](auto & obj) {
-                return obj.formatSyntax(this->m_parser);
+                return obj.formatSyntax(this->m_parser, colorizer);
             };
 
             StringType ret = this->appendSyntax(
@@ -146,7 +151,8 @@ namespace Argum {
             std::vector<std::pair<StringType, StringType>> optionItems;
             std::vector<std::pair<StringType, StringType>> positionalItems;
         };
-        auto calculateHelpContent(bool forSubCommand) const -> HelpContent {
+        auto calculateHelpContent(bool forSubCommand, 
+                                  const Colorizer & colorizer = {}) const -> HelpContent {
             
             HelpContent ret;
             auto subCommandMark = this->m_parser.subCommandMark();
@@ -160,15 +166,17 @@ namespace Argum {
                 if (forSubCommand && i == subCommandMark.positionalIdx)
                     continue;
                 auto & pos = this->m_parser.positionals()[i];
-                auto name = pos.formatHelpName(this->m_parser);
-                if (name.length() > ret.maxNameLen)
-                    ret.maxNameLen = unsigned(name.length());
+                auto name = pos.formatHelpName(this->m_parser, colorizer);
+                auto length = stringWidth(name);
+                if (length > ret.maxNameLen)
+                    ret.maxNameLen = length;
                 ret.positionalItems.emplace_back(std::move(name), pos.formatHelpDescription());
             }
             std::for_each(this->m_parser.options().begin(), this->optionsEnd(forSubCommand), [&](auto & opt){
-                auto name = opt.formatHelpName(this->m_parser);
-                if (name.length() > ret.maxNameLen)
-                    ret.maxNameLen = unsigned(name.length());
+                auto name = opt.formatHelpName(this->m_parser, colorizer);
+                auto length = stringWidth(name);
+                if (length > ret.maxNameLen)
+                    ret.maxNameLen = length;
                 ret.optionItems.emplace_back(std::move(name), opt.formatHelpDescription());
             });
             return ret;
@@ -182,9 +190,9 @@ namespace Argum {
 
             auto descColumnOffset = this->m_layout.helpLeadingGap + maxNameLen + this->m_layout.helpDescriptionGap;
 
-            StringType ret = indent(wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width), this->m_layout.helpLeadingGap);
+            StringType ret = wordWrap(StringType(this->m_layout.helpLeadingGap, space).append(name), this->m_layout.width, this->m_layout.helpLeadingGap);
             auto lastEndlPos = ret.rfind(endl);
-            auto lastLineLen = ret.size() - (lastEndlPos + 1);
+            auto lastLineLen = stringWidth(StringViewType(ret.c_str() + (lastEndlPos + 1), ret.size() - (lastEndlPos + 1)));
 
             if (lastLineLen > maxNameLen + this->m_layout.helpLeadingGap) {
                 ret += endl;
@@ -193,7 +201,7 @@ namespace Argum {
                 ret.append(descColumnOffset - lastLineLen, space);
             }
 
-            ret.append(indent(wordWrap(description, this->m_layout.width - descColumnOffset), descColumnOffset));
+            ret.append(wordWrap(description, this->m_layout.width - descColumnOffset, descColumnOffset));
 
             return ret;
         }

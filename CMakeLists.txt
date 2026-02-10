@@ -19,7 +19,7 @@ project(argum VERSION ${ARGUM_VERSION} LANGUAGES CXX)
 add_library(argum INTERFACE)
 
 set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})
-set(TOOLSDIR ${SRCDIR}/tools)
+set(TOOLSDIR ${SRCDIR}/.tools)
 
 target_include_directories(argum 
     INTERFACE
@@ -27,15 +27,28 @@ target_include_directories(argum
         $<INSTALL_INTERFACE:include>  # <prefix>/include
 )
 
+target_compile_options(argum
+    INTERFACE
+        $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>
+)
+
 target_compile_definitions(argum
     INTERFACE
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 )
 
+if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
+    target_compile_definitions(argum
+        INTERFACE
+            $<$<CXX_COMPILER_ID:Clang>:_CRT_SECURE_NO_WARNINGS>
+    )
+endif()
+
 set(PUBLIC_HEADERS 
     ${SRCDIR}/inc/argum/common.h
     ${SRCDIR}/inc/argum/char-constants.h
     ${SRCDIR}/inc/argum/messages.h
+    ${SRCDIR}/inc/argum/color.h
     ${SRCDIR}/inc/argum/formatting.h
     ${SRCDIR}/inc/argum/partitioner.h
     ${SRCDIR}/inc/argum/flat-map.h
@@ -48,6 +61,8 @@ set(PUBLIC_HEADERS
     ${SRCDIR}/inc/argum/validators.h
     ${SRCDIR}/inc/argum/help-formatter.h
     ${SRCDIR}/inc/argum/type-parsers.h
+    ${SRCDIR}/inc/argum/wcwidth.h
+    ${SRCDIR}/inc/argum/detect-system.h
 )
 
 target_sources(argum
@@ -67,6 +82,7 @@ if (PROJECT_IS_TOP_LEVEL)
 
     if (NOT ARGUM_NO_TESTS)
         include(test/test.cmake)
+        include(samples/samples.cmake)
     endif()
 
 endif()

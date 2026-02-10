@@ -50,11 +50,12 @@ TEST_CASE( "extremely small number of columns" ) {
     });
 
     CHECK(formatter.formatUsage() == R"__(Usage: PROG
-[-h] [-v] [-x]
-[--y Y] foo bar)__");
+ [-h] [-v] [-x]
+ [--y Y] foo
+ bar)__");
 
     CHECK(formatter.formatHelp() == R"__(positional
-arguments:
+ arguments:
  foo
    FOO HELP
  bar
@@ -63,14 +64,15 @@ arguments:
 options:
  -h, --help
    show this
-   help message
+   help
+   message
    and exit
  -v, --version
    show
    program's
    version
-   number and
-   exit
+   number
+   and exit
  -x
    X HELP
  --y Y
@@ -89,10 +91,8 @@ TEST_CASE( "argument help aligns when options are longer" ) {
     parser.add(POSITIONAL("bob").occurs(Quantifier(0, 25)).help("hohahaha"));
     parser.add(POSITIONAL("fob").help("ghakl\njdks"));
 
-    CHECK(parser.formatUsage("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob
-bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob)__");
-    CHECK(parser.formatHelp("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob
-bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob
+    CHECK(parser.formatUsage("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob)__");
+    CHECK(parser.formatHelp("PROG") == R"__(Usage: PROG [-v] [--name ARG] [bob [bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob bob]] fob
 
 positional arguments:
   bob                 hohahaha

@@ -35,25 +35,27 @@ function(configure_test name)
 
     target_compile_options(${name} 
         PRIVATE
-            $<$<CXX_COMPILER_ID:AppleClang,Clang>:-Wall -Wextra -Wpedantic 
+            $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic 
                 -Wno-gnu-zero-variadic-macro-arguments #Clang bug - this is not an issue in C++20
-                # -Weverything 
-                # -Wno-c++98-compat 
-                # -Wno-c++98-compat-pedantic 
-                # -Wno-old-style-cast 
-                # -Wno-ctad-maybe-unsupported
-                # -Wno-return-std-move-in-c++11
-                # -Wno-extra-semi-stmt
-                # -Wno-shadow-uncaptured-local
-                # -Wno-padded 
-                # -Wno-weak-vtables
             > 
             
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic
                 -Wno-unknown-pragmas  #the whole point of pragmas it to be potentially unknown!
             >
-            $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /Zc:preprocessor /W4 /WX>
+            $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /W4 /WX>
     )
+
+    if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
+        target_compile_options(${name}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:Clang>:/W4;/WX>
+        )
+    else()
+        target_compile_options(${name}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:Clang>:-Wall;-Wextra;-pedantic>
+        )
+    endif()
 
     target_include_directories(${name} 
     PRIVATE
@@ -78,6 +80,7 @@ function(configure_test name)
             test/test-parser-adaptive.cpp
             test/test-parser-validation.cpp
             test/test-type-parsers.cpp
+            test/test-color.cpp
 
             test/response.txt
             test/response1.txt
@@ -124,10 +127,23 @@ target_compile_definitions(test_nothrow
 
 target_compile_options(test_nothrow
     PRIVATE
-        $<$<CXX_COMPILER_ID:AppleClang,Clang>:-fno-exceptions -fno-rtti>
+        $<$<CXX_COMPILER_ID:AppleClang>:-fno-exceptions -fno-rtti>
         $<$<CXX_COMPILER_ID:GNU>:-fno-exceptions -fno-rtti>
         $<$<CXX_COMPILER_ID:MSVC>:/GR- -D_HAS_EXCEPTIONS=0>
 )
+
+if ("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
+    target_compile_options(test_nothrow
+    PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:/GR- -D_HAS_EXCEPTIONS=0>
+    )
+else()
+    target_compile_options(test_nothrow
+    PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:-fno-exceptions -fno-rtti>
+    )
+endif()
+
 
 set(TEST_COMMAND "")
 set(TEST_DEPS "")
