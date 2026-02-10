@@ -4901,19 +4901,6 @@ namespace Argum {
         return ColorStatus::unknown;
     }
 
-    //Portable isatty
-    ARGUM_MOD_EXPORTED
-    inline bool isAtTty(FILE * fp) {
-#if defined(ARGUM_HAS_UNISTD_H)
-        return isatty(fileno(fp));
-#elif defined(_WIN32)
-        return _isatty(_fileno(fp));
-#else
-        return false;
-#endif
-    }
-
-
     ARGUM_MOD_EXPORTED
     inline bool shouldUseColor(ColorStatus envColorStatus, FILE * fp) {
         if (envColorStatus == ColorStatus::required)
@@ -4921,31 +4908,38 @@ namespace Argum {
         if (envColorStatus == ColorStatus::forbidden)
             return false;
 
-#ifndef _WIN32
+#if defined(ARGUM_HAS_UNISTD_H)
         if (envColorStatus == ColorStatus::unknown)
             return false;
-#endif
 
-        if (!isAtTty(fp))
+        return isatty(fileno(fp));
+
+#elif defined(_WIN32)
+        int desc = _fileno(fp);
+        if (desc < 0)
             return false;
 
-#ifdef _WIN32
+        if (!_isatty(desc))
+            return false;
+
         if (envColorStatus == ColorStatus::unknown) {
         
-            HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-            if (hOut == INVALID_HANDLE_VALUE)
+            HANDLE h = HANDLE(_get_osfhandle(_fileno(fp)));
+            if (h == INVALID_HANDLE_VALUE)
                 return false;
 
             DWORD dwMode = 0;
-            if (!GetConsoleMode(hOut, &dwMode))
+            if (!GetConsoleMode(h, &dwMode))
                 return false;
 
             if (!(dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING))
                 return false;
         }
-#endif
 
         return true;
+#else
+        return false;
+#endif
     }
 
     ARGUM_MOD_EXPORTED
@@ -4983,10 +4977,14 @@ namespace Argum {
 
 #elif defined(_WIN32)
 
-        if (!_isatty(_fileno(fp)))
+        int desc = _fileno(fp);
+        if (desc < 0)
             return fallback;
 
-        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (!_isatty(desc))
+            return fallback;
+
+        HANDLE h = HANDLE(_get_osfhandle(desc));
         if (h == INVALID_HANDLE_VALUE)
             return fallback;
 
