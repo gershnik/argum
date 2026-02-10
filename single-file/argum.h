@@ -3827,6 +3827,7 @@ namespace Argum {
             std::visit([&](const auto & handler) {
                 using HandlerType = std::remove_cvref_t<decltype(handler)>;
                 constexpr auto argumentKind = BasicOption::template argumentKindOf<HandlerType>();
+                auto colorArg = forUsage ? colorizer.optionArgInUsage(this->m_argName) : colorizer.optionArg(this->m_argName);
                 if constexpr (argumentKind == ArgumentKind::Optional) {
                     if (this->m_requireAttachedArgument)
                         if (forLongName)
@@ -3835,7 +3836,7 @@ namespace Argum {
                             ret.append({brop});
                     else
                         ret.append({space, brop});
-                    ret.append(this->m_argName).append({brcl});
+                    ret.append(colorArg).append({brcl});
                 } else if constexpr (argumentKind == ArgumentKind::Required)  {
                     if (this->m_requireAttachedArgument) {
                         if (forLongName)
@@ -3843,7 +3844,7 @@ namespace Argum {
                     } else {
                         ret.append({space});
                     }
-                    ret.append(forUsage ? colorizer.optionArgInUsage(this->m_argName) : colorizer.optionArg(this->m_argName));
+                    ret.append(colorArg);
                 }
             }, this->m_handler);
             return ret;
