@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+## [2.7] - 2026-02-10
+
 ### Added
 - Help/usage output now supports colors, if desired.
 - New `detect-system.h` header for detection of terminal width and whether to 
@@ -128,3 +130,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [2.4]: https://github.com/gershnik/argum/releases/v2.4
 [2.5]: https://github.com/gershnik/argum/releases/v2.5
 [2.6]: https://github.com/gershnik/argum/releases/v2.6
+[2.7]: https://github.com/gershnik/argum/releases/v2.7
