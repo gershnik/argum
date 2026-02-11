@@ -201,7 +201,7 @@ namespace Argum {
                 ret.append(descColumnOffset - lastLineLen, space);
             }
 
-            ret.append(wordWrap(description, this->m_layout.width - descColumnOffset, descColumnOffset));
+            ret.append(wordWrap(description, this->m_layout.width, descColumnOffset, descColumnOffset));
 
             return ret;
         }

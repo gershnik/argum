@@ -30,6 +30,30 @@ options:
 )__");
 }
 
+TEST_CASE( "help wraps properly" ) {
+    map<string, vector<Value>> results;
+    Parser parser;
+
+    parser.add(OPTION_NO_ARG("--help").help("show this help message and exit"));
+
+    HelpFormatter formatter(parser, "PROG", {
+        .width = 15,
+        .helpLeadingGap = 2,
+        .helpNameMaxWidth = 6,
+        .helpDescriptionGap = 2
+    });
+
+    CHECK(formatter.formatHelp() == R"__(options:
+  --help  show
+          this
+          help
+          message
+          and
+          exit
+
+)__");
+}
+
 TEST_CASE( "extremely small number of columns" ) {
 
     map<string, vector<Value>> results;
@@ -64,15 +88,14 @@ TEST_CASE( "extremely small number of columns" ) {
 options:
  -h, --help
    show this
-   help
-   message
+   help message
    and exit
  -v, --version
    show
    program's
    version
-   number
-   and exit
+   number and
+   exit
  -x
    X HELP
  --y Y

@@ -1054,7 +1054,8 @@ namespace Argum {
     }
 
     template<StringLike T>
-    auto wordWrap(T && input, unsigned maxLength, unsigned indent = 0) -> std::basic_string<CharTypeOf<T>> {
+    auto wordWrap(T && input, unsigned maxLength, 
+                  unsigned indent = 0, unsigned firstLineOffset = 0) -> std::basic_string<CharTypeOf<T>> {
 
         using Char = CharTypeOf<T>;
 
@@ -1063,20 +1064,31 @@ namespace Argum {
         if (maxLength == 0 || str.empty())
             return {};
 
-        if (indent > maxLength)
+        if (indent >= maxLength)
             indent = maxLength - 1;
 
         std::basic_string<Char> ret;
         ret.reserve(str.size());
         std::basic_string<Char> prefix;
-
         bool firstLine = true;
+
+        unsigned curMaxLen;
+        if (firstLineOffset >= maxLength) {
+            ret += CharConstants<Char>::endl;
+            prefix = std::basic_string<Char>(indent, CharConstants<char>::space);
+            ret += prefix;
+            curMaxLen = maxLength - indent;
+            firstLine = false;
+        } else {
+            curMaxLen = maxLength - firstLineOffset;
+        }
+        
         for ( ; ; ) {
             auto eolPos = str.find(CharConstants<Char>::endl);
             auto line = str.substr(0, eolPos);
             bool needLineBreak = (eolPos != str.npos);
             auto width = stringWidth(line);
-            while (width > maxLength) {
+            while (width > curMaxLen) {
                 auto spacePos = line.rfind(CharConstants<Char>::space);
                 if (spacePos == line.npos)
                     break;
@@ -1097,7 +1109,7 @@ namespace Argum {
 
             if (firstLine) {
                 prefix = std::basic_string<Char>(indent, CharConstants<char>::space);
-                maxLength -= indent;
+                curMaxLen = maxLength - indent;
                 firstLine = false;
             }
         }
@@ -3608,7 +3620,7 @@ namespace Argum {
                 ret.append(descColumnOffset - lastLineLen, space);
             }
 
-            ret.append(wordWrap(description, this->m_layout.width - descColumnOffset, descColumnOffset));
+            ret.append(wordWrap(description, this->m_layout.width, descColumnOffset, descColumnOffset));
 
             return ret;
         }
