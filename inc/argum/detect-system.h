@@ -175,6 +175,13 @@ namespace Argum {
     }
 
     ARGUM_MOD_EXPORTED
+    inline auto wideColorizerForFile(ColorStatus envColorStatus, FILE * fp) -> WColorizer {
+        if (shouldUseColor(envColorStatus, fp))
+            return defaultWColorizer();
+        return {};
+    }
+
+    ARGUM_MOD_EXPORTED
     inline unsigned terminalWidth(FILE * fp) {
         unsigned fallback = std::numeric_limits<unsigned>::max();
 
