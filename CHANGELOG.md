@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+## [2.8] - 2026-02-11
+
 ### Fixed
 - Minor fixes to help word wrapping algorithm
 - Added missing `wideColorizerForFile` function
@@ -138,3 +140,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [2.5]: https://github.com/gershnik/argum/releases/v2.5
 [2.6]: https://github.com/gershnik/argum/releases/v2.6
 [2.7]: https://github.com/gershnik/argum/releases/v2.7
+[2.8]: https://github.com/gershnik/argum/releases/v2.8
