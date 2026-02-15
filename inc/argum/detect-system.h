@@ -200,9 +200,10 @@ namespace Argum {
             char * end;
             auto val = CharConstants<char>::toULong(cols, &end, 10);
             if (val > 0 && val < std::numeric_limits<unsigned>::max() &&
-                end == cols + strlen(cols))
+                end == cols + strlen(cols)) {
 
-                return val;
+                return unsigned(val);
+            }
         }
 
         return fallback;
