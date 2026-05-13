@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+### Fixed
+- Compilation warning when using the library from XCode
+
 ## [2.8] - 2026-02-11
 
 ### Fixed
